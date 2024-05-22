@@ -1,0 +1,48 @@
+package rgw_commands
+
+import (
+	"bytes"
+	"fmt"
+)
+
+func BucketCreation(variables map[string][]string) string {
+	// Iterate over the buckets to generate terminal commands for bucket creation
+	var rows bytes.Buffer
+	for i, bucket := range variables["bucketnames"] {
+		// Check if UID is empty
+		if bucket != "" {
+			bucketcreate := fmt.Sprintf("./rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --req %s ;", variables["rgw_realm"][0], variables["tenant"][0], variables["bucketnames"][i], variables["bucketquotas"][i], variables["request_id_sm"][0])
+			rows.WriteString(bucketcreate)
+			// Add newline character only if it's not the last row
+			if i < len(variables["bucketnames"])-1 {
+				rows.WriteString("\n")
+			}
+		}
+
+	}
+	return rows.String()
+}
+
+func UserCreation(variables map[string][]string) string {
+	// Iterate over the usernames to generate terminal commands for "radogw-admin user create"
+	var rows bytes.Buffer
+	for i, user := range variables["users"] {
+		// Check if UID is empty
+		if user != "" {
+			usercreate := fmt.Sprintf("sudo radosgw-admin user create --rgw-realm %s --tenant %s --uid %s --display-name %s --max-buckets -1;", variables["rgw_realm"][0], variables["tenant"][0], user, variables["request_id_sm"][0])
+			rows.WriteString(usercreate)
+			// Add newline character only if it's not the last row
+			if i < len(variables["users"])-1 {
+				rows.WriteString("\n")
+			}
+		}
+
+	}
+	return rows.String()
+}
+
+func ResultCheck(variables map[string][]string) string {
+	// Commands to check users and buckets in tenant
+	userListCommand := fmt.Sprintf("sudo radosgw-admin user list --rgw-realm %s | grep %s; sudo radosgw-admin bucket list --rgw-realm %s | grep %s;\n", variables["rgw_realm"][0], variables["tenant"][0], variables["rgw_realm"][0], variables["tenant"][0])
+	return userListCommand
+}
