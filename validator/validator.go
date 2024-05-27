@@ -2,26 +2,43 @@ package validator
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
 func ValidateTenant(tenant string, env string) {
-	// Perform validation
-	// Validate if the tenant contains Russian characters
-	if strings.ContainsAny(tenant, "абвгдеёжзийклмнопрстуфхцчшщъыьэюя") {
-		fmt.Println("Warning: Tenant contains Russian characters")
+	// Check if the tenant only contains lowercase English characters, digits, and underscore
+	allowedCharsPattern := "^[a-z0-9_]+$"
+	matched, err := regexp.MatchString(allowedCharsPattern, tenant)
+	if err != nil {
+		fmt.Println("Error in regex pattern for Tenant name validation:", err)
+		return
 	}
+	if !matched {
+		fmt.Println("Warning: Tenant contains invalid characters(not an English character/digit/underscore)")
+	}
+
 	//Validate if tenant contains 'gen'
 	if !strings.Contains(tenant, "gen") {
 		fmt.Println("Warning: Tenant must contain 'gen'")
 	}
+
 	// Validate if the tenant contains special symbols or characters other then "_"
 	if strings.ContainsAny(tenant, "!@#$%^&*()+`-=[]{}|;':\",./<>?—") {
 		fmt.Println("Warning: Tenant contains invalid special characters")
 	}
-	if env == "TEST" && strings.Contains(tenant, "prod") {
-		fmt.Println("Warning: Environment is TEST, but tenant contains 'prod'")
+
+	// Define a list of environments to check against
+	envsToCheck := []string{"IFT", "PREPROD", "HOTFIX"}
+	// Check if the environment is one of the specified ones and tenant contains 'prod'
+	for _, envToCheck := range envsToCheck {
+		if env == envToCheck && strings.Contains(tenant, "prod") {
+			fmt.Printf("Warning: Environment is %s, but tenant contains 'prod'\n", env)
+			break // No need to check other environments if warning is already printed
+		}
 	}
+
+	// Check if the environment is PROD and tenant contains 'test'
 	if env == "PROD" && strings.Contains(tenant, "test") {
 		fmt.Println("Warning: Environment is PROD, but tenant contains 'test'")
 	}

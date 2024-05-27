@@ -7,7 +7,7 @@ ris_code: 1370
 ris_name: grnt
 resp_group: ЦК-2Л
 owner: test@vtb.ru;test2@vtb.ru
-tenant: p0_grnt_ge_01_ch4_b2b_com_app
+tenant: p0_grnt_gen_01_ch4_b2b_com_app
 rgw_realm: b2b-app
 requester: Заявитель
 email_for_credentials: test@vtb.ru 
@@ -18,4 +18,4 @@ testbucket3 8G
 users:
 user1
 user2
-usеr3
+user3
