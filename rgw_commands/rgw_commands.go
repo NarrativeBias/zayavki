@@ -11,7 +11,7 @@ func BucketCreation(variables map[string][]string) string {
 	for i, bucket := range variables["bucketnames"] {
 		// Check if UID is empty
 		if bucket != "" {
-			bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --req %s ", variables["rgw_realm"][0], variables["tenant"][0], variables["bucketnames"][i], variables["bucketquotas"][i], variables["request_id_sm"][0])
+			bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --req %s", variables["rgw_realm"][0], variables["tenant"][0], variables["bucketnames"][i], variables["bucketquotas"][i], variables["request_id_sm"][0])
 			rows.WriteString(bucketcreate)
 			// Add newline character only if it's not the last row
 			if i < len(variables["bucketnames"])-1 {
@@ -27,6 +27,10 @@ func UserCreation(variables map[string][]string) string {
 	// Iterate over the usernames to generate terminal commands for "radogw-admin user create"
 	var rows bytes.Buffer
 	for i, user := range variables["users"] {
+		// Skip the generation of main tenant user
+		if user == variables["tenant"][0] {
+			continue
+		}
 		// Check if UID is empty
 		if user != "" {
 			usercreate := fmt.Sprintf("sudo radosgw-admin user create --rgw-realm %s --tenant %s --uid %s --display-name %s --max-buckets -1 | grep -A2 '\"user\"';", variables["rgw_realm"][0], variables["tenant"][0], user, variables["request_id_sm"][0])
