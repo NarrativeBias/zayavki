@@ -1,0 +1,45 @@
+
+~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	p0_grnt_gen_01_ch4_b2b_com_app	-	-	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	user1	-	-	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	user2	-	-	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	user3	-	-	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	-	testbucket1	9G	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	-	testbucket2	10G	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+cluster_test	TEST	TEST	realm_test	p0_grnt_gen_01_ch4_b2b_com_app	-	testbucket3	8G	SD-0122345678	SR-1234567	25.06.2024	grnt	1370	ЦК-2Л	test@vtb.ru;test2@vtb.ru	Заявитель
+
+~~~~~~~List of terminal commands for bucket and user creation~~~~~~~
+~/scripts/rgw-create-bucket.sh --config realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --bucket testbucket1 --size 9G --req SD-0122345678 &&\
+~/scripts/rgw-create-bucket.sh --config realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --bucket testbucket2 --size 10G --req SD-0122345678 &&\
+~/scripts/rgw-create-bucket.sh --config realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --bucket testbucket3 --size 8G --req SD-0122345678
+sudo radosgw-admin user create --rgw-realm realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --uid user1 --display-name SD-0122345678 --max-buckets -1 | grep -A2 '"user"';
+sudo radosgw-admin user create --rgw-realm realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --uid user2 --display-name SD-0122345678 --max-buckets -1 | grep -A2 '"user"';
+sudo radosgw-admin user create --rgw-realm realm_test --tenant p0_grnt_gen_01_ch4_b2b_com_app --uid user3 --display-name SD-0122345678 --max-buckets -1 | grep -A2 '"user"';
+sudo radosgw-admin user list --rgw-realm realm_test | grep p0_grnt_gen_01_ch4_b2b_com_app; sudo radosgw-admin bucket list --rgw-realm realm_test | grep p0_grnt_gen_01_ch4_b2b_com_app;
+
+
+~~~~~~~Request closure + Email template~~~~~~~
+
+test@vtb.ru
+Добрый день.
+
+Ваш запрос SD-0122345678 был выполнен.
+
+Сегмент: TEST
+Окружение: TEST
+Тенант: p0_grnt_gen_01_ch4_b2b_com_app
+Endpoints для подключения:
+endpoint_test_mtls
+endpoint_test_tls
+
+Пользователи созданы:
+- p0_grnt_gen_01_ch4_b2b_com_app
+- user1
+- user2
+- user3
+
+Бакеты созданы:
+- testbucket1
+- testbucket2
+- testbucket3
+

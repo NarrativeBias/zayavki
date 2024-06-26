@@ -1,14 +1,12 @@
 request_id_sm: SD-0122345678
 request_id_sf: SR-1234567
-segment: B2B-COM-APP
-env: PROD
-cluster: TEST-SYNT-DMZ
+segment: TEST
+env: TEST
 ris_code: 1370
 ris_name: grnt
 resp_group: ЦК-2Л
 owner: test@vtb.ru;test2@vtb.ru
 tenant: p0_grnt_gen_01_ch4_b2b_com_app
-rgw_realm: b2b-app
 requester: Заявитель
 email_for_credentials: test@vtb.ru 
 buckets:
@@ -16,6 +14,7 @@ testbucket1 9G
 testbucket2 10G
 testbucket3 8G
 users:
+p0_grnt_gen_01_ch4_b2b_com_app
 user1
 user2
 user3

@@ -42,13 +42,11 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 		return nil, fmt.Errorf("error reading file: %v", err)
 	}
 	// fixing lower,upper case
-	rgw_realm := strings.ToLower(variables["rgw_realm"][0])
 	tenant := strings.ToLower(variables["tenant"][0])
 	request_id_sm := strings.ToUpper(variables["request_id_sm"][0])
 	request_id_sf := strings.ToUpper(variables["request_id_sf"][0])
 	segment := strings.ToUpper(variables["segment"][0])
 	env := strings.ToUpper(variables["env"][0])
-	cluster := strings.ToUpper(variables["cluster"][0])
 	ris_code := variables["ris_code"][0]
 	ris_name := strings.ToLower(variables["ris_name"][0])
 	resp_group := variables["resp_group"][0]
@@ -70,13 +68,11 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 	}
 
 	return map[string][]string{
-		"rgw_realm":     {rgw_realm},
 		"tenant":        {tenant},
 		"request_id_sm": {request_id_sm},
 		"request_id_sf": {request_id_sf},
 		"segment":       {segment},
 		"env":           {env},
-		"cluster":       {cluster},
 		"ris_code":      {ris_code},
 		"ris_name":      {ris_name},
 		"resp_group":    {resp_group},
