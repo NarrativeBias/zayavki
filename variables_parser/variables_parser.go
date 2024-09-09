@@ -42,7 +42,6 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 		return nil, fmt.Errorf("error reading file: %v", err)
 	}
 	// fixing lower,upper case
-	tenant := strings.ToLower(variables["tenant"][0])
 	request_id_sm := strings.ToUpper(variables["request_id_sm"][0])
 	request_id_sf := strings.ToUpper(variables["request_id_sf"][0])
 	segment := strings.ToUpper(variables["segment"][0])
@@ -51,6 +50,8 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 	ris_name := strings.ToLower(variables["ris_name"][0])
 	resp_group := variables["resp_group"][0]
 	owner := variables["owner"][0]
+	create_tenant := strings.ToLower(variables["create_tenant"][0])
+	override_tenant_name := strings.ToLower(variables["override_tenant"][0])
 	requester := variables["requester"][0]
 	email := strings.ToLower(variables["email_for_credentials"][0])
 	bucketNames := make([]string, len(variables["buckets"]))
@@ -67,20 +68,35 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 		users[i] = strings.ToLower(user)
 	}
 
+	//convert existing variables into format for tenant_name
+	var env_code string
+	switch env {
+	case "PROD":
+		env_code = "p0"
+	case "PREPROD":
+		env_code = "rr"
+	case "IFT":
+		env_code = "if"
+	case "HOTFIX":
+		env_code = "hf"
+	}
+
 	return map[string][]string{
-		"tenant":        {tenant},
-		"request_id_sm": {request_id_sm},
-		"request_id_sf": {request_id_sf},
-		"segment":       {segment},
-		"env":           {env},
-		"ris_code":      {ris_code},
-		"ris_name":      {ris_name},
-		"resp_group":    {resp_group},
-		"owner":         {owner},
-		"requester":     {requester},
-		"email":         {email},
-		"bucketnames":   bucketNames,
-		"bucketquotas":  bucketQuotas,
-		"users":         users,
+		"request_id_sm":   {request_id_sm},
+		"request_id_sf":   {request_id_sf},
+		"segment":         {segment},
+		"env":             {env},
+		"env_code":        {env_code},
+		"ris_code":        {ris_code},
+		"ris_name":        {ris_name},
+		"resp_group":      {resp_group},
+		"owner":           {owner},
+		"create_tenant":   {create_tenant},
+		"tenant_override": {override_tenant_name},
+		"requester":       {requester},
+		"email":           {email},
+		"bucketnames":     bucketNames,
+		"bucketquotas":    bucketQuotas,
+		"users":           users,
 	}, nil
 }

@@ -6,58 +6,46 @@ import (
 	"strings"
 )
 
-func ValidateTenant(tenant string, env string) {
-	// Check if the tenant only contains lowercase English characters, digits, and underscore
-	allowedCharsPattern := "^[a-z0-9_]+$"
-	matched, err := regexp.MatchString(allowedCharsPattern, tenant)
-	if err != nil {
-		fmt.Println("Error in regex pattern for Tenant name validation:", err)
-		return
-	}
-	if !matched {
-		fmt.Println("Warning: Tenant contains invalid characters(not an English character/digit/underscore)")
-	}
-
-	//Validate if tenant contains 'gen'
-	if !strings.Contains(tenant, "gen") {
-		fmt.Println("Warning: Tenant must contain 'gen'")
-	}
-
-	// Validate if the tenant contains special symbols or characters other then "_"
-	if strings.ContainsAny(tenant, "!@#$%^&*()+`-=[]{}|;':\",./<>?—") {
-		fmt.Println("Warning: Tenant contains invalid special characters")
-	}
-
-	// Define a list of environments to check against
-	envsToCheck := []string{"IFT", "PREPROD", "HOTFIX"}
-	// Check if the environment is one of the specified ones and tenant contains 'prod'
-	for _, envToCheck := range envsToCheck {
-		if env == envToCheck && strings.Contains(tenant, "prod") {
-			fmt.Printf("Warning: Environment is %s, but tenant contains 'prod'\n", env)
-			break // No need to check other environments if warning is already printed
-		}
-	}
-
-	// Check if the environment is PROD and tenant contains 'test'
-	if env == "PROD" && strings.Contains(tenant, "test") {
-		fmt.Println("Warning: Environment is PROD, but tenant contains 'test'")
-	}
-}
-func ValidateUsers(variables map[string][]string) {
-	//Validate if usernames contain Russian characters
+func ValidateUsers(variables map[string][]string) (bool, error) {
+	//Validate if usernames contain invalid characters / env code is wrong / no ris name
+	var errors []string
 	for _, username := range variables["users"] {
 		username = strings.ToLower(username)
-		if strings.ContainsAny(username, "абвгдеёжзийклмнопрстуфхцчшщъыьэюя") {
-			fmt.Println("Warning: Username contains Russian characters")
+		if len(username) >= 2 {
+			prefix := variables["env_code"][0] + "_" + variables["ris_name"][0] + "_"
+			if !strings.HasPrefix(username, prefix) {
+				errors = append(errors, fmt.Sprintf("username %s is missing expected prefix '%s'", username, prefix))
+			}
+			pattern := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
+			if !pattern.MatchString(username[len(prefix):]) {
+				errors = append(errors, fmt.Sprintf("username %s contains invalid characters", username))
+			}
 		}
 	}
+	if len(errors) > 0 {
+		return false, fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return true, nil
 }
-func ValidateBuckets(variables map[string][]string) {
-	//Validate if bucket names contain Russian characters
-	for _, bucket := range variables["buckets"] {
+
+func ValidateBuckets(variables map[string][]string) (bool, error) {
+	//Validate if bucket names contain invalid characters / env code is wrong / no ris name
+	var errors []string
+	for _, bucket := range variables["bucketnames"] {
 		bucket = strings.ToLower(bucket)
-		if strings.ContainsAny(bucket, "абвгдеёжзийклмнопрстуфхцчшщъыьэюя") {
-			fmt.Println("Warning: Bucket name contains Russian characters")
+		if len(bucket) >= 2 {
+			prefix := variables["env_code"][0] + "-" + variables["ris_name"][0] + "-"
+			if !strings.HasPrefix(bucket, prefix) {
+				errors = append(errors, fmt.Sprintf("bucket name %s is missing expected prefix '%s'", bucket, prefix))
+			}
+			pattern := regexp.MustCompile("^[a-zA-Z0-9-]+$")
+			if !pattern.MatchString(bucket[len(prefix):]) {
+				errors = append(errors, fmt.Sprintf("bucket name %s contains invalid characters", bucket))
+			}
 		}
 	}
+	if len(errors) > 0 {
+		return false, fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return true, nil
 }

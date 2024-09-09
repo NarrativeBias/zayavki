@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
-	"zayavki/cluster_endpoint_parser"
-	"zayavki/email_template"
-	"zayavki/rgw_commands"
-	"zayavki/validator"
-	"zayavki/variables_parser"
-	"zayavki/vtbox_table"
+
+	"fake.com/zayavki/cluster_endpoint_parser"
+	"fake.com/zayavki/email_template"
+	"fake.com/zayavki/rgw_commands"
+	"fake.com/zayavki/tenant_name_generation"
+	"fake.com/zayavki/validator"
+	"fake.com/zayavki/variables_parser"
+	"fake.com/zayavki/vtbox_table"
 )
 
 func main() {
@@ -26,11 +28,6 @@ func main() {
 		return
 	}
 
-	//Sending variables through validator
-	validator.ValidateTenant(variables["tenant"][0], variables["env"][0])
-	validator.ValidateUsers(variables)
-	validator.ValidateBuckets(variables)
-
 	cluster_info := "clusters.xlsx" // Filename with cluster information
 	clusters, err := cluster_endpoint_parser.FindMatchingClusters(cluster_info, variables["segment"][0], variables["env"][0])
 	if err != nil {
@@ -41,6 +38,30 @@ func main() {
 	if err != nil {
 		fmt.Println("Error choosing cluster:", err)
 		return
+	}
+	fmt.Println(variables["tenant_override"][0])
+	//generating tenant name
+	if variables["tenant_override"][0] != "" {
+		variables["tenant"] = []string{variables["tenant_override"][0]}
+	} else {
+		variables["tenant"] = []string{tenant_name_generation.GenerateTenantName(variables, chosenCluster)}
+	}
+	// checking if creating tenant is needed
+	if variables["create_tenant"][0] == "true" {
+		if len(variables["users"]) == 1 {
+			variables["users"] = []string{variables["tenant"][0]}
+		} else {
+			variables["users"] = append([]string{variables["tenant"][0]}, variables["users"]...)
+		}
+	}
+	//Sending variables through validator
+	validationResult, validationError := validator.ValidateUsers(variables)
+	if !validationResult {
+		fmt.Fprintln(resultFile, "ValidateUsers:", validationError)
+	}
+	validationResult, validationError = validator.ValidateBuckets(variables)
+	if !validationResult {
+		fmt.Fprintln(resultFile, "ValidateBuckets:", validationError)
 	}
 
 	//Generating table rows for VTBox

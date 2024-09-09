@@ -1,20 +1,15 @@
-request_id_sm: SD-0122345678
-request_id_sf: SR-1234567
-segment: TEST
-env: TEST
-ris_code: 1370
-ris_name: grnt
-resp_group: ЦК-2Л
-owner: test@vtb.ru;test2@vtb.ru
-tenant: p0_grnt_gen_01_ch4_b2b_com_app
-requester: Заявитель
-email_for_credentials: test@vtb.ru 
+request_id_sm: SD-27998
+request_id_sf: SR-7981554
+segment: INET-BIZ-APP
+env: PROD
+ris_code: 573
+ris_name: CHAT
+resp_group: ВО-Эксперты
+owner: mpkuzmin@vtb.ru
+create_tenant: true
+override_tenant: 
+requester: Мумладзе Тариэл Валентинович
+email_for_credentials: mumladzetv@vtb.ru 
 buckets:
-testbucket1 9G
-testbucket2 10G
-testbucket3 8G
+p0-chat-dmz-o22 10G
 users:
-p0_grnt_gen_01_ch4_b2b_com_app
-user1
-user2
-user3
