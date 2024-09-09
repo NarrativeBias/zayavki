@@ -1,4 +1,4 @@
-module fake.com/zayavki
+module github.com/NarrativeBias/zayavki
 
 go 1.22
 

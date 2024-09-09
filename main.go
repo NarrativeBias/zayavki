@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"fake.com/zayavki/cluster_endpoint_parser"
-	"fake.com/zayavki/email_template"
-	"fake.com/zayavki/rgw_commands"
-	"fake.com/zayavki/tenant_name_generation"
-	"fake.com/zayavki/validator"
-	"fake.com/zayavki/variables_parser"
-	"fake.com/zayavki/vtbox_table"
+	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
+	"github.com/NarrativeBias/zayavki/email_template"
+	"github.com/NarrativeBias/zayavki/rgw_commands"
+	"github.com/NarrativeBias/zayavki/tenant_name_generation"
+	"github.com/NarrativeBias/zayavki/validator"
+	"github.com/NarrativeBias/zayavki/variables_parser"
+	"github.com/NarrativeBias/zayavki/vtbox_table"
 )
 
 func main() {

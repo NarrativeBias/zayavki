@@ -1,15 +1,14 @@
-request_id_sm: SD-27998
-request_id_sf: SR-7981554
+request_id_sm: SD
+request_id_sf: SR
 segment: INET-BIZ-APP
 env: PROD
-ris_code: 573
-ris_name: CHAT
-resp_group: ВО-Эксперты
-owner: mpkuzmin@vtb.ru
+ris_code: 
+ris_name: 
+resp_group: 
+owner: 
 create_tenant: true
 override_tenant: 
-requester: Мумладзе Тариэл Валентинович
-email_for_credentials: mumladzetv@vtb.ru 
+requester: 
+email_for_credentials: 
 buckets:
-p0-chat-dmz-o22 10G
 users:
