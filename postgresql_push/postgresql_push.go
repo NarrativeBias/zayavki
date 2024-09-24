@@ -1,0 +1,69 @@
+package postgresql_push
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	_ "github.com/lib/pq" // PostgreSQL driver
+)
+
+func PushToDB(variables map[string][]string, clusters map[string]string) {
+	// Set up PostgreSQL connection
+	connStr := "user=postgres dbname=S3_Users password=3130 host=localhost sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Prepare the SQL insert statement
+	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
+        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	// Get current date
+	done_date := time.Now().Format("02.01.2006") // Format: DD-MM-YYYY
+
+	// Loop through the users and insert into the database
+	for _, username := range variables["users"] {
+		username = strings.ToLower(username)
+		if username != "" {
+			// Execute the prepared statement for each user
+			_, err := stmt.Exec(
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
+				variables["request_id_sm"][0], variables["request_id_sf"][0],
+				done_date, variables["ris_name"][0], variables["ris_code"][0],
+				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], variables["email"][0], "-",
+			)
+			if err != nil {
+				log.Fatalf("Failed to insert row for user %s: %v", username, err)
+			}
+		}
+	}
+
+	// Loop through the buckets and insert into the database
+	for i, bucket := range variables["bucketnames"] {
+		if bucket != "" {
+			// Execute the prepared statement for each bucket
+			_, err := stmt.Exec(
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], "-", bucket, variables["bucketquotas"][i],
+				variables["request_id_sm"][0], variables["request_id_sf"][0],
+				done_date, variables["ris_name"][0], variables["ris_code"][0],
+				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], "-", "-",
+			)
+			if err != nil {
+				log.Fatalf("Failed to insert row for bucket %s: %v", bucket, err)
+			}
+		}
+	}
+
+	fmt.Println("Data inserted successfully into PostgreSQL")
+}

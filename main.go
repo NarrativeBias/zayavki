@@ -1,11 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
 	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	"github.com/NarrativeBias/zayavki/email_template"
+	"github.com/NarrativeBias/zayavki/postgresql_push"
 	"github.com/NarrativeBias/zayavki/rgw_commands"
 	"github.com/NarrativeBias/zayavki/tenant_name_generation"
 	"github.com/NarrativeBias/zayavki/validator"
@@ -14,6 +16,22 @@ import (
 )
 
 func main() {
+	// Define flags
+	helpFlag := flag.Bool("help", false, "Display all available options and help")
+	dbPushFlag := flag.Bool("db_push", false, "Push result to DB")
+
+	// Parse the flags
+	flag.Parse()
+
+	// Handle the --help flag
+	if *helpFlag {
+		fmt.Println("Usage: zayavki [OPTIONS]")
+		fmt.Println("Options:")
+		fmt.Println("  --help      Show this help message")
+		fmt.Println("  --db_push   Push result to DB")
+		os.Exit(0)
+	}
+
 	// Open the result.txt file in write mode
 	resultFile, err := os.OpenFile("result.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -64,10 +82,18 @@ func main() {
 		fmt.Fprintln(resultFile, "ValidateBuckets:", validationError)
 	}
 
-	//Generating table rows for VTBox
-	fmt.Fprintln(resultFile, "\n~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~")
-	fmt.Fprintln(resultFile, vtbox_table.PopulateUsers(variables, chosenCluster))
-	fmt.Fprintln(resultFile, vtbox_table.PopulateBuckets(variables, chosenCluster))
+	// Handle the --db_push flag
+	if *dbPushFlag {
+		fmt.Println("Database push mode enabled.")
+		postgresql_push.PushToDB(variables, chosenCluster)
+
+	} else {
+		fmt.Println("Running in normal mode.")
+		//Generating table rows for VTBox
+		fmt.Fprintln(resultFile, "\n~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~")
+		fmt.Fprintln(resultFile, vtbox_table.PopulateUsers(variables, chosenCluster))
+		fmt.Fprintln(resultFile, vtbox_table.PopulateBuckets(variables, chosenCluster))
+	}
 
 	//Generating terminal commands
 	fmt.Fprintln(resultFile, "\n~~~~~~~List of terminal commands for bucket and user creation~~~~~~~")
