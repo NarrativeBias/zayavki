@@ -28,6 +28,20 @@ func ValidateUsers(variables map[string][]string) (bool, error) {
 	return true, nil
 }
 
+func ValidateOwnerEmail(variables map[string][]string) (bool, error) {
+	//Validate if email is valid
+	var errors []string
+	for _, email := range variables["email"] {
+		if !strings.Contains(email, "@") {
+			errors = append(errors, fmt.Sprintf("Owner should be listed as email, %s is missing @ symbol", email))
+		}
+		if len(errors) > 0 {
+			return false, fmt.Errorf(strings.Join(errors, "\n"))
+		}
+	}
+	return true, nil
+}
+
 func ValidateBuckets(variables map[string][]string) (bool, error) {
 	//Validate if bucket names contain invalid characters / env code is wrong / no ris name
 	var errors []string
