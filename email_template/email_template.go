@@ -11,7 +11,7 @@ const emailTemplate = `
 {{.email}}
 Добрый день.
 
-Вы указаны получателем данных от УЗ созданных в рамках обращения {{.request_id_sm}}.
+Вы указаны получателем данных от УЗ созданных в рамках обращения {{.request_id_sm}} / {{.request_id_sf}}.
 
 Сегмент: {{.segment}}
 Окружение: {{.env}}
@@ -50,6 +50,7 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 	err = tmpl.Execute(&populatedTemplate, map[string]interface{}{
 		"email":         variables["email"][0],
 		"request_id_sm": variables["request_id_sm"][0],
+		"request_id_sf": variables["request_id_sf"][0],
 		"segment":       variables["segment"][0],
 		"env":           variables["env"][0],
 		"tenant":        variables["tenant"][0],

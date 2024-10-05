@@ -1,74 +1,68 @@
 package variables_parser
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
 )
 
-func ReadVariablesFromFile(filename string) (map[string][]string, error) {
-	// Open the file
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error opening file: %v", err)
-	}
-	defer file.Close()
+// ParseAndProcessVariables processes the raw variables from the form submission
+func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]string, error) {
+	processedVars := make(map[string][]string)
 
-	// Create a map to store the variables
-	variables := make(map[string][]string)
-
-	// Read the file line by line
-	scanner := bufio.NewScanner(file)
-	var key string
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue // Skip empty lines
+	// Helper function to safely get the first element of a slice or return an empty string
+	getFirst := func(slice []string) string {
+		if len(slice) > 0 {
+			return slice[0]
 		}
-		if strings.Contains(line, ":") {
-			// Split the line into key-value pair
-			parts := strings.SplitN(line, ":", 2)
-			key = strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			variables[key] = append(variables[key], value)
-		} else {
-			// Append value to the existing key
-			variables[key] = append(variables[key], strings.TrimSpace(line))
-		}
+		return ""
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading file: %v", err)
-	}
-	// fixing lower,upper case
-	request_id_sm := strings.ToUpper(variables["request_id_sm"][0])
-	request_id_sf := strings.ToUpper(variables["request_id_sf"][0])
-	segment := strings.ToUpper(variables["segment"][0])
-	env := strings.ToUpper(variables["env"][0])
-	ris_code := variables["ris_code"][0]
-	ris_name := strings.ToLower(variables["ris_name"][0])
-	resp_group := variables["resp_group"][0]
-	owner := variables["owner"][0]
-	create_tenant := strings.ToLower(variables["create_tenant"][0])
-	override_tenant_name := strings.ToLower(variables["override_tenant"][0])
-	requester := variables["requester"][0]
-	email := strings.ToLower(variables["email_for_credentials"][0])
-	bucketNames := make([]string, len(variables["buckets"]))
-	bucketQuotas := make([]string, len(variables["buckets"]))
-	for i, bucket := range variables["buckets"] {
-		if bucket != "" {
-			parts := strings.Fields(bucket)
-			bucketNames[i] = strings.ToLower(parts[0])
-			bucketQuotas[i] = strings.ToUpper(parts[1])
+	// Process other variables
+	processedVars["request_id_sm"] = []string{strings.ToUpper(getFirst(rawVariables["request_id_sm"]))}
+	processedVars["request_id_sf"] = []string{strings.ToUpper(getFirst(rawVariables["request_id_sf"]))}
+	processedVars["segment"] = []string{strings.ToUpper(getFirst(rawVariables["segment"]))}
+	processedVars["env"] = []string{strings.ToUpper(getFirst(rawVariables["env"]))}
+	processedVars["ris_code"] = []string{getFirst(rawVariables["ris_code"])}
+	processedVars["ris_name"] = []string{strings.ToLower(getFirst(rawVariables["ris_name"]))}
+	processedVars["resp_group"] = []string{getFirst(rawVariables["resp_group"])}
+	processedVars["owner"] = []string{getFirst(rawVariables["owner"])}
+	processedVars["create_tenant"] = []string{strings.ToLower(getFirst(rawVariables["create_tenant"]))}
+	processedVars["tenant_override"] = []string{strings.ToLower(getFirst(rawVariables["tenant_override"]))}
+	processedVars["requester"] = []string{getFirst(rawVariables["requester"])}
+	processedVars["email"] = []string{strings.ToLower(getFirst(rawVariables["email_for_credentials"]))}
+
+	// Process buckets
+	bucketInput := getFirst(rawVariables["buckets"])
+
+	if bucketInput != "" {
+		// Split the bucket input by newlines
+		bucketList := strings.Split(bucketInput, "\n")
+		for _, bucket := range bucketList {
+			parts := strings.Fields(strings.TrimSpace(bucket))
+			if len(parts) >= 2 {
+				processedVars["bucketnames"] = append(processedVars["bucketnames"], strings.ToLower(parts[0]))
+				processedVars["bucketquotas"] = append(processedVars["bucketquotas"], strings.ToUpper(parts[1]))
+			}
 		}
 	}
-	users := make([]string, len(variables["users"]))
-	for i, user := range variables["users"] {
-		users[i] = strings.ToLower(user)
+
+	// Process users
+	userInput := getFirst(rawVariables["users"])
+	if userInput != "" {
+		// Split the user input by newlines and/or commas
+		userList := strings.FieldsFunc(userInput, func(r rune) bool {
+			return r == '\n' || r == ',' || r == ' '
+		})
+		for _, user := range userList {
+			trimmedUser := strings.TrimSpace(user)
+			if trimmedUser != "" {
+				processedVars["users"] = append(processedVars["users"], strings.ToLower(trimmedUser))
+			}
+		}
 	}
 
-	//convert existing variables into format for tenant_name
+	// Convert env to env_code
+	env := processedVars["env"][0]
 	var env_code string
 	switch env {
 	case "PROD":
@@ -79,24 +73,10 @@ func ReadVariablesFromFile(filename string) (map[string][]string, error) {
 		env_code = "if"
 	case "HOTFIX":
 		env_code = "hf"
+	default:
+		return nil, fmt.Errorf("Invalid environment: %s", env)
 	}
+	processedVars["env_code"] = []string{env_code}
 
-	return map[string][]string{
-		"request_id_sm":   {request_id_sm},
-		"request_id_sf":   {request_id_sf},
-		"segment":         {segment},
-		"env":             {env},
-		"env_code":        {env_code},
-		"ris_code":        {ris_code},
-		"ris_name":        {ris_name},
-		"resp_group":      {resp_group},
-		"owner":           {owner},
-		"create_tenant":   {create_tenant},
-		"tenant_override": {override_tenant_name},
-		"requester":       {requester},
-		"email":           {email},
-		"bucketnames":     bucketNames,
-		"bucketquotas":    bucketQuotas,
-		"users":           users,
-	}, nil
+	return processedVars, nil
 }

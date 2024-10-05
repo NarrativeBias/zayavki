@@ -1,112 +1,160 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"os"
+	"html/template"
+	"log"
+	"net/http"
+	"strings"
 
 	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	"github.com/NarrativeBias/zayavki/email_template"
 	"github.com/NarrativeBias/zayavki/postgresql_push"
+	"github.com/NarrativeBias/zayavki/prep_db_table_data"
 	"github.com/NarrativeBias/zayavki/rgw_commands"
 	"github.com/NarrativeBias/zayavki/tenant_name_generation"
 	"github.com/NarrativeBias/zayavki/validator"
 	"github.com/NarrativeBias/zayavki/variables_parser"
-	"github.com/NarrativeBias/zayavki/vtbox_table"
 )
 
 func main() {
-	// Define flags
-	helpFlag := flag.Bool("help", false, "Display all available options and help")
-	dbPushFlag := flag.Bool("db_push", false, "Push result to DB")
-
-	// Parse the flags
-	flag.Parse()
-
-	// Handle the --help flag
-	if *helpFlag {
-		fmt.Println("Usage: zayavki [OPTIONS]")
-		fmt.Println("Options:")
-		fmt.Println("  --help      Show this help message")
-		fmt.Println("  --db_push   Push result to DB")
-		os.Exit(0)
+	// Initialize database connection
+	err := postgresql_push.InitDB("db_config.json")
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Open the result.txt file in write mode
-	resultFile, err := os.OpenFile("result.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	// Serve static files
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	http.HandleFunc("/", handleIndex)
+	http.HandleFunc("/submit", handleSubmit)
+
+	fmt.Println("Server is running on http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func handleIndex(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
-		fmt.Println("Error opening result.txt:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer resultFile.Close()
-	//Reading variables
-	variables, err := variables_parser.ReadVariablesFromFile("request.txt")
-	if err != nil {
-		fmt.Println(err)
+	tmpl.Execute(w, nil)
+}
+
+func handleSubmit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	cluster_info := "clusters.xlsx" // Filename with cluster information
-	clusters, err := cluster_endpoint_parser.FindMatchingClusters(cluster_info, variables["segment"][0], variables["env"][0])
+	// Parse form data
+	err := r.ParseForm()
 	if err != nil {
-		fmt.Println("Error finding matching clusters:", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Check if push to database is requested
+	pushToDb := r.Form.Get("push_to_db") == "true"
+
+	// Process data
+	result, err := processData(r.Form, pushToDb)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set the content type to text/plain with UTF-8 encoding
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	// Write the result as UTF-8 encoded bytes
+	_, err = w.Write([]byte(result))
+	if err != nil {
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func processData(rawVariables map[string][]string, pushToDb bool) (string, error) {
+	var warnings []string
+
+	// Parse and process variables
+	processedVars, err := variables_parser.ParseAndProcessVariables(rawVariables)
+	if err != nil {
+		return "", fmt.Errorf("error processing variables: %v", err)
+	}
+
+	// Find matching clusters
+	cluster_info := "clusters.xlsx"
+	clusters, err := cluster_endpoint_parser.FindMatchingClusters(cluster_info, processedVars["segment"][0], processedVars["env"][0])
+	if err != nil {
+		return "", fmt.Errorf("error finding matching clusters: %v", err)
 	}
 	chosenCluster, err := cluster_endpoint_parser.ChooseCluster(clusters)
 	if err != nil {
-		fmt.Println("Error choosing cluster:", err)
-		return
+		return "", fmt.Errorf("error choosing cluster: %v", err)
 	}
-	fmt.Println(variables["tenant_override"][0])
-	//generating tenant name
-	if variables["tenant_override"][0] != "" {
-		variables["tenant"] = []string{variables["tenant_override"][0]}
+
+	// Generate tenant name
+	if processedVars["tenant_override"][0] != "" {
+		processedVars["tenant"] = []string{processedVars["tenant_override"][0]}
 	} else {
-		variables["tenant"] = []string{tenant_name_generation.GenerateTenantName(variables, chosenCluster)}
+		processedVars["tenant"] = []string{tenant_name_generation.GenerateTenantName(processedVars, chosenCluster)}
 	}
-	// checking if creating tenant is needed
-	if variables["create_tenant"][0] == "true" {
-		if len(variables["users"]) == 1 {
-			variables["users"] = []string{variables["tenant"][0]}
-		} else {
-			variables["users"] = append([]string{variables["tenant"][0]}, variables["users"]...)
+
+	// Validate users and buckets
+	if valid, err := validator.ValidateUsers(processedVars); !valid {
+		warnings = append(warnings, fmt.Sprintf("User validation warning: %v", err))
+	}
+	if valid, err := validator.ValidateBuckets(processedVars); !valid {
+		warnings = append(warnings, fmt.Sprintf("Bucket validation warning: %v", err))
+	}
+
+	// Generate results
+	var result strings.Builder
+
+	result.WriteString("~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~\n")
+	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, chosenCluster))
+	result.WriteString("\n")
+	result.WriteString(prep_db_table_data.PopulateBuckets(processedVars, chosenCluster))
+	result.WriteString("\n\n")
+
+	result.WriteString("~~~~~~~List of terminal commands for bucket and user creation~~~~~~~\n")
+	result.WriteString(rgw_commands.BucketCreation(processedVars, chosenCluster))
+	result.WriteString("\n")
+	result.WriteString(rgw_commands.UserCreation(processedVars, chosenCluster))
+	result.WriteString("\n")
+	result.WriteString(rgw_commands.ResultCheck(processedVars, chosenCluster))
+	result.WriteString("\n\n")
+
+	result.WriteString("~~~~~~~Request closure + Email template~~~~~~~\n")
+	email, err := email_template.PopulateEmailTemplate(processedVars, chosenCluster)
+	if err != nil {
+		return "", fmt.Errorf("error generating email template: %v", err)
+	}
+	result.WriteString(email)
+	result.WriteString("\n")
+
+	// Add warnings to the result
+	if len(warnings) > 0 {
+		result.WriteString("\n~~~~~~~Warnings~~~~~~~\n")
+		for _, warning := range warnings {
+			result.WriteString(warning + "\n")
 		}
 	}
-	//Sending variables through validator
-	validationResult, validationError := validator.ValidateUsers(variables)
-	if !validationResult {
-		fmt.Fprintln(resultFile, "ValidateUsers:", validationError)
-	}
-	validationResult, validationError = validator.ValidateBuckets(variables)
-	if !validationResult {
-		fmt.Fprintln(resultFile, "ValidateBuckets:", validationError)
-	}
 
-	// Handle the --db_push flag
-	if *dbPushFlag {
-		fmt.Println("Database push mode enabled.")
-		postgresql_push.PushToDB(variables, chosenCluster)
-
-	} else {
-		fmt.Println("Running in normal mode.")
-		//Generating table rows for VTBox
-		fmt.Fprintln(resultFile, "\n~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~")
-		fmt.Fprintln(resultFile, vtbox_table.PopulateUsers(variables, chosenCluster))
-		fmt.Fprintln(resultFile, vtbox_table.PopulateBuckets(variables, chosenCluster))
+	// Push to database if requested
+	if pushToDb {
+		err := postgresql_push.PushToDB(processedVars, chosenCluster)
+		if err != nil {
+			result.WriteString(fmt.Sprintf("\nError pushing to database: %v\n", err))
+		} else {
+			result.WriteString("\nData successfully pushed to database.\n")
+		}
 	}
 
-	//Generating terminal commands
-	fmt.Fprintln(resultFile, "\n~~~~~~~List of terminal commands for bucket and user creation~~~~~~~")
-	fmt.Fprintln(resultFile, rgw_commands.BucketCreation(variables, chosenCluster))
-	fmt.Fprintln(resultFile, rgw_commands.UserCreation(variables, chosenCluster))
-	fmt.Fprintln(resultFile, rgw_commands.ResultCheck(variables, chosenCluster))
-
-	//Generation of email template
-	fmt.Fprintln(resultFile, "\n~~~~~~~Request closure + Email template~~~~~~~")
-	email, err := email_template.PopulateEmailTemplate(variables, chosenCluster)
-	if err != nil {
-		fmt.Println("Error generating email template:", err)
-		return
-	}
-	fmt.Fprintln(resultFile, email)
+	return result.String(), nil
 }

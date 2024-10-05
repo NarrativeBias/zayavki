@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zayavki Form</title>
+    <script src="/static/js/form-validation.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .page-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            gap: 20px;
+        }
+        .form-container {
+            width: 100%;
+            max-width: 250px; /* Reduced from 500px */
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .results-container {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        input[type="text"], 
+        input[type="email"], 
+        select, 
+        textarea {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9em;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+            max-height: 150px;
+        }
+        input[type="submit"] {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        input[type="submit"]:hover {
+            background: #45a049;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        #result {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="form-container">
+            <h1>Zayavki Form</h1>
+            <form action="/submit" method="POST" id="zayavkiForm">
+                <label for="request_id_sm">Request ID SM:</label>
+                <input type="text" id="request_id_sm" name="request_id_sm" required>
+
+                <label for="request_id_sf">Request ID SF:</label>
+                <input type="text" id="request_id_sf" name="request_id_sf" required>
+
+                <label for="segment">Segment:</label>
+                <input type="text" id="segment" name="segment" required>
+
+                <label for="env">Environment:</label>
+                <select id="env" name="env" required>
+                    <option value="">Select Environment</option>
+                    <option value="PROD">PROD</option>
+                    <option value="PREPROD">PREPROD</option>
+                    <option value="IFT">IFT</option>
+                    <option value="HOTFIX">HOTFIX</option>
+                </select>
+
+                <label for="ris_code">RIS Code:</label>
+                <input type="text" id="ris_code" name="ris_code" required>
+
+                <label for="ris_name">RIS Name:</label>
+                <input type="text" id="ris_name" name="ris_name" required>
+
+                <label for="resp_group">Resp Group:</label>
+                <input type="text" id="resp_group" name="resp_group" required>
+
+                <label for="owner">Owner:</label>
+                <input type="text" id="owner" name="owner" required>
+
+                <label for="requester">Requester:</label>
+                <input type="text" id="requester" name="requester" required>
+
+                <label for="email_for_credentials">Email for Credentials:</label>
+                <input type="email" id="email_for_credentials" name="email_for_credentials" required>
+
+                <label for="buckets">Buckets (one per line):</label>
+                <textarea id="buckets" name="buckets" rows="3"></textarea>
+
+                <label for="users">Users (one per line):</label>
+                <textarea id="users" name="users" rows="3"></textarea>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="push_to_db" name="push_to_db" value="true">
+                    <label for="push_to_db">Push to DB?</label>
+                </div>
+
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        <div class="results-container">
+            <h2>Execution Result</h2>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('zayavkiForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch('/submit', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('result').textContent = data;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'An error occurred while processing your request.';
+            });
+        });
+    </script>
+</body>
+</html>

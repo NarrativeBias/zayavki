@@ -1,4 +1,4 @@
-package vtbox_table
+package prep_db_table_data
 
 import (
 	"bytes"
