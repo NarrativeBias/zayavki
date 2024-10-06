@@ -53,37 +53,18 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	result, err := processData(r.MultipartForm.Value, pushToDb)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error processing data: %v", err)
+		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	formattedResult := formatResult(result)
-
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte(formattedResult))
-}
-
-func formatResult(result string) string {
-	sections := strings.Split(result, "\n\n")
-	var formatted strings.Builder
-
-	for _, section := range sections {
-		lines := strings.SplitN(section, "\n", 2)
-		if len(lines) < 2 {
-			continue
-		}
-		title := strings.TrimSpace(lines[0])
-		content := strings.TrimSpace(lines[1])
-
-		formatted.WriteString(title + "\n")
-		formatted.WriteString(content + "\n\n")
-	}
-
-	return formatted.String()
+	w.Write([]byte(result))
 }
 
 func processData(rawVariables map[string][]string, pushToDb bool) (string, error) {
 	var warnings []string
+	var result strings.Builder
 
 	// Parse and process variables
 	processedVars, err := variables_parser.ParseAndProcessVariables(rawVariables)
@@ -117,8 +98,14 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 		warnings = append(warnings, fmt.Sprintf("Bucket validation warning: %v", err))
 	}
 
-	// Generate results
-	var result strings.Builder
+	// Add warnings at the top if there are any
+	if len(warnings) > 0 {
+		result.WriteString("~~~~~~~Warnings~~~~~~~\n")
+		for _, warning := range warnings {
+			result.WriteString(warning + "\n")
+		}
+		result.WriteString("\n")
+	}
 
 	result.WriteString("~~~~~~~Table of users and buckets to be pushed into database~~~~~~~\n")
 	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, chosenCluster))
@@ -142,21 +129,14 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 	result.WriteString(email)
 	result.WriteString("\n")
 
-	// Add warnings to the result
-	if len(warnings) > 0 {
-		result.WriteString("\n~~~~~~~Warnings~~~~~~~\n")
-		for _, warning := range warnings {
-			result.WriteString(warning + "\n")
-		}
-	}
-
 	// Push to database if requested
 	if pushToDb {
 		err := postgresql_push.PushToDB(processedVars, chosenCluster)
 		if err != nil {
 			return "", fmt.Errorf("failed to push to database: %v", err)
 		}
-		result.WriteString("\nData successfully pushed to database.")
+		// Return only the success message for DB push
+		return "Data successfully pushed to database.", nil
 	}
 
 	return result.String(), nil
