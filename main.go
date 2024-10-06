@@ -90,6 +90,15 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 		processedVars["tenant"] = []string{tenant_name_generation.GenerateTenantName(processedVars, chosenCluster)}
 	}
 
+	// Check if creating tenant is needed and add to users list if so
+	if createTenant, ok := processedVars["create_tenant"]; ok && len(createTenant) > 0 && createTenant[0] == "true" {
+		if len(processedVars["users"]) == 0 {
+			processedVars["users"] = []string{processedVars["tenant"][0]}
+		} else {
+			processedVars["users"] = append([]string{processedVars["tenant"][0]}, processedVars["users"]...)
+		}
+	}
+
 	// Validate users and buckets
 	if valid, err := validator.ValidateUsers(processedVars); !valid {
 		warnings = append(warnings, fmt.Sprintf("User validation warning: %v", err))
@@ -100,20 +109,20 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 
 	// Add warnings at the top if there are any
 	if len(warnings) > 0 {
-		result.WriteString("~~~~~~~Warnings~~~~~~~\n")
+		result.WriteString("~~~~~~~Предупреждения~~~~~~~\n")
 		for _, warning := range warnings {
 			result.WriteString(warning + "\n")
 		}
 		result.WriteString("\n")
 	}
 
-	result.WriteString("~~~~~~~Table of users and buckets to be pushed into database~~~~~~~\n")
+	result.WriteString("~~~~~~~Таблица пользователей и бакетов для отправки в БД~~~~~~~\n")
 	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, chosenCluster))
 	result.WriteString("\n")
 	result.WriteString(prep_db_table_data.PopulateBuckets(processedVars, chosenCluster))
 	result.WriteString("\n\n")
 
-	result.WriteString("~~~~~~~List of terminal commands for bucket and user creation~~~~~~~\n")
+	result.WriteString("~~~~~~~Список терминальных команд для создания пользователей и бакетов~~~~~~~\n")
 	result.WriteString(rgw_commands.BucketCreation(processedVars, chosenCluster))
 	result.WriteString("\n")
 	result.WriteString(rgw_commands.UserCreation(processedVars, chosenCluster))
@@ -121,7 +130,7 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 	result.WriteString(rgw_commands.ResultCheck(processedVars, chosenCluster))
 	result.WriteString("\n\n")
 
-	result.WriteString("~~~~~~~Request closure + Email template~~~~~~~\n")
+	result.WriteString("~~~~~~~Шаблон для закрытия задания и письма с данными УЗ~~~~~~~\n")
 	email, err := email_template.PopulateEmailTemplate(processedVars, chosenCluster)
 	if err != nil {
 		return "", fmt.Errorf("error generating email template: %v", err)

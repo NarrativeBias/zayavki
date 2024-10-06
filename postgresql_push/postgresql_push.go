@@ -68,7 +68,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 
 	// Prepare the SQL insert statement
 	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
-        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
+        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_number, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`)
 	if err != nil {
 		return fmt.Errorf("failed to prepare SQL statement: %v", err)
@@ -87,7 +87,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
 				variables["request_id_sd"][0], variables["request_id_sr"][0],
-				done_date, variables["ris_name"][0], variables["ris_code"][0],
+				done_date, variables["ris_name"][0], variables["ris_number"][0],
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], variables["email"][0], "-",
 			)
 			if err != nil {
@@ -104,7 +104,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], "-", bucket, variables["bucketquotas"][i],
 				variables["request_id_sd"][0], variables["request_id_sr"][0],
-				done_date, variables["ris_name"][0], variables["ris_code"][0],
+				done_date, variables["ris_name"][0], variables["ris_number"][0],
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], "-", "-",
 			)
 			if err != nil {

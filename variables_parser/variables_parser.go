@@ -16,7 +16,7 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 	}
 
 	variablesToProcess := []string{
-		"request_id_sd", "request_id_sr", "segment", "env", "ris_code", "ris_name",
+		"request_id_sd", "request_id_sr", "segment", "env", "ris_number", "ris_name",
 		"resp_group", "owner", "create_tenant", "tenant_override", "requester",
 		"email_for_credentials",
 	}
