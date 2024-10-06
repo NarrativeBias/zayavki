@@ -59,6 +59,13 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 		return fmt.Errorf("database connection not initialized")
 	}
 
+	// Start a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %v", err)
+	}
+	defer tx.Rollback() // Rollback the transaction if it hasn't been committed
+
 	// Prepare the SQL insert statement
 	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
         (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
@@ -104,6 +111,11 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				return fmt.Errorf("failed to insert row for bucket %s: %v", bucket, err)
 			}
 		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
 	return nil

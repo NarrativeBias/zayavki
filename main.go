@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+	defer postgresql_push.CloseDB()
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -153,10 +154,9 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 	if pushToDb {
 		err := postgresql_push.PushToDB(processedVars, chosenCluster)
 		if err != nil {
-			result.WriteString(fmt.Sprintf("\nError pushing to database: %v\n", err))
-		} else {
-			result.WriteString("\nData successfully pushed to database.\n")
+			return "", fmt.Errorf("failed to push to database: %v", err)
 		}
+		result.WriteString("\nData successfully pushed to database.")
 	}
 
 	return result.String(), nil
