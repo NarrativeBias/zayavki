@@ -58,7 +58,6 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 	if db == nil {
 		return fmt.Errorf("database connection not initialized")
 	}
-	defer db.Close()
 
 	// Prepare the SQL insert statement
 	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
@@ -80,7 +79,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 			_, err := stmt.Exec(
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
-				variables["request_id_sm"][0], variables["request_id_sf"][0],
+				variables["request_id_sd"][0], variables["request_id_sr"][0],
 				done_date, variables["ris_name"][0], variables["ris_code"][0],
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], variables["email"][0], "-",
 			)
@@ -97,7 +96,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 			_, err := stmt.Exec(
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], "-", bucket, variables["bucketquotas"][i],
-				variables["request_id_sm"][0], variables["request_id_sf"][0],
+				variables["request_id_sd"][0], variables["request_id_sr"][0],
 				done_date, variables["ris_name"][0], variables["ris_code"][0],
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], "-", "-",
 			)
@@ -107,5 +106,15 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 		}
 	}
 
+	return nil
+}
+
+// CloseDB closes the database connection
+func CloseDB() error {
+	if db != nil {
+		err := db.Close()
+		db = nil
+		return err
+	}
 	return nil
 }

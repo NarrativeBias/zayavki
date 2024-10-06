@@ -2,31 +2,58 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(event) {
-            validateForm(event, this);
+            event.preventDefault();
+            if (validateForm(this)) {
+                submitForm(this);
+            }
         });
     } else {
         console.error('Form not found in the document');
     }
 });
 
-function validateForm(event, form) {
-    event.preventDefault();
-    
-    const requestIdSm = document.getElementById('request_id_sm').value.trim();
-    const requestIdSf = document.getElementById('request_id_sf').value.trim();
-    const segment = document.getElementById('segment').value.trim();
-    const env = document.getElementById('env').value.trim();
-    const risCode = document.getElementById('ris_code').value.trim();
-    const risName = document.getElementById('ris_name').value.trim();
-    const respGroup = document.getElementById('resp_group').value.trim();
-    const owner = document.getElementById('owner').value.trim();
-    const requester = document.getElementById('requester').value.trim();
-    const email = document.getElementById('email_for_credentials').value.trim();
-    const buckets = document.getElementById('buckets').value.trim();
-    const users = document.getElementById('users').value.trim();
+function validateForm(form) {
+    const requestIdSd = form.request_id_sd.value.trim();
+    const requestIdSr = form.request_id_sr.value.trim();
+    const segment = form.segment.value.trim();
+    const env = form.env.value.trim();
+    const risCode = form.ris_code.value.trim();
+    const risName = form.ris_name.value.trim();
+    const respGroup = form.resp_group.value.trim();
+    const owner = form.owner.value.trim();
+    const requester = form.requester.value.trim();
+    const email = form.email_for_credentials.value.trim();
+    const buckets = form.buckets.value.trim();
+    const users = form.users.value.trim();
 
     let isValid = true;
     let errorMessage = '';
+
+    // Validate required fields
+    if (!requestIdSd || !requestIdSr || !segment || !env || !risCode || !risName || !respGroup || !owner || !requester || !email) {
+        isValid = false;
+        errorMessage += 'All fields except Buckets and Users are required.\n';
+    }
+
+    // Validate that at least one of buckets or users is filled
+    if (!buckets && !users) {
+        isValid = false;
+        errorMessage += 'At least one of Buckets or Users must be filled.\n';
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        isValid = false;
+        errorMessage += 'Invalid email format.\n';
+    }
+
+    // Validate environment
+    const validEnvs = ['PROD', 'PREPROD', 'IFT', 'HOTFIX'];
+    if (!validEnvs.includes(env.toUpperCase())) {
+        isValid = false;
+        errorMessage += 'Invalid environment.\n';
+    }
 
     // Determine environment code
     let envCode;
@@ -35,49 +62,9 @@ function validateForm(event, form) {
         case 'PREPROD': envCode = 'rr'; break;
         case 'IFT': envCode = 'if'; break;
         case 'HOTFIX': envCode = 'hf'; break;
-        default: 
-            isValid = false;
-            errorMessage += 'Invalid environment.\n';
     }
 
-    // Validate Request IDs
-    if (!requestIdSm || !requestIdSf) {
-        isValid = false;
-        errorMessage += 'Both Request IDs are required.\n';
-    }
-
-    // Validate Segment and Environment
-    if (!segment || !env) {
-        isValid = false;
-        errorMessage += 'Segment and Environment are required.\n';
-    }
-
-    // Validate RIS Code and Name
-    if (!risCode || !risName) {
-        isValid = false;
-        errorMessage += 'RIS Code and Name are required.\n';
-    }
-
-    // Validate Response Group and Owner
-    if (!respGroup || !owner) {
-        isValid = false;
-        errorMessage += 'Response Group and Owner are required.\n';
-    }
-
-    // Validate Requester and Email
-    if (!requester || !email) {
-        isValid = false;
-        errorMessage += 'Requester and Email are required.\n';
-    }
-
-    // Validate Email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        isValid = false;
-        errorMessage += 'Invalid email format.\n';
-    } 
-    
-    // Validate Buckets
+    // Validate Buckets if provided
     if (buckets) {
         const bucketLines = buckets.split('\n');
         for (let line of bucketLines) {
@@ -102,7 +89,7 @@ function validateForm(event, form) {
         }
     }
 
-    // Validate Users
+    // Validate Users if provided
     if (users) {
         const userLines = users.split(/[\n,]/);
         for (let user of userLines) {
@@ -124,7 +111,30 @@ function validateForm(event, form) {
 
     if (!isValid) {
         alert('Validation failed:\n' + errorMessage);
-    } else {
-        form.submit();
+        return false;
     }
+    return true;
+}
+
+function submitForm(form) {
+    const formData = new FormData(form);
+    
+    fetch('/submit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.text();
+    })
+    .then(data => {
+        const resultElement = document.getElementById('result');
+        resultElement.textContent = data;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the form. Please try again.');
+    });
 }

@@ -4,115 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zayavki Form</title>
-    <script src="/static/js/form-validation.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #f4f4f4;
         }
-        .page-container {
+        .container {
             display: flex;
-            width: 100%;
-            max-width: 1200px;
+            max-width: 1600px; /* Increased to allow more space */
+            margin: 0 auto;
             gap: 20px;
         }
         .form-container {
-            width: 100%;
-            max-width: 250px; /* Reduced from 500px */
-            background-color: #ffffff;
+            flex: 0 0 240px; /* Reduced from 400px to about 60% of original */
+            background-color: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .results-container {
-            width: 100%;
-            background-color: #ffffff;
+            flex: 1; /* This will take up the remaining space */
+            background-color: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
         }
-        h1, h2 {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-        }
-        form {
+        .button-container {
             display: flex;
+            justify-content: space-between;
             flex-direction: column;
+            margin-top: 20px;
         }
-        label {
-            margin-top: 10px;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9em;
+        .primary-buttons {
+            display: flex;
+            justify-content: space-between;
         }
-        input[type="text"], 
-        input[type="email"], 
-        select, 
-        textarea {
-            width: 100%;
-            padding: 6px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
+        .submit-button {
+            flex: 2; /* Make submit button take up 2 parts */
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 40px;
+            border: none;
             border-radius: 4px;
-            box-sizing: border-box;
+            cursor: pointer;
             font-size: 0.9em;
         }
-        textarea {
-            resize: vertical;
-            min-height: 60px;
-            max-height: 150px;
+        .submit-button:hover {
+            background-color: #45a049;
         }
-        input[type="submit"] {
-            background: #4CAF50;
+        .push-db-button {
+            background-color: #ff4136; /* Red color */
             color: white;
             padding: 10px 15px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-top: 20px;
+            font-size: 0.9em;
+            margin-top: 10px; /* Additional space above the button */
+            width: 100%; /* Make the button full width */
         }
-        input[type="submit"]:hover {
-            background: #45a049;
+        .push-db-button:hover {
+            background-color: #e60000; /* Darker red on hover */
         }
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
+        .push-db-button:disabled {
+            background-color: #ffcccb; /* Light red when disabled */
+            cursor: not-allowed;
+        }
+        .save-button {
+            flex: 1; /* Make save button take up 1 part */
+            background-color: #008CBA;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
             font-size: 0.9em;
         }
-        .checkbox-container input[type="checkbox"] {
-            margin-right: 10px;
+        .save-button:hover {
+            background-color: #007B9A;
+        }
+        h1, h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 1.5em; /* Maintain heading size */
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9em; /* Slightly reduce label size for compact layout */
+        }
+        input[type="text"], input[type="email"], select, textarea {
+            width: 100%;
+            padding: 6px; /* Slightly reduced padding */
+            margin-bottom: 8px; /* Slightly reduced margin */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9em; /* Maintain text size in inputs */
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        button:hover {
+            background-color: #45a049;
         }
         #result {
             white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 0.9em;
             background-color: #f8f8f8;
-            padding: 10px;
+            padding: 15px;
             border-radius: 4px;
             border: 1px solid #ddd;
-            max-height: 600px;
-            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px; /* Maintain result text size */
         }
     </style>
 </head>
 <body>
-    <div class="page-container">
+    <div class="container">
         <div class="form-container">
-            <h1>Zayavki Form</h1>
-            <form action="/submit" method="POST" id="zayavkiForm">
-                <label for="request_id_sm">Request ID SM:</label>
-                <input type="text" id="request_id_sm" name="request_id_sm" required>
+            <h1>Zayavki Variables</h1>
+            <form id="zayavkiForm">
+                <label for="request_id_SD">Request ID SD:</label>
+                <input type="text" id="request_id_sd" name="request_id_sd" required>
 
-                <label for="request_id_sf">Request ID SF:</label>
-                <input type="text" id="request_id_sf" name="request_id_sf" required>
+                <label for="request_id_SR">Request ID SR:</label>
+                <input type="text" id="request_id_sr" name="request_id_sr" required>
 
                 <label for="segment">Segment:</label>
                 <input type="text" id="segment" name="segment" required>
@@ -145,40 +172,107 @@
                 <input type="email" id="email_for_credentials" name="email_for_credentials" required>
 
                 <label for="buckets">Buckets (one per line):</label>
-                <textarea id="buckets" name="buckets" rows="3"></textarea>
+                <textarea id="buckets" name="buckets" rows="3" ></textarea>
 
                 <label for="users">Users (one per line):</label>
-                <textarea id="users" name="users" rows="3"></textarea>
+                <textarea id="users" name="users" rows="3" ></textarea>
 
-                <div class="checkbox-container">
-                    <input type="checkbox" id="push_to_db" name="push_to_db" value="true">
-                    <label for="push_to_db">Push to DB?</label>
-                </div>
-
-                <input type="submit" value="Submit">
+                <button type="submit" class="submit-button">Submit</button>
+                <button id="saveButton" class="save-button" disabled>Save to File</button>
+                <button id="pushDbButton" class="push-db-button" disabled>Push to DB</button>
             </form>
         </div>
         <div class="results-container">
-            <h2>Execution Result</h2>
+            <h2>Result</h2>
             <div id="result"></div>
         </div>
     </div>
 
     <script>
+        let currentRequestId = '';
+        let formData;
+
         document.getElementById('zayavkiForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            formData = new FormData(this);
+            currentRequestId = formData.get('request_id_sf') || 'execution_result';
+            
             fetch('/submit', {
                 method: 'POST',
-                body: new FormData(this)
+                body: formData
             })
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
             .then(data => {
                 document.getElementById('result').textContent = data;
+                document.getElementById('saveButton').disabled = false;
+                document.getElementById('pushDbButton').disabled = false;
             })
             .catch(error => {
                 console.error('Error:', error);
-                document.getElementById('result').textContent = 'An error occurred while processing your request.';
+                document.getElementById('result').textContent = 'An error occurred while submitting the form. Please try again.';
+                document.getElementById('saveButton').disabled = true;
+                document.getElementById('pushDbButton').disabled = true;
             });
+        });
+
+        document.getElementById('saveButton').addEventListener('click', function() {
+            const result = document.getElementById('result').textContent;
+            if (result) {
+                const blob = new Blob([result], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentRequestId}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+
+        document.getElementById('pushDbButton').addEventListener('click', function() {
+            if (formData) {
+                // Disable the button immediately
+                this.disabled = true;
+                document.getElementById('result').textContent = 'Pushing data to DB...';
+
+                formData.append('push_to_db', 'true');
+                fetch('/submit', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text || 'Network response was not ok');
+                        });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // Check if the response contains an error message
+                    if (data.toLowerCase().includes('error')) {
+                        throw new Error(data);
+                    }
+                    document.getElementById('result').textContent = data + '\n\nData pushed to DB successfully.';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('result').textContent = 'Error pushing data to DB: ' + error.message;
+                })
+                .finally(() => {
+                    // Re-enable the button after 3 seconds
+                    setTimeout(() => {
+                        this.disabled = false;
+                    }, 3000);
+                });
+            }
         });
     </script>
 </body>

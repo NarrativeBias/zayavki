@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -18,13 +17,11 @@ import (
 )
 
 func main() {
-	// Initialize database connection
 	err := postgresql_push.InitDB("db_config.json")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -36,12 +33,7 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	tmpl.Execute(w, nil)
+	http.ServeFile(w, r, "templates/index.html")
 }
 
 func handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -50,32 +42,43 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse form data
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20) // 10 MB max memory
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Check if push to database is requested
-	pushToDb := r.Form.Get("push_to_db") == "true"
+	pushToDb := r.FormValue("push_to_db") == "true"
 
-	// Process data
-	result, err := processData(r.Form, pushToDb)
+	result, err := processData(r.MultipartForm.Value, pushToDb)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Set the content type to text/plain with UTF-8 encoding
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	formattedResult := formatResult(result)
 
-	// Write the result as UTF-8 encoded bytes
-	_, err = w.Write([]byte(result))
-	if err != nil {
-		http.Error(w, "Error writing response", http.StatusInternalServerError)
-		return
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte(formattedResult))
+}
+
+func formatResult(result string) string {
+	sections := strings.Split(result, "\n\n")
+	var formatted strings.Builder
+
+	for _, section := range sections {
+		lines := strings.SplitN(section, "\n", 2)
+		if len(lines) < 2 {
+			continue
+		}
+		title := strings.TrimSpace(lines[0])
+		content := strings.TrimSpace(lines[1])
+
+		formatted.WriteString(title + "\n")
+		formatted.WriteString(content + "\n\n")
 	}
+
+	return formatted.String()
 }
 
 func processData(rawVariables map[string][]string, pushToDb bool) (string, error) {
@@ -116,7 +119,7 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 	// Generate results
 	var result strings.Builder
 
-	result.WriteString("~~~~~~~Table of users and buckets to copy-paste into VTBox~~~~~~~\n")
+	result.WriteString("~~~~~~~Table of users and buckets to be pushed into database~~~~~~~\n")
 	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, chosenCluster))
 	result.WriteString("\n")
 	result.WriteString(prep_db_table_data.PopulateBuckets(processedVars, chosenCluster))

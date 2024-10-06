@@ -5,11 +5,9 @@ import (
 	"strings"
 )
 
-// ParseAndProcessVariables processes the raw variables from the form submission
 func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]string, error) {
 	processedVars := make(map[string][]string)
 
-	// Helper function to safely get the first element of a slice or return an empty string
 	getFirst := func(slice []string) string {
 		if len(slice) > 0 {
 			return slice[0]
@@ -17,25 +15,31 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		return ""
 	}
 
-	// Process other variables
-	processedVars["request_id_sm"] = []string{strings.ToUpper(getFirst(rawVariables["request_id_sm"]))}
-	processedVars["request_id_sf"] = []string{strings.ToUpper(getFirst(rawVariables["request_id_sf"]))}
-	processedVars["segment"] = []string{strings.ToUpper(getFirst(rawVariables["segment"]))}
-	processedVars["env"] = []string{strings.ToUpper(getFirst(rawVariables["env"]))}
-	processedVars["ris_code"] = []string{getFirst(rawVariables["ris_code"])}
-	processedVars["ris_name"] = []string{strings.ToLower(getFirst(rawVariables["ris_name"]))}
-	processedVars["resp_group"] = []string{getFirst(rawVariables["resp_group"])}
-	processedVars["owner"] = []string{getFirst(rawVariables["owner"])}
-	processedVars["create_tenant"] = []string{strings.ToLower(getFirst(rawVariables["create_tenant"]))}
-	processedVars["tenant_override"] = []string{strings.ToLower(getFirst(rawVariables["tenant_override"]))}
-	processedVars["requester"] = []string{getFirst(rawVariables["requester"])}
-	processedVars["email"] = []string{strings.ToLower(getFirst(rawVariables["email_for_credentials"]))}
+	variablesToProcess := []string{
+		"request_id_sd", "request_id_sr", "segment", "env", "ris_code", "ris_name",
+		"resp_group", "owner", "create_tenant", "tenant_override", "requester",
+		"email_for_credentials",
+	}
 
-	// Process buckets
+	for _, varName := range variablesToProcess {
+		rawValue := getFirst(rawVariables[varName])
+		var processedValue string
+		switch varName {
+		case "request_id_sd", "request_id_sr", "segment", "env":
+			processedValue = strings.ToUpper(rawValue)
+		case "ris_name", "create_tenant", "tenant_override":
+			processedValue = strings.ToLower(rawValue)
+		case "email_for_credentials":
+			processedValue = strings.ToLower(rawValue)
+			varName = "email"
+		default:
+			processedValue = rawValue
+		}
+		processedVars[varName] = []string{processedValue}
+	}
+
 	bucketInput := getFirst(rawVariables["buckets"])
-
 	if bucketInput != "" {
-		// Split the bucket input by newlines
 		bucketList := strings.Split(bucketInput, "\n")
 		for _, bucket := range bucketList {
 			parts := strings.Fields(strings.TrimSpace(bucket))
@@ -46,10 +50,8 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		}
 	}
 
-	// Process users
 	userInput := getFirst(rawVariables["users"])
 	if userInput != "" {
-		// Split the user input by newlines and/or commas
 		userList := strings.FieldsFunc(userInput, func(r rune) bool {
 			return r == '\n' || r == ',' || r == ' '
 		})
@@ -61,7 +63,6 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		}
 	}
 
-	// Convert env to env_code
 	env := processedVars["env"][0]
 	var env_code string
 	switch env {
@@ -73,8 +74,10 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		env_code = "if"
 	case "HOTFIX":
 		env_code = "hf"
+	case "":
+		return nil, fmt.Errorf("environment is empty")
 	default:
-		return nil, fmt.Errorf("Invalid environment: %s", env)
+		return nil, fmt.Errorf("invalid environment: %s", env)
 	}
 	processedVars["env_code"] = []string{env_code}
 
