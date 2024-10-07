@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,20 +24,15 @@ func main() {
 	}
 	defer postgresql_push.CloseDB()
 
-	// Create a new ServeMux
 	mux := http.NewServeMux()
 
-	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	mux.Handle("/zayavki/static/", http.StripPrefix("/zayavki/static/", fs))
 
-	// Handle submit
 	mux.HandleFunc("/zayavki/submit", stripPrefix(handleSubmit))
-
-	// Handle index and other paths
 	mux.HandleFunc("/zayavki/", stripPrefix(handleIndex))
+	mux.HandleFunc("/zayavki/cluster", stripPrefix(handleClusterSelection))
 
-	// Use the custom ServeMux
 	fmt.Println("Server is running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -58,7 +54,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := r.ParseMultipartForm(10 << 20) // 10 MB max memory
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -66,10 +62,55 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	pushToDb := r.FormValue("push_to_db") == "true"
 
-	result, err := processData(r.MultipartForm.Value, pushToDb)
+	processedVars, err := variables_parser.ParseAndProcessVariables(r.MultipartForm.Value)
 	if err != nil {
-		log.Printf("Error processing data: %v", err)
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error processing variables: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	cluster, err := cluster_endpoint_parser.GetCluster("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
+	if err != nil {
+		if err.Error() == "multiple clusters found" {
+			clusters, _ := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
+			clusterJSON, _ := json.Marshal(clusters)
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			fmt.Fprintf(w, "CLUSTER_SELECTION_REQUIRED:%s", clusterJSON)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error finding cluster: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Process data with the single cluster found
+	result, err := processDataWithCluster(processedVars, cluster, pushToDb)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte(result))
+}
+func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
+	selectedCluster, err := cluster_endpoint_parser.HandleClusterSelection(w, r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error selecting cluster: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	var data struct {
+		ProcessedVars map[string][]string `json:"processedVars"`
+		PushToDb      bool                `json:"pushToDb"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result, err := processDataWithCluster(data.ProcessedVars, *selectedCluster, data.PushToDb)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -77,32 +118,17 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(result))
 }
 
-func processData(rawVariables map[string][]string, pushToDb bool) (string, error) {
+func processDataWithCluster(processedVars map[string][]string, chosenCluster cluster_endpoint_parser.ClusterInfo, pushToDb bool) (string, error) {
 	var warnings []string
 	var result strings.Builder
 
-	// Parse and process variables
-	processedVars, err := variables_parser.ParseAndProcessVariables(rawVariables)
-	if err != nil {
-		return "", fmt.Errorf("error processing variables: %v", err)
-	}
-
-	// Find matching clusters
-	cluster_info := "clusters.xlsx"
-	clusters, err := cluster_endpoint_parser.FindMatchingClusters(cluster_info, processedVars["segment"][0], processedVars["env"][0])
-	if err != nil {
-		return "", fmt.Errorf("error finding matching clusters: %v", err)
-	}
-	chosenCluster, err := cluster_endpoint_parser.ChooseCluster(clusters)
-	if err != nil {
-		return "", fmt.Errorf("error choosing cluster: %v", err)
-	}
+	clusterMap := chosenCluster.ConvertToMap()
 
 	// Generate tenant name
 	if processedVars["tenant_override"][0] != "" {
 		processedVars["tenant"] = []string{processedVars["tenant_override"][0]}
 	} else {
-		processedVars["tenant"] = []string{tenant_name_generation.GenerateTenantName(processedVars, chosenCluster)}
+		processedVars["tenant"] = []string{tenant_name_generation.GenerateTenantName(processedVars, clusterMap)}
 	}
 
 	// Check if creating tenant is needed and add to users list if so
@@ -132,21 +158,21 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 	}
 
 	result.WriteString("~~~~~~~Таблица пользователей и бакетов для отправки в БД~~~~~~~\n")
-	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, chosenCluster))
+	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, clusterMap))
 	result.WriteString("\n")
-	result.WriteString(prep_db_table_data.PopulateBuckets(processedVars, chosenCluster))
+	result.WriteString(prep_db_table_data.PopulateBuckets(processedVars, clusterMap))
 	result.WriteString("\n\n")
 
 	result.WriteString("~~~~~~~Список терминальных команд для создания пользователей и бакетов~~~~~~~\n")
-	result.WriteString(rgw_commands.BucketCreation(processedVars, chosenCluster))
+	result.WriteString(rgw_commands.BucketCreation(processedVars, clusterMap))
 	result.WriteString("\n")
-	result.WriteString(rgw_commands.UserCreation(processedVars, chosenCluster))
+	result.WriteString(rgw_commands.UserCreation(processedVars, clusterMap))
 	result.WriteString("\n")
-	result.WriteString(rgw_commands.ResultCheck(processedVars, chosenCluster))
+	result.WriteString(rgw_commands.ResultCheck(processedVars, clusterMap))
 	result.WriteString("\n\n")
 
 	result.WriteString("~~~~~~~Шаблон для закрытия задания и письма с данными УЗ~~~~~~~\n")
-	email, err := email_template.PopulateEmailTemplate(processedVars, chosenCluster)
+	email, err := email_template.PopulateEmailTemplate(processedVars, clusterMap)
 	if err != nil {
 		return "", fmt.Errorf("error generating email template: %v", err)
 	}
@@ -155,12 +181,11 @@ func processData(rawVariables map[string][]string, pushToDb bool) (string, error
 
 	// Push to database if requested
 	if pushToDb {
-		err := postgresql_push.PushToDB(processedVars, chosenCluster)
+		err := postgresql_push.PushToDB(processedVars, clusterMap)
 		if err != nil {
 			return "", fmt.Errorf("failed to push to database: %v", err)
 		}
-		// Return only the success message for DB push
-		return "Data successfully pushed to database.", nil
+		result.WriteString("\nData successfully pushed to database.")
 	}
 
 	return result.String(), nil
