@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -70,6 +70,10 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	cluster, err := cluster_endpoint_parser.GetCluster("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "no matching clusters found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		if err.Error() == "multiple clusters found" {
 			clusters, _ := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
 			clusterJSON, _ := json.Marshal(clusters)
@@ -94,7 +98,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling cluster selection")
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading request body: %v", err)
 		http.Error(w, fmt.Sprintf("Error reading request: %v", err), http.StatusBadRequest)

@@ -54,7 +54,7 @@ func GetCluster(filename, segment, env string) (ClusterInfo, error) {
 
 	switch len(clusters) {
 	case 0:
-		return ClusterInfo{}, errors.New("no matching clusters found")
+		return ClusterInfo{}, fmt.Errorf("no matching clusters found for segment '%s' and environment '%s'", segment, env)
 	case 1:
 		return clusters[0], nil
 	default:

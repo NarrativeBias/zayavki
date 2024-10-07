@@ -10,9 +10,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function submitForm(form) {
     const formData = new FormData(form);
-    sendRequest('/zayavki/submit', formData)
-        .then(handleResponse)
-        .catch(handleError);
+    const currentRequestId = formData.get('request_id_sr') || 'execution_result';
+
+    fetch('/zayavki/submit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(text || 'Network response was not ok');
+            });
+        }
+        return response.text();
+    })
+    .then(data => {
+        if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clustersJson = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
+            const clusters = JSON.parse(clustersJson);
+            showClusterSelectionModal(clusters);
+        } else {
+            displayResult(data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('result').textContent = error.message;
+        document.getElementById('saveButton').disabled = true;
+        document.getElementById('pushDbButton').disabled = true;
+    });
 }
 
 function submitWithSelectedCluster(selectedCluster) {
