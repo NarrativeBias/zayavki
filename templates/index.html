@@ -364,35 +364,6 @@
             modal.style.display = 'block';
         }
 
-        function submitWithSelectedCluster(selectedCluster) {
-            const pushToDb = document.getElementById('pushDbButton').disabled === false;
-
-            fetch('/zayavki/cluster', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    processedVars: Object.fromEntries(formData),
-                    selectedCluster,
-                    pushToDb,
-                }),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(data => {
-                displayResult(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('result').textContent = 'An error occurred while processing your request. Please try again.';
-            });
-        }
-
         function displayResult(data) {
             document.getElementById('result').textContent = data;
             document.getElementById('saveButton').disabled = false;
