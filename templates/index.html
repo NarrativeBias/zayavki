@@ -262,10 +262,11 @@
         <div class="modal-content">
             <h2>Выберете кластер</h2>
             <select id="cluster-select"></select>
+            <dl id="cluster-details"></dl>
             <button id="confirm-cluster">Подтвердить</button>
         </div>
     </div>
-    <script src="/zayavki/static/js/form-validation.js"></script>
+
     <script>
         let currentRequestId = '';
         let formData;
@@ -437,5 +438,6 @@
             }
         });
     </script>
+    <script src="/zayavki/static/js/form-validation.js"></script>
 </body>
 </html>

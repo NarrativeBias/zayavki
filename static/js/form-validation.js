@@ -44,18 +44,13 @@ function submitForm(form) {
 function showClusterSelectionModal(clusters) {
     console.log('showClusterSelectionModal called with clusters:', clusters);
     const modal = document.getElementById('clusterModal');
-    if (!modal) {
-        console.error('Modal element not found');
-        return;
-    }
-    console.log('Modal element found:', modal);
-
     const select = document.getElementById('cluster-select');
-    if (!select) {
-        console.error('Cluster select element not found');
+    const details = document.getElementById('cluster-details');
+
+    if (!modal || !select || !details) {
+        console.error('Required elements not found');
         return;
     }
-    console.log('Select element found:', select);
 
     // Clear previous options
     select.innerHTML = '';
@@ -65,6 +60,7 @@ function showClusterSelectionModal(clusters) {
         const option = document.createElement('option');
         option.value = index;
         option.textContent = `${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}`;
+        option.dataset.cluster = JSON.stringify(cluster);
         select.appendChild(option);
     });
 
@@ -73,20 +69,12 @@ function showClusterSelectionModal(clusters) {
 
     // Update details when selection changes
     select.addEventListener('change', () => {
-        const selectedCluster = clusters[select.value];
+        const selectedCluster = JSON.parse(select.options[select.selectedIndex].dataset.cluster);
         updateClusterDetails(selectedCluster);
     });
 
-    // Ensure the modal is visible
+    // Show the modal
     modal.style.display = 'block';
-    console.log('Modal display style set to block');
-
-    // Force a reflow
-    void modal.offsetHeight;
-
-    // Add a class for transition if needed
-    modal.classList.add('show');
-    console.log('Show class added to modal');
 }
 
 function updateClusterDetails(cluster) {
@@ -103,21 +91,29 @@ function updateClusterDetails(cluster) {
         <dt>Кластер:</dt><dd>${cluster.Кластер}</dd>
         <dt>Реалм:</dt><dd>${cluster.Реалм}</dd>
     `;
-    console.log('Cluster details updated');
 }
 
 document.getElementById('confirm-cluster').addEventListener('click', function() {
     const select = document.getElementById('cluster-select');
-    const selectedIndex = select.value;
-    const selectedCluster = JSON.parse(select.options[selectedIndex].dataset.cluster);
-    document.getElementById('clusterModal').style.display = 'none';
-    submitWithSelectedCluster(selectedCluster);
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption && selectedOption.dataset.cluster) {
+        const selectedCluster = JSON.parse(selectedOption.dataset.cluster);
+        document.getElementById('clusterModal').style.display = 'none';
+        submitWithSelectedCluster(selectedCluster);
+    } else {
+        console.error('No cluster selected or cluster data missing');
+    }
 });
 
 function submitWithSelectedCluster(selectedCluster) {
     const form = document.getElementById('zayavkiForm');
     const formData = new FormData(form);
-    const pushToDb = document.getElementById('pushDbButton').disabled === false;
+    const pushToDb = document.getElementById('pushDbButton').checked;
+
+    const processedVars = {};
+    for (let [key, value] of formData.entries()) {
+        processedVars[key] = value;
+    }
 
     fetch('/zayavki/cluster', {
         method: 'POST',
@@ -125,7 +121,7 @@ function submitWithSelectedCluster(selectedCluster) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            processedVars: Object.fromEntries(formData),
+            processedVars: processedVars,
             selectedCluster: selectedCluster,
             pushToDb: pushToDb,
         }),
