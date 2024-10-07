@@ -157,6 +157,40 @@
             font-family: monospace;
             font-size: 14px;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        #cluster-select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        #confirm-cluster {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -224,10 +258,18 @@
             <div id="result"></div>
         </div>
     </div>
+    <div id="clusterModal" class="modal">
+        <div class="modal-content">
+            <h2>Выберете кластер</h2>
+            <select id="cluster-select"></select>
+            <button id="confirm-cluster">Подтвердить</button>
+        </div>
+    </div>
 
     <script>
         let currentRequestId = '';
         let formData;
+        let clusters = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('zayavkiForm');
@@ -271,7 +313,6 @@
             formData = new FormData(this);
             currentRequestId = formData.get('request_id_sr') || 'execution_result';
 
-            
             fetch('/zayavki/submit', {
                 method: 'POST',
                 body: formData
@@ -283,9 +324,11 @@
                 return response.text();
             })
             .then(data => {
-                document.getElementById('result').textContent = data;
-                document.getElementById('saveButton').disabled = false;
-                document.getElementById('pushDbButton').disabled = false;
+                if (data.status === 'cluster_selection_required') {
+                    showClusterSelectionModal(data.clusters);
+                } else {
+                    displayResult(data);
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -309,6 +352,51 @@
                 URL.revokeObjectURL(url);
             }
         });
+
+        function showClusterSelectionModal(clustersData) {
+            clusters = clustersData;
+            const modal = document.getElementById('clusterModal');
+            const select = document.getElementById('cluster-select');
+            select.innerHTML = clusters.map((cluster, index) => `
+                <option value="${index}">${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}</option>
+            `).join('');
+            modal.style.display = 'block';
+        }
+
+        function submitWithSelectedCluster(selectedCluster) {
+            const pushToDb = document.getElementById('pushDbButton').disabled === false;
+
+            fetch('/zayavki/cluster', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    processedVars: Object.fromEntries(formData),
+                    selectedCluster,
+                    pushToDb,
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                displayResult(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'An error occurred while processing your request. Please try again.';
+            });
+        }
+
+        function displayResult(data) {
+            document.getElementById('result').textContent = data;
+            document.getElementById('saveButton').disabled = false;
+            document.getElementById('pushDbButton').disabled = false;
+        }
 
         document.getElementById('pushDbButton').addEventListener('click', function() {
             if (formData) {
