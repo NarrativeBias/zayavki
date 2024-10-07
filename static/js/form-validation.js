@@ -5,92 +5,104 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             submitForm(this);
         });
-    } else {
-        console.error('Form not found in the document');
     }
 });
 
 function submitForm(form) {
     const formData = new FormData(form);
-    const currentRequestId = formData.get('request_id_sr') || 'execution_result';
+    sendRequest('/zayavki/submit', formData)
+        .then(handleResponse)
+        .catch(handleError);
+}
 
-    fetch('/zayavki/submit', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+function submitWithSelectedCluster(selectedCluster) {
+    const form = document.getElementById('zayavkiForm');
+    const formData = new FormData(form);
+    const pushToDb = document.getElementById('pushDbButton').checked;
+
+    const processedVars = Object.fromEntries(
+        Array.from(formData.entries()).map(([key, value]) => [key, [value]])
+    );
+
+    if (!processedVars.hasOwnProperty('env_code')) {
+        const envSelect = document.getElementById('env');
+        if (envSelect) {
+            processedVars['env_code'] = [getEnvCode(envSelect.value)];
         }
-        return response.text();
+    }
+
+    const requestBody = {
+        processedVars,
+        selectedCluster,
+        pushToDb,
+    };
+
+    sendRequest('/zayavki/cluster', JSON.stringify(requestBody), 'POST', {
+        'Content-Type': 'application/json',
     })
-    .then(data => {
-        if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            const clustersJson = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
-            const clusters = JSON.parse(clustersJson);
-            showClusterSelectionModal(clusters);
-        } else {
-            displayResult(data);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('result').textContent = 'An error occurred while submitting the form. Please try again.';
-        document.getElementById('saveButton').disabled = true;
-        document.getElementById('pushDbButton').disabled = true;
-    });
+        .then(handleResponse)
+        .catch(handleError);
+}
+
+function sendRequest(url, body, method = 'POST', headers = {}) {
+    return fetch(url, { method, body, headers })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                });
+            }
+            return response.text();
+        });
+}
+
+function handleResponse(data) {
+    if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+        const clusters = JSON.parse(data.slice('CLUSTER_SELECTION_REQUIRED:'.length));
+        showClusterSelectionModal(clusters);
+    } else {
+        displayResult(data);
+    }
+}
+
+function handleError(error) {
+    document.getElementById('result').textContent = 'An error occurred while processing your request. Please try again.';
+    document.getElementById('saveButton').disabled = true;
+    document.getElementById('pushDbButton').disabled = true;
 }
 
 function showClusterSelectionModal(clusters) {
-    console.log('showClusterSelectionModal called with clusters:', clusters);
     const modal = document.getElementById('clusterModal');
     const select = document.getElementById('cluster-select');
     const details = document.getElementById('cluster-details');
 
     if (!modal || !select || !details) {
-        console.error('Required elements not found');
         return;
     }
 
-    // Clear previous options
-    select.innerHTML = '';
-    
-    // Add new options
-    clusters.forEach((cluster, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}`;
-        option.dataset.cluster = JSON.stringify(cluster);
-        select.appendChild(option);
-    });
+    select.innerHTML = clusters.map((cluster, index) => `
+        <option value="${index}" data-cluster='${JSON.stringify(cluster)}'>
+            ${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}
+        </option>
+    `).join('');
 
-    // Show initial cluster details
     updateClusterDetails(clusters[0]);
 
-    // Update details when selection changes
     select.addEventListener('change', () => {
         const selectedCluster = JSON.parse(select.options[select.selectedIndex].dataset.cluster);
         updateClusterDetails(selectedCluster);
     });
 
-    // Show the modal
     modal.style.display = 'block';
 }
 
 function updateClusterDetails(cluster) {
-    console.log('Updating cluster details:', cluster);
     const details = document.getElementById('cluster-details');
-    if (!details) {
-        console.error('Cluster details element not found');
-        return;
-    }
-    details.innerHTML = `
-        <dt>ЦОД:</dt><dd>${cluster.ЦОД}</dd>
-        <dt>Среда:</dt><dd>${cluster.Среда}</dd>
-        <dt>ЗБ:</dt><dd>${cluster.ЗБ}</dd>
-        <dt>Кластер:</dt><dd>${cluster.Кластер}</dd>
-        <dt>Реалм:</dt><dd>${cluster.Реалм}</dd>
-    `;
+    if (!details) return;
+    
+    details.innerHTML = Object.entries(cluster)
+        .map(([key, value]) => `<dt>${key}:</dt><dd>${value}</dd>`)
+        .join('');
 }
 
 document.getElementById('confirm-cluster').addEventListener('click', function() {
@@ -100,66 +112,17 @@ document.getElementById('confirm-cluster').addEventListener('click', function() 
         const selectedCluster = JSON.parse(selectedOption.dataset.cluster);
         document.getElementById('clusterModal').style.display = 'none';
         submitWithSelectedCluster(selectedCluster);
-    } else {
-        console.error('No cluster selected or cluster data missing');
     }
 });
 
-function submitWithSelectedCluster(selectedCluster) {
-    const form = document.getElementById('zayavkiForm');
-    const formData = new FormData(form);
-    const pushToDb = document.getElementById('pushDbButton').checked;
-
-    const processedVars = {};
-    for (let [key, value] of formData.entries()) {
-        processedVars[key] = [value];
-    }
-
-    if (!processedVars.hasOwnProperty('env_code')) {
-        const envSelect = document.getElementById('env');
-        if (envSelect) {
-            const envCode = getEnvCode(envSelect.value);
-            processedVars['env_code'] = [envCode];
-        }
-    }
-
-    const requestBody = {
-        processedVars: processedVars,
-        selectedCluster: selectedCluster,
-        pushToDb: pushToDb,
-    };
-
-    fetch('/zayavki/cluster', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
-            });
-        }
-        return response.text();
-    })
-    .then(data => {
-        displayResult(data);
-    })
-    .catch(error => {
-        document.getElementById('result').textContent = 'An error occurred while processing your request. Please try again.';
-    });
-}
-
 function getEnvCode(env) {
-    switch (env) {
-        case 'PROD': return 'p0';
-        case 'PREPROD': return 'rr';
-        case 'IFT': return 'if';
-        case 'HOTFIX': return 'hf';
-        default: return '';
-    }
+    const envCodes = {
+        'PROD': 'p0',
+        'PREPROD': 'rr',
+        'IFT': 'if',
+        'HOTFIX': 'hf'
+    };
+    return envCodes[env] || '';
 }
 
 function displayResult(data) {
