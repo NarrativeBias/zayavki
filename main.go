@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -33,7 +34,6 @@ func main() {
 	mux.HandleFunc("/zayavki/", stripPrefix(handleIndex))
 	mux.HandleFunc("/zayavki/cluster", stripPrefix(handleClusterSelection))
 
-	fmt.Println("Server is running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 
@@ -92,24 +92,53 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(result))
 }
 func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
-	selectedCluster, err := cluster_endpoint_parser.HandleClusterSelection(w, r)
+	log.Println("Handling cluster selection")
+
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error selecting cluster: %v", err), http.StatusBadRequest)
+		log.Printf("Error reading request body: %v", err)
+		http.Error(w, fmt.Sprintf("Error reading request: %v", err), http.StatusBadRequest)
 		return
 	}
+	log.Printf("Received data: %s", string(body))
 
 	var data struct {
-		ProcessedVars map[string][]string `json:"processedVars"`
-		PushToDb      bool                `json:"pushToDb"`
+		ProcessedVars   map[string][]string                 `json:"processedVars"`
+		SelectedCluster cluster_endpoint_parser.ClusterInfo `json:"selectedCluster"`
+		PushToDb        bool                                `json:"pushToDb"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Printf("Error unmarshaling JSON: %v", err)
+		http.Error(w, fmt.Sprintf("Error parsing request: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	result, err := processDataWithCluster(data.ProcessedVars, *selectedCluster, data.PushToDb)
+	log.Printf("Processed variables: %+v", data.ProcessedVars)
+	log.Printf("Selected cluster: %+v", data.SelectedCluster)
+	log.Printf("Push to DB: %v", data.PushToDb)
+
+	// Ensure email is properly set
+	if email, ok := data.ProcessedVars["email_for_credentials"]; ok && len(email) > 0 {
+		data.ProcessedVars["email"] = email
+	}
+
+	// Process buckets
+	if buckets, ok := data.ProcessedVars["buckets"]; ok && len(buckets) > 0 && buckets[0] != "" {
+		data.ProcessedVars["bucketnames"] = strings.Split(buckets[0], "\n")
+		data.ProcessedVars["bucketquotas"] = make([]string, len(data.ProcessedVars["bucketnames"]))
+		for i, bucket := range data.ProcessedVars["bucketnames"] {
+			parts := strings.Fields(bucket)
+			if len(parts) >= 2 {
+				data.ProcessedVars["bucketnames"][i] = parts[0]
+				data.ProcessedVars["bucketquotas"][i] = parts[1]
+			}
+		}
+	}
+
+	result, err := processDataWithCluster(data.ProcessedVars, data.SelectedCluster, data.PushToDb)
 	if err != nil {
+		log.Printf("Error processing data: %v", err)
 		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -125,10 +154,14 @@ func processDataWithCluster(processedVars map[string][]string, chosenCluster clu
 	clusterMap := chosenCluster.ConvertToMap()
 
 	// Generate tenant name
-	if processedVars["tenant_override"][0] != "" {
+	if len(processedVars["tenant_override"]) > 0 && processedVars["tenant_override"][0] != "" {
 		processedVars["tenant"] = []string{processedVars["tenant_override"][0]}
 	} else {
-		processedVars["tenant"] = []string{tenant_name_generation.GenerateTenantName(processedVars, clusterMap)}
+		tenantName, err := tenant_name_generation.GenerateTenantName(processedVars, clusterMap)
+		if err != nil {
+			return "", fmt.Errorf("error generating tenant name: %v", err)
+		}
+		processedVars["tenant"] = []string{tenantName}
 	}
 
 	// Check if creating tenant is needed and add to users list if so

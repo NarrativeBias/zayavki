@@ -2,11 +2,47 @@ package email_template
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"text/template"
 )
 
-// Email template with placeholders for variables.
+func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[string]string) (string, error) {
+	// Helper function to safely get the first element of a slice or return a default value
+	getFirst := func(slice []string, defaultValue string) string {
+		if len(slice) > 0 {
+			return slice[0]
+		}
+		return defaultValue
+	}
+
+	data := map[string]interface{}{
+		"email":         getFirst(variables["email"], "N/A"),
+		"request_id_sd": getFirst(variables["request_id_sd"], "N/A"),
+		"request_id_sr": getFirst(variables["request_id_sr"], "N/A"),
+		"segment":       getFirst(variables["segment"], "N/A"),
+		"env":           getFirst(variables["env"], "N/A"),
+		"tenant":        getFirst(variables["tenant"], "N/A"),
+		"users":         variables["users"],
+		"bucketnames":   variables["bucketnames"],
+		"tls_endpoint":  chosenCluster["tls_endpoint"],
+		"mtls_endpoint": chosenCluster["mtls_endpoint"],
+	}
+
+	tmpl, err := template.New("email_template").Parse(emailTemplate)
+	if err != nil {
+		return "", fmt.Errorf("error parsing email template: %v", err)
+	}
+
+	var populatedTemplate bytes.Buffer
+	err = tmpl.Execute(&populatedTemplate, data)
+	if err != nil {
+		return "", fmt.Errorf("error executing email template: %v", err)
+	}
+
+	return populatedTemplate.String(), nil
+}
+
+// Keep your existing emailTemplate const
 const emailTemplate = `
 {{.email}}
 Добрый день.
@@ -34,34 +70,3 @@ Endpoints для подключения:
 {{- end}}
 {{- end}}
 `
-
-// Function to populate the email template with variables.
-func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[string]string) (string, error) {
-	if chosenCluster == nil {
-		return "", errors.New("clusters map is nil")
-	}
-
-	tmpl, err := template.New("email_template").Parse(emailTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	var populatedTemplate bytes.Buffer
-	err = tmpl.Execute(&populatedTemplate, map[string]interface{}{
-		"email":         variables["email"][0],
-		"request_id_sd": variables["request_id_sd"][0],
-		"request_id_sr": variables["request_id_sr"][0],
-		"segment":       variables["segment"][0],
-		"env":           variables["env"][0],
-		"tenant":        variables["tenant"][0],
-		"users":         variables["users"],
-		"bucketnames":   variables["bucketnames"],
-		"tls_endpoint":  chosenCluster["mtls_endpoint"],
-		"mtls_endpoint": chosenCluster["tls_endpoint"],
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return populatedTemplate.String(), nil
-}

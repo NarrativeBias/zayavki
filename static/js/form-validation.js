@@ -112,23 +112,35 @@ function submitWithSelectedCluster(selectedCluster) {
 
     const processedVars = {};
     for (let [key, value] of formData.entries()) {
-        processedVars[key] = value;
+        processedVars[key] = [value];
     }
+
+    if (!processedVars.hasOwnProperty('env_code')) {
+        const envSelect = document.getElementById('env');
+        if (envSelect) {
+            const envCode = getEnvCode(envSelect.value);
+            processedVars['env_code'] = [envCode];
+        }
+    }
+
+    const requestBody = {
+        processedVars: processedVars,
+        selectedCluster: selectedCluster,
+        pushToDb: pushToDb,
+    };
 
     fetch('/zayavki/cluster', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            processedVars: processedVars,
-            selectedCluster: selectedCluster,
-            pushToDb: pushToDb,
-        }),
+        body: JSON.stringify(requestBody),
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            return response.text().then(text => {
+                throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+            });
         }
         return response.text();
     })
@@ -136,9 +148,18 @@ function submitWithSelectedCluster(selectedCluster) {
         displayResult(data);
     })
     .catch(error => {
-        console.error('Error:', error);
         document.getElementById('result').textContent = 'An error occurred while processing your request. Please try again.';
     });
+}
+
+function getEnvCode(env) {
+    switch (env) {
+        case 'PROD': return 'p0';
+        case 'PREPROD': return 'rr';
+        case 'IFT': return 'if';
+        case 'HOTFIX': return 'hf';
+        default: return '';
+    }
 }
 
 function displayResult(data) {

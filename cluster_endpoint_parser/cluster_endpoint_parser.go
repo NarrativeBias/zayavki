@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/xuri/excelize/v2"
@@ -70,16 +72,28 @@ func GetCluster(filename, segment, env string) (ClusterInfo, error) {
 
 func HandleClusterSelection(w http.ResponseWriter, r *http.Request) (*ClusterInfo, error) {
 	if r.Method != http.MethodPost {
-		return nil, errors.New("method not allowed")
+		return nil, fmt.Errorf("method not allowed: %s", r.Method)
 	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		return nil, fmt.Errorf("error reading body: %v", err)
+	}
+	log.Printf("Received data: %s", string(body))
 
 	var data struct {
-		SelectedCluster ClusterInfo `json:"selectedCluster"`
+		ProcessedVars   map[string]string `json:"processedVars"`
+		SelectedCluster ClusterInfo       `json:"selectedCluster"`
+		PushToDb        bool              `json:"pushToDb"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("error decoding JSON: %v", err)
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Printf("Error unmarshaling JSON: %v", err)
+		return nil, fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
+
+	log.Printf("Processed data: %+v", data)
 
 	return &data.SelectedCluster, nil
 }
