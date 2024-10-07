@@ -68,7 +68,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 
 	// Prepare the SQL insert statement
 	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
-        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_number, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
+        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`)
 	if err != nil {
 		return fmt.Errorf("failed to prepare SQL statement: %v", err)
