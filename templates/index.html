@@ -11,7 +11,7 @@
             margin: 0;
             padding: 20px;
             background-color: #004d4d;
-            background-image: url('/static/background.jpg');
+            background-image: url('/zayavki/static/background.jpg');
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center center;
@@ -165,13 +165,13 @@
             <h1>Детали запроса</h1>
             <form id="zayavkiForm">
                 <label for="request_id_sd">Номер обращения SD:</label>
-                <input type="text" id="request_id_sd" name="request_id_sd" required>
+                <input type="text" id="request_id_sd" name="request_id_sd" data-custom-tabindex="1" required>
 
                 <label for="request_id_sr">Номер задания SR:</label>
-                <input type="text" id="request_id_sr" name="request_id_sr" required>
+                <input type="text" id="request_id_sr" name="request_id_sr" data-custom-tabindex="2 "required>
 
                 <label for="segment">Зона безопасности:</label>
-                <input type="text" id="segment" name="segment" required>
+                <input type="text" id="segment" name="segment" data-custom-tabindex="3 "required>
 
                 <label for="env">Среда:</label>
                 <select id="env" name="env" required>
@@ -183,25 +183,25 @@
                 </select>
 
                 <label for="ris_number">РИС номер:</label>
-                <input type="text" id="ris_number" name="ris_number" required>
+                <input type="text" id="ris_number" name="ris_number" data-custom-tabindex="4"required>
 
                 <label for="ris_name">РИС имя:</label>
-                <input type="text" id="ris_name" name="ris_name" required>
+                <input type="text" id="ris_name" name="ris_name" data-custom-tabindex="5" required>
 
                 <label for="resp_group">Группа сопровождения:</label>
-                <input type="text" id="resp_group" name="resp_group" required>
+                <input type="text" id="resp_group" name="resp_group" data-custom-tabindex="6" required>
 
                 <label for="owner">Владелец; Замещающий владелец:</label>
-                <input type="text" id="owner" name="owner" required>
+                <input type="text" id="owner" name="owner" data-custom-tabindex="7" required>
 
                 <label for="requester">Заявитель:</label>
-                <input type="text" id="requester" name="requester" required>
+                <input type="text" id="requester" name="requester" data-custom-tabindex="8" required>
 
                 <label for="email_for_credentials">Email для передачи учетных данных:</label>
-                <input type="email" id="email_for_credentials" name="email_for_credentials" required>
+                <input type="email" id="email_for_credentials" name="email_for_credentials" data-custom-tabindex="9" required>
 
                 <label for="tenant_override">Имя тенанта (override):</label>
-                <input type="text" id="tenant_override" name="tenant_override">
+                <input type="text" id="tenant_override" name="tenant_override" data-custom-tabindex="10">
 
                 <div class="checkbox-group">
                     <label for="create_tenant">Создать тенант:</label>
@@ -209,10 +209,10 @@
                 </div>
 
                 <label for="buckets">Бакеты (один в строке + объем):</label>
-                <textarea id="buckets" name="buckets" rows="3" ></textarea>
+                <textarea id="buckets" name="buckets" rows="3" data-custom-tabindex="11" ></textarea></textarea>
 
                 <label for="users">Пользователи (один в строке):</label>
-                <textarea id="users" name="users" rows="3" ></textarea>
+                <textarea id="users" name="users" rows="3" data-custom-tabindex="12" ></textarea></textarea>
 
                 <button type="submit" class="submit-button">Отправить</button>
                 <button id="saveButton" class="save-button" disabled>Сохранить как файл</button>
@@ -229,6 +229,42 @@
         let currentRequestId = '';
         let formData;
 
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('zayavkiForm');
+            const focusableElements = form.querySelectorAll('input, select, textarea, button:not([disabled])');
+            const firstFocusableElement = focusableElements[0];
+            const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+            function trapFocus(e) {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstFocusableElement) {
+                            e.preventDefault();
+                            lastFocusableElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastFocusableElement) {
+                            e.preventDefault();
+                            firstFocusableElement.focus();
+                        }
+                    }
+                }
+            }
+
+            form.addEventListener('keydown', trapFocus);
+
+            // Set initial focus
+            firstFocusableElement.focus();
+
+            // Prevent focus from leaving the form
+            document.addEventListener('focus', function(event) {
+                if (!form.contains(event.target)) {
+                    event.preventDefault();
+                    firstFocusableElement.focus();
+                }
+            }, true);
+        });
+
         document.getElementById('zayavkiForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -236,7 +272,7 @@
             currentRequestId = formData.get('request_id_sr') || 'execution_result';
 
             
-            fetch('/submit', {
+            fetch('/zayavki/submit', {
                 method: 'POST',
                 body: formData
             })
@@ -281,7 +317,7 @@
                 document.getElementById('result').textContent = 'Pushing data to DB...';
 
                 formData.append('push_to_db', 'true');
-                fetch('/submit', {
+                fetch('/zayavki/submit', {
                     method: 'POST',
                     body: formData
                 })

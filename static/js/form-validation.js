@@ -18,7 +18,7 @@ function submitForm(form) {
     console.log('Submitting form...');
     const formData = new FormData(form);
     
-    fetch('/submit', {
+    fetch('/zayavki/submit', {
         method: 'POST',
         body: formData
     })

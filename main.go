@@ -23,14 +23,29 @@ func main() {
 	}
 	defer postgresql_push.CloseDB()
 
+	// Create a new ServeMux
+	mux := http.NewServeMux()
+
+	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/zayavki/static/", http.StripPrefix("/zayavki/static/", fs))
 
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/submit", handleSubmit)
+	// Handle submit
+	mux.HandleFunc("/zayavki/submit", stripPrefix(handleSubmit))
 
+	// Handle index and other paths
+	mux.HandleFunc("/zayavki/", stripPrefix(handleIndex))
+
+	// Use the custom ServeMux
 	fmt.Println("Server is running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+func stripPrefix(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, "/zayavki")
+		h(w, r)
+	}
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
