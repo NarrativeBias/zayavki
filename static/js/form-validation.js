@@ -42,9 +42,21 @@ function submitForm(form) {
 }
 
 function showClusterSelectionModal(clusters) {
+    console.log('showClusterSelectionModal called with clusters:', clusters);
     const modal = document.getElementById('clusterModal');
+    if (!modal) {
+        console.error('Modal element not found');
+        return;
+    }
+    console.log('Modal element found:', modal);
+
     const select = document.getElementById('cluster-select');
-    
+    if (!select) {
+        console.error('Cluster select element not found');
+        return;
+    }
+    console.log('Select element found:', select);
+
     // Clear previous options
     select.innerHTML = '';
     
@@ -65,11 +77,25 @@ function showClusterSelectionModal(clusters) {
         updateClusterDetails(selectedCluster);
     });
 
+    // Ensure the modal is visible
     modal.style.display = 'block';
+    console.log('Modal display style set to block');
+
+    // Force a reflow
+    void modal.offsetHeight;
+
+    // Add a class for transition if needed
+    modal.classList.add('show');
+    console.log('Show class added to modal');
 }
 
 function updateClusterDetails(cluster) {
+    console.log('Updating cluster details:', cluster);
     const details = document.getElementById('cluster-details');
+    if (!details) {
+        console.error('Cluster details element not found');
+        return;
+    }
     details.innerHTML = `
         <dt>ЦОД:</dt><dd>${cluster.ЦОД}</dd>
         <dt>Среда:</dt><dd>${cluster.Среда}</dd>
@@ -77,6 +103,7 @@ function updateClusterDetails(cluster) {
         <dt>Кластер:</dt><dd>${cluster.Кластер}</dd>
         <dt>Реалм:</dt><dd>${cluster.Реалм}</dd>
     `;
+    console.log('Cluster details updated');
 }
 
 document.getElementById('confirm-cluster').addEventListener('click', function() {
