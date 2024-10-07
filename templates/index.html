@@ -423,7 +423,7 @@
                     if (data.toLowerCase().includes('error')) {
                         throw new Error(data);
                     }
-                    document.getElementById('result').textContent = data + '\n\nData pushed to DB successfully.';
+                    document.getElementById('result').textContent = data + '\n\nData attempted to be sent to DB (must be a positive responce from DB).';
                 })
                 .catch(error => {
                     console.error('Error:', error);
