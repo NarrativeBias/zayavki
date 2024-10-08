@@ -118,29 +118,19 @@ func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Processed variables: %+v", data.ProcessedVars)
+	// Process the variables
+	processedVars, err := variables_parser.ParseAndProcessVariables(data.ProcessedVars)
+	if err != nil {
+		log.Printf("Error processing variables: %v", err)
+		http.Error(w, fmt.Sprintf("Error processing variables: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Processed variables: %+v", processedVars)
 	log.Printf("Selected cluster: %+v", data.SelectedCluster)
-	log.Printf("Push to DB: %v", data.PushToDb)
 
-	// Ensure email is properly set
-	if email, ok := data.ProcessedVars["email_for_credentials"]; ok && len(email) > 0 {
-		data.ProcessedVars["email"] = email
-	}
-
-	// Process buckets
-	if buckets, ok := data.ProcessedVars["buckets"]; ok && len(buckets) > 0 && buckets[0] != "" {
-		data.ProcessedVars["bucketnames"] = strings.Split(buckets[0], "\n")
-		data.ProcessedVars["bucketquotas"] = make([]string, len(data.ProcessedVars["bucketnames"]))
-		for i, bucket := range data.ProcessedVars["bucketnames"] {
-			parts := strings.Fields(bucket)
-			if len(parts) >= 2 {
-				data.ProcessedVars["bucketnames"][i] = parts[0]
-				data.ProcessedVars["bucketquotas"][i] = parts[1]
-			}
-		}
-	}
-
-	result, err := processDataWithCluster(data.ProcessedVars, data.SelectedCluster, data.PushToDb)
+	// Process data with the selected cluster
+	result, err := processDataWithCluster(processedVars, data.SelectedCluster, data.PushToDb)
 	if err != nil {
 		log.Printf("Error processing data: %v", err)
 		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)

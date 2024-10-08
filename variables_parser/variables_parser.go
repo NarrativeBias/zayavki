@@ -8,49 +8,48 @@ import (
 func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]string, error) {
 	processedVars := make(map[string][]string)
 
-	getFirst := func(key string) string {
-		if values, ok := rawVariables[key]; ok && len(values) > 0 {
-			return values[0]
+	getFirst := func(slice []string) string {
+		if len(slice) > 0 {
+			return slice[0]
 		}
 		return ""
 	}
 
-	variablesToProcess := map[string]func(string) string{
-		"request_id_sd":         strings.ToUpper,
-		"request_id_sr":         strings.ToUpper,
-		"segment":               strings.ToUpper,
-		"env":                   strings.ToUpper,
-		"ris_name":              strings.ToLower,
-		"create_tenant":         strings.ToLower,
-		"tenant_override":       strings.ToLower,
-		"email_for_credentials": strings.ToLower,
-		"ris_number":            func(s string) string { return s },
-		"resp_group":            func(s string) string { return s },
-		"owner":                 func(s string) string { return s },
-		"requester":             func(s string) string { return s },
+	variablesToProcess := []string{
+		"request_id_sd", "request_id_sr", "segment", "env", "ris_number", "ris_name",
+		"resp_group", "owner", "create_tenant", "tenant_override", "requester",
+		"email_for_credentials",
 	}
 
-	for varName, processFunc := range variablesToProcess {
-		rawValue := getFirst(varName)
-		processedValue := processFunc(rawValue)
-		if varName == "email_for_credentials" {
+	for _, varName := range variablesToProcess {
+		rawValue := getFirst(rawVariables[varName])
+		var processedValue string
+		switch varName {
+		case "request_id_sd", "request_id_sr", "segment", "env":
+			processedValue = strings.ToUpper(rawValue)
+		case "ris_name", "create_tenant", "tenant_override":
+			processedValue = strings.ToLower(rawValue)
+		case "email_for_credentials":
+			processedValue = strings.ToLower(rawValue)
 			varName = "email"
+		default:
+			processedValue = rawValue
 		}
 		processedVars[varName] = []string{processedValue}
 	}
 
-	processList := func(input, separator string) []string {
-		var result []string
-		for _, item := range strings.Split(input, separator) {
-			if trimmed := strings.TrimSpace(item); trimmed != "" {
-				result = append(result, strings.ToLower(trimmed))
-			}
-		}
-		return result
+	// Process users
+	userInput := getFirst(rawVariables["users"])
+	if userInput != "" {
+		userList := strings.Fields(strings.ReplaceAll(userInput, "\n", " "))
+		processedVars["users"] = userList
 	}
 
-	if bucketInput := getFirst("buckets"); bucketInput != "" {
-		for _, bucket := range strings.Split(bucketInput, "\n") {
+	// Process buckets
+	bucketInput := getFirst(rawVariables["buckets"])
+	if bucketInput != "" {
+		bucketList := strings.Split(bucketInput, "\n")
+		for _, bucket := range bucketList {
 			parts := strings.Fields(strings.TrimSpace(bucket))
 			if len(parts) >= 2 {
 				processedVars["bucketnames"] = append(processedVars["bucketnames"], strings.ToLower(parts[0]))
@@ -59,23 +58,24 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		}
 	}
 
-	if userInput := getFirst("users"); userInput != "" {
-		processedVars["users"] = processList(userInput, "\n,")
-	}
-
-	envCodes := map[string]string{
-		"PROD":    "p0",
-		"PREPROD": "rr",
-		"IFT":     "if",
-		"HOTFIX":  "hf",
-	}
-
+	// Process environment code
 	env := processedVars["env"][0]
-	if envCode, ok := envCodes[env]; ok {
-		processedVars["env_code"] = []string{envCode}
-	} else {
+	var env_code string
+	switch env {
+	case "PROD":
+		env_code = "p0"
+	case "PREPROD":
+		env_code = "rr"
+	case "IFT":
+		env_code = "if"
+	case "HOTFIX":
+		env_code = "hf"
+	case "":
+		return nil, fmt.Errorf("environment is empty")
+	default:
 		return nil, fmt.Errorf("invalid environment: %s", env)
 	}
+	processedVars["env_code"] = []string{env_code}
 
 	return processedVars, nil
 }

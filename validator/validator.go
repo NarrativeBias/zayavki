@@ -7,14 +7,16 @@ import (
 )
 
 func ValidateUsers(variables map[string][]string) (bool, error) {
-	users, ok := variables["users"]
-	if !ok || len(users) == 0 {
+	userInput, ok := variables["users"]
+	if !ok || len(userInput) == 0 {
 		return false, fmt.Errorf("no users provided")
 	}
 
 	requiredKeys := []string{"env_code", "ris_name"}
-	if err := validateRequiredKeys(variables, requiredKeys); err != nil {
-		return false, err
+	for _, key := range requiredKeys {
+		if _, ok := variables[key]; !ok || len(variables[key]) == 0 {
+			return false, fmt.Errorf("missing required key: %s", key)
+		}
 	}
 
 	envCode := variables["env_code"][0]
@@ -24,6 +26,10 @@ func ValidateUsers(variables map[string][]string) (bool, error) {
 	pattern := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
 
 	var errors []string
+	users := strings.FieldsFunc(userInput[0], func(r rune) bool {
+		return r == '\n' || r == ',' || r == ' '
+	})
+
 	for _, username := range users {
 		username = strings.TrimSpace(strings.ToLower(username))
 		if username == "" {
@@ -39,7 +45,10 @@ func ValidateUsers(variables map[string][]string) (bool, error) {
 		}
 	}
 
-	return len(errors) == 0, joinErrors(errors)
+	if len(errors) > 0 {
+		return false, fmt.Errorf(strings.Join(errors, "; "))
+	}
+	return true, nil
 }
 
 func ValidateOwnerEmail(variables map[string][]string) (bool, error) {
