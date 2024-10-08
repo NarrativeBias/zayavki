@@ -3,5 +3,7 @@
     "port": "5432",
     "user": "postgres",
     "password": "3130",
-    "dbname": "S3_Users"
+    "dbname": "S3_Users",
+    "schema": "sds",
+    "table": "simple_test"
   }

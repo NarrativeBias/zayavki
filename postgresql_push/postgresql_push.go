@@ -17,9 +17,14 @@ type DBConfig struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 	DBName   string `json:"dbname"`
+	Schema   string `json:"schema"`
+	Table    string `json:"table"`
 }
 
-var db *sql.DB
+var (
+	db     *sql.DB
+	config DBConfig
+)
 
 func InitDB(configPath string) error {
 	// Read the config file
@@ -29,7 +34,6 @@ func InitDB(configPath string) error {
 	}
 
 	// Parse the JSON into our DBConfig struct
-	var config DBConfig
 	err = json.Unmarshal(file, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse config file: %v", err)
@@ -67,9 +71,9 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 	defer tx.Rollback() // Rollback the transaction if it hasn't been committed
 
 	// Prepare the SQL insert statement
-	stmt, err := db.Prepare(`INSERT INTO sds.simple_cspp_clients
+	stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO %s.%s
         (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`, config.Schema, config.Table))
 	if err != nil {
 		return fmt.Errorf("failed to prepare SQL statement: %v", err)
 	}
