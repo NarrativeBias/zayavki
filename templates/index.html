@@ -268,10 +268,6 @@
     </div>
 
     <script>
-        let currentRequestId = '';
-        let formData;
-        let clusters = [];
-
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('zayavkiForm');
             const focusableElements = form.querySelectorAll('input, select, textarea, button:not([disabled])');
@@ -308,61 +304,6 @@
             }, true);
         });
 
-        document.getElementById('zayavkiForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            formData = new FormData(this);
-            currentRequestId = formData.get('request_id_sr') || 'execution_result';
-
-            fetch('/zayavki/submit', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(data => {
-                if (data.status === 'cluster_selection_required') {
-                    showClusterSelectionModal(data.clusters);
-                } else {
-                    displayResult(data);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('result').textContent = 'An error occurred while submitting the form. Please try again.';
-                document.getElementById('saveButton').disabled = true;
-                document.getElementById('pushDbButton').disabled = true;
-            });
-        });
-
-        document.getElementById('saveButton').addEventListener('click', function() {
-            const result = document.getElementById('result').textContent;
-            if (result) {
-                const blob = new Blob([result], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${currentRequestId}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        });
-
-        function showClusterSelectionModal(clustersData) {
-            clusters = clustersData;
-            const modal = document.getElementById('clusterModal');
-            const select = document.getElementById('cluster-select');
-            select.innerHTML = clusters.map((cluster, index) => `
-                <option value="${index}">${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}</option>
-            `).join('');
-            modal.style.display = 'block';
-        }
     </script>
     <script src="/zayavki/static/js/form-validation.js"></script>
 </body>

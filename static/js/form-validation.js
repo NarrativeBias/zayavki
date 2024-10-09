@@ -31,7 +31,9 @@ function submitForm(form, pushToDb = false) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            return response.text().then(text => {
+                throw new Error(`HTTP error! ${response.status}, message: ${text}`);
+            });
         }
         return response.text();
     })
@@ -46,7 +48,7 @@ function submitForm(form, pushToDb = false) {
     })
     .catch(error => {
         console.error('Error:', error);
-        document.getElementById('result').textContent = 'An error occurred while submitting the form. Please try again.';
+        document.getElementById('result').textContent = `An error occurred: ${error.message}`;
         document.getElementById('saveButton').disabled = true;
         document.getElementById('pushDbButton').disabled = false;
     });
@@ -154,7 +156,9 @@ function submitWithSelectedCluster(selectedCluster, pushToDb) {
 }
 
 function displayResult(data) {
-    document.getElementById('result').textContent = data;
+    const resultElement = document.getElementById('result');
+    resultElement.textContent = data;
+    resultElement.style.whiteSpace = 'pre-wrap';  // Preserve line breaks
     document.getElementById('saveButton').disabled = false;
     document.getElementById('pushDbButton').disabled = false;
 }

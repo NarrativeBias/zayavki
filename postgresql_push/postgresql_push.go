@@ -58,6 +58,22 @@ func InitDB(configPath string) error {
 	return nil
 }
 
+func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, error) {
+	query := fmt.Sprintf(`
+		SELECT EXISTS (
+			SELECT 1 FROM %s.%s 
+			WHERE cls_name = $1 AND net_seg = $2 AND env = $3 AND realm = $4 AND tenant = $5 
+			AND s3_user = $6 AND bucket = $7 AND sd_num = $8 AND sr_num = $9
+		)`, schema, table)
+
+	var exists bool
+	err := tx.QueryRow(query, params...).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("error checking row existence: %v", err)
+	}
+	return exists, nil
+}
+
 func PushToDB(variables map[string][]string, clusters map[string]string) error {
 	if db == nil {
 		return fmt.Errorf("database connection not initialized")
@@ -71,7 +87,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 	defer tx.Rollback() // Rollback the transaction if it hasn't been committed
 
 	// Prepare the SQL insert statement
-	stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO %s.%s
+	stmt, err := tx.Prepare(fmt.Sprintf(`INSERT INTO %s.%s
         (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`, config.Schema, config.Table))
 	if err != nil {
@@ -82,12 +98,51 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 	// Get current date
 	done_date := time.Now().Format("02.01.2006") // Format: DD-MM-YYYY
 
-	// Loop through the users and insert into the database
+	var duplicates []string
+
+	// Check and collect duplicates for users
 	for _, username := range variables["users"] {
 		username = strings.ToLower(username)
 		if username != "" {
-			// Execute the prepared statement for each user
-			_, err := stmt.Exec(
+			exists, err := rowExists(tx, config.Schema, config.Table,
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], username, "-",
+				variables["request_id_sd"][0], variables["request_id_sr"][0])
+			if err != nil {
+				return fmt.Errorf("error checking row existence: %v", err)
+			}
+			if exists {
+				duplicates = append(duplicates, fmt.Sprintf("user: %s", username))
+			}
+		}
+	}
+
+	// Check and collect duplicates for buckets
+	for _, bucket := range variables["bucketnames"] {
+		if bucket != "" {
+			exists, err := rowExists(tx, config.Schema, config.Table,
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], "-", bucket,
+				variables["request_id_sd"][0], variables["request_id_sr"][0])
+			if err != nil {
+				return fmt.Errorf("error checking row existence: %v", err)
+			}
+			if exists {
+				duplicates = append(duplicates, fmt.Sprintf("bucket: %s", bucket))
+			}
+		}
+	}
+
+	// If duplicates were found, return an error with the list
+	if len(duplicates) > 0 {
+		return fmt.Errorf("the following entries already exist: %s", strings.Join(duplicates, ", "))
+	}
+
+	// If no duplicates, proceed with insertion
+	for _, username := range variables["users"] {
+		username = strings.ToLower(username)
+		if username != "" {
+			_, err = stmt.Exec(
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
 				variables["request_id_sd"][0], variables["request_id_sr"][0],
@@ -100,11 +155,9 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 		}
 	}
 
-	// Loop through the buckets and insert into the database
 	for i, bucket := range variables["bucketnames"] {
 		if bucket != "" {
-			// Execute the prepared statement for each bucket
-			_, err := stmt.Exec(
+			_, err = stmt.Exec(
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
 				clusters["Реалм"], variables["tenant"][0], "-", bucket, variables["bucketquotas"][i],
 				variables["request_id_sd"][0], variables["request_id_sr"][0],
