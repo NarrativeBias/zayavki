@@ -78,7 +78,7 @@
             gap: 25px;
             margin-top: 30px; 
         }
-        .submit-button, .save-button, .push-db-button {
+        .submit-button, .clear-fields-button, .push-db-button {
             width: 100%; 
             padding: 12px 15px;
             border: none;
@@ -95,7 +95,7 @@
             color: white;
         }
 
-        .save-button {
+        .clear-fields-button {
             background-color: #008CBA;
             color: white;
         }
@@ -118,12 +118,12 @@
             padding-bottom: 10px;
         }
 
-        .submit-button:hover, .save-button:hover, .push-db-button:hover {
+        .submit-button:hover, .clear-fields-button:hover, .push-db-button:hover {
             opacity: 0.9;
             transform: translateY(-2px);
         }
 
-        .submit-button:active, .save-button:active, .push-db-button:active {
+        .submit-button:active, .clear-fields-button:active, .push-db-button:active {
             transform: translateY(1px);
         }
         .checkbox-group {
@@ -249,7 +249,7 @@
                 <textarea id="users" name="users" rows="3" data-custom-tabindex="12" ></textarea></textarea>
 
                 <button type="submit" class="submit-button">Отправить</button>
-                <button id="saveButton" class="save-button" disabled>Сохранить как файл</button>
+                <button id="clearFieldsButton" class="clear-fields-button" disabled>Очистить все поля</button>
                 <button id="pushDbButton" class="push-db-button" disabled>Отправить в БД</button>
             </form>
         </div>
