@@ -53,7 +53,9 @@ async function submitForm(form, pushToDb = false) {
             showClusterSelectionModal(clusters, pushToDb);
         } else {
             displayResult(data);
-            document.getElementById('pushDbButton').disabled = false;
+            if (!pushToDb) {
+                enablePushToDbButton(); // Enable the "Send to DB" button after successful submit
+            }
         }
     } catch (error) {
         handleSubmitError(error);
@@ -83,12 +85,14 @@ async function submitWithSelectedCluster(cluster, pushToDb) {
 
         displayResult(data);
         if (!pushToDb) {
-            document.getElementById('pushDbButton').disabled = false;
+            enablePushToDbButton(); // Enable the "Send to DB" button after successful submit
         }
     } catch (error) {
         handleSubmitError(error);
     } finally {
-        document.getElementById('pushDbButton').disabled = false;
+        if (pushToDb) {
+            disablePushToDbButton(); // Disable the button after push to DB operation
+        }
     }
 }
 
@@ -96,7 +100,7 @@ async function submitWithSelectedCluster(cluster, pushToDb) {
 function handleSubmitError(error) {
     console.error('Error:', error);
     document.getElementById('result').textContent = `An error occurred: ${error.message}`;
-    document.getElementById('pushDbButton').disabled = false;
+    disablePushToDbButton(); // Disable the button on error
 }
 
 // Clear all fields function
@@ -121,6 +125,9 @@ function clearAllFields() {
         // Reset the selectedCluster
         selectedCluster = null;
         
+        // Disable the "Send to DB" button
+        disablePushToDbButton();
+        
         console.log('All fields have been cleared');
     } else {
         console.error('Form not found when trying to clear fields');
@@ -129,9 +136,26 @@ function clearAllFields() {
 
 // New function to handle push to DB
 function handlePushToDb() {
+    disablePushToDbButton(); // Disable the button when starting the push to DB operation
     if (selectedCluster) {
         submitWithSelectedCluster(selectedCluster, true);
     } else {
         submitForm(document.getElementById('zayavkiForm'), true);
+    }
+}
+
+// Function to enable the "Send to DB" button
+function enablePushToDbButton() {
+    const pushDbButton = document.getElementById('pushDbButton');
+    if (pushDbButton) {
+        pushDbButton.disabled = false;
+    }
+}
+
+// Function to disable the "Send to DB" button
+function disablePushToDbButton() {
+    const pushDbButton = document.getElementById('pushDbButton');
+    if (pushDbButton) {
+        pushDbButton.disabled = true;
     }
 }
