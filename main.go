@@ -112,7 +112,6 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(result))
 }
 func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
-	log.Println("Handling cluster selection")
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -120,7 +119,6 @@ func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error reading request: %v", err), http.StatusBadRequest)
 		return
 	}
-	log.Printf("Received data: %s", string(body))
 
 	var data struct {
 		ProcessedVars   map[string][]string                 `json:"processedVars"`
@@ -141,9 +139,6 @@ func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error processing variables: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("Processed variables: %+v", processedVars)
-	log.Printf("Selected cluster: %+v", data.SelectedCluster)
 
 	// Process data with the selected cluster
 	result, err := processDataWithCluster(processedVars, data.SelectedCluster, data.PushToDb)

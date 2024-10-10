@@ -155,18 +155,61 @@ input[type="text"], input[type="email"], select, textarea {
     overflow: auto;
     background-color: rgba(0,0,0,0.4);
 }
+
 .modal-content {
     background-color: #fefefe;
     margin: 15% auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 80%;
+    width: 90%;
     max-width: 500px;
+    position: relative;
 }
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
 #cluster-select {
     width: 100%;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+    padding: 5px;
 }
+
+#cluster-details {
+    margin-bottom: 20px;
+}
+
+.cluster-row {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.cluster-row .label {
+    flex: 0 0 100px;
+    text-align: right;
+    padding-right: 10px;
+    font-weight: bold;
+}
+
+.cluster-row .value {
+    flex: 1;
+}
+
 #confirm-cluster {
     background-color: #4CAF50;
     color: white;
@@ -174,4 +217,16 @@ input[type="text"], input[type="email"], select, textarea {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    float: right;
+    margin-top: 10px;
+}
+
+#confirm-cluster:hover {
+    background-color: #45a049;
+}
+
+.modal-content::after {
+    content: "";
+    display: table;
+    clear: both;
 }

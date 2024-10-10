@@ -54,10 +54,11 @@ function updateClusterDetails(cluster) {
         return;
     }
     details.innerHTML = `
-        <dt>ЦОД:</dt><dd>${cluster.ЦОД}</dd>
-        <dt>Среда:</dt><dd>${cluster.Среда}</dd>
-        <dt>ЗБ:</dt><dd>${cluster.ЗБ}</dd>
-        <dt>Кластер:</dt><dd>${cluster.Кластер}</dd>
-        <dt>Реалм:</dt><dd>${cluster.Реалм}</dd>
+        <div class="cluster-row"><span class="label">Выдача:</span><span class="value">${cluster.Выдача}</span></div>
+        <div class="cluster-row"><span class="label">ЦОД:</span><span class="value">${cluster.ЦОД}</span></div>
+        <div class="cluster-row"><span class="label">Среда:</span><span class="value">${cluster.Среда}</span></div>
+        <div class="cluster-row"><span class="label">ЗБ:</span><span class="value">${cluster.ЗБ}</span></div>
+        <div class="cluster-row"><span class="label">Кластер:</span><span class="value">${cluster.Кластер}</span></div>
+        <div class="cluster-row"><span class="label">Реалм:</span><span class="value">${cluster.Реалм}</span></div>
     `;
 }

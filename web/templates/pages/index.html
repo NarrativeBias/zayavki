@@ -66,9 +66,18 @@
     </div>
     <div id="clusterModal" class="modal">
         <div class="modal-content">
-            <h2>Выберете кластер</h2>
-            <select id="cluster-select"></select>
-            <dl id="cluster-details"></dl>
+            <span class="close-button">&times;</span>
+            <h2>Выберите кластер</h2>
+            <select id="cluster-select">
+            </select>
+            <div id="cluster-details">
+              <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
+              <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
+              <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
+              <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
+              <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
+              <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
+            </div>
             <button id="confirm-cluster">Подтвердить</button>
-        </div>
+          </div>
 {{end}}
