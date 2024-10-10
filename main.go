@@ -158,18 +158,28 @@ func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 }
 
 func processDataWithCluster(processedVars map[string][]string, chosenCluster cluster_endpoint_parser.ClusterInfo, pushToDb bool) (string, error) {
-	var warnings []string
-	var result strings.Builder
-
 	clusterMap := chosenCluster.ConvertToMap()
 
+	// Set up tenant and users
+	if err := setupTenantAndUsers(processedVars, clusterMap); err != nil {
+		return "", err
+	}
+
+	if pushToDb {
+		return pushToDatabase(processedVars, clusterMap)
+	}
+
+	return generateFullResult(processedVars, clusterMap)
+}
+
+func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[string]string) error {
 	// Generate tenant name
 	if len(processedVars["tenant_override"]) > 0 && processedVars["tenant_override"][0] != "" {
 		processedVars["tenant"] = []string{processedVars["tenant_override"][0]}
 	} else {
 		tenantName, err := tenant_name_generation.GenerateTenantName(processedVars, clusterMap)
 		if err != nil {
-			return "", fmt.Errorf("error generating tenant name: %v", err)
+			return fmt.Errorf("error generating tenant name: %v", err)
 		}
 		processedVars["tenant"] = []string{tenantName}
 	}
@@ -182,6 +192,21 @@ func processDataWithCluster(processedVars map[string][]string, chosenCluster clu
 			processedVars["users"] = append([]string{processedVars["tenant"][0]}, processedVars["users"]...)
 		}
 	}
+
+	return nil
+}
+
+func pushToDatabase(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
+	dbResult, err := postgresql_push.PushToDB(processedVars, clusterMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to push to database: %v", err)
+	}
+	return fmt.Sprintf("~~~~~~~Результат отправки данных в БД~~~~~~~\n%s", dbResult), nil
+}
+
+func generateFullResult(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
+	var result strings.Builder
+	var warnings []string
 
 	// Validate users and buckets
 	if valid, err := validator.ValidateUsers(processedVars); !valid {
@@ -200,6 +225,7 @@ func processDataWithCluster(processedVars map[string][]string, chosenCluster clu
 		result.WriteString("\n")
 	}
 
+	// Generate other parts of the result
 	result.WriteString("~~~~~~~Таблица пользователей и бакетов для отправки в БД~~~~~~~\n")
 	result.WriteString(prep_db_table_data.PopulateUsers(processedVars, clusterMap))
 	result.WriteString("\n")
@@ -221,15 +247,6 @@ func processDataWithCluster(processedVars map[string][]string, chosenCluster clu
 	}
 	result.WriteString(email)
 	result.WriteString("\n")
-
-	// Push to database if requested
-	if pushToDb {
-		err := postgresql_push.PushToDB(processedVars, clusterMap)
-		if err != nil {
-			return "", fmt.Errorf("failed to push to database: %v", err)
-		}
-		result.WriteString("\nData successfully pushed to database.")
-	}
 
 	return result.String(), nil
 }

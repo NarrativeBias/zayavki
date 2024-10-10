@@ -74,15 +74,15 @@ func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, e
 	return exists, nil
 }
 
-func PushToDB(variables map[string][]string, clusters map[string]string) error {
+func PushToDB(variables map[string][]string, clusters map[string]string) (string, error) {
 	if db == nil {
-		return fmt.Errorf("database connection not initialized")
+		return "", fmt.Errorf("database connection not initialized")
 	}
 
 	// Start a transaction
 	tx, err := db.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to start transaction: %v", err)
+		return "", fmt.Errorf("failed to start transaction: %v", err)
 	}
 	defer tx.Rollback() // Rollback the transaction if it hasn't been committed
 
@@ -91,7 +91,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
         (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`, config.Schema, config.Table))
 	if err != nil {
-		return fmt.Errorf("failed to prepare SQL statement: %v", err)
+		return "", fmt.Errorf("failed to prepare SQL statement: %v", err)
 	}
 	defer stmt.Close()
 
@@ -109,7 +109,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				clusters["Реалм"], variables["tenant"][0], username, "-",
 				variables["request_id_sd"][0], variables["request_id_sr"][0])
 			if err != nil {
-				return fmt.Errorf("error checking row existence: %v", err)
+				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
 			if exists {
 				duplicates = append(duplicates, fmt.Sprintf("user: %s", username))
@@ -125,7 +125,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				clusters["Реалм"], variables["tenant"][0], "-", bucket,
 				variables["request_id_sd"][0], variables["request_id_sr"][0])
 			if err != nil {
-				return fmt.Errorf("error checking row existence: %v", err)
+				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
 			if exists {
 				duplicates = append(duplicates, fmt.Sprintf("bucket: %s", bucket))
@@ -135,8 +135,11 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 
 	// If duplicates were found, return an error with the list
 	if len(duplicates) > 0 {
-		return fmt.Errorf("the following entries already exist: %s", strings.Join(duplicates, ", "))
+		return "", fmt.Errorf("the following entries already exist: %s", strings.Join(duplicates, ", "))
 	}
+
+	insertedUsers := []string{}
+	insertedBuckets := []string{}
 
 	// If no duplicates, proceed with insertion
 	for _, username := range variables["users"] {
@@ -150,8 +153,9 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], variables["email"][0], "-",
 			)
 			if err != nil {
-				return fmt.Errorf("failed to insert row for user %s: %v", username, err)
+				return "", fmt.Errorf("failed to insert row for user %s: %v", username, err)
 			}
+			insertedUsers = append(insertedUsers, username)
 		}
 	}
 
@@ -165,17 +169,21 @@ func PushToDB(variables map[string][]string, clusters map[string]string) error {
 				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], "-", "-",
 			)
 			if err != nil {
-				return fmt.Errorf("failed to insert row for bucket %s: %v", bucket, err)
+				return "", fmt.Errorf("failed to insert row for bucket %s: %v", bucket, err)
 			}
+			insertedBuckets = append(insertedBuckets, bucket)
 		}
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %v", err)
+		return "", fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	return nil
+	result := fmt.Sprintf("Successfully pushed to database:\nInserted users: %s\nInserted buckets: %s",
+		strings.Join(insertedUsers, ", "), strings.Join(insertedBuckets, ", "))
+
+	return result, nil
 }
 
 // CloseDB closes the database connection
