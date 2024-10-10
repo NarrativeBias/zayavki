@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('Push DB button not found in the document');
     }
+
+    const clearFieldsButton = document.getElementById('clearFieldsButton');
+    if (clearFieldsButton) {
+        clearFieldsButton.addEventListener('click', clearAllFields);
+        clearFieldsButton.disabled = false; // Enable the button
+    } else {
+        console.error('Clear All Fields button not found in the document');
+    }
 });
 
 function submitForm(form, pushToDb = false) {
@@ -49,7 +57,6 @@ function submitForm(form, pushToDb = false) {
     .catch(error => {
         console.error('Error:', error);
         document.getElementById('result').textContent = `An error occurred: ${error.message}`;
-        document.getElementById('saveButton').disabled = true;
         document.getElementById('pushDbButton').disabled = false;
     });
 }
@@ -159,7 +166,6 @@ function displayResult(data) {
     const resultElement = document.getElementById('result');
     resultElement.textContent = data;
     resultElement.style.whiteSpace = 'pre-wrap';  // Preserve line breaks
-    document.getElementById('saveButton').disabled = false;
     document.getElementById('pushDbButton').disabled = false;
 }
 
@@ -179,6 +185,29 @@ function updateClusterDetails(cluster) {
     `;
 }
 
+function clearAllFields() {
+    const form = document.getElementById('zayavkiForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+        
+        // Clear the result div
+        const resultDiv = document.getElementById('result');
+        if (resultDiv) {
+            resultDiv.textContent = '';
+        }
+        
+        console.log('All fields have been cleared');
+    } else {
+        console.error('Form not found when trying to clear fields');
+    }
+}
 function getEnvCode(env) {
     switch (env) {
         case 'PROD': return 'p0';
