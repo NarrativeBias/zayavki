@@ -1,3 +1,5 @@
+let selectedCluster = null;
+
 function initializeFormSubmissionHandler() {
     const form = document.getElementById('zayavkiForm');
     if (form) {
@@ -51,6 +53,7 @@ async function submitForm(form, pushToDb = false) {
             showClusterSelectionModal(clusters, pushToDb);
         } else {
             displayResult(data);
+            document.getElementById('pushDbButton').disabled = false;
         }
     } catch (error) {
         handleSubmitError(error);
@@ -58,14 +61,15 @@ async function submitForm(form, pushToDb = false) {
 }
 
 // Function to submit with selected cluster
-async function submitWithSelectedCluster(selectedCluster, pushToDb) {
+async function submitWithSelectedCluster(cluster, pushToDb) {
     try {
+        selectedCluster = cluster;  // Store the selected cluster
         const form = document.getElementById('zayavkiForm');
         const processedVars = processFormData(form);
 
         const requestBody = {
             processedVars,
-            selectedCluster,
+            selectedCluster: cluster,
             pushToDb,
         };
 
@@ -78,6 +82,9 @@ async function submitWithSelectedCluster(selectedCluster, pushToDb) {
         }).then(handleFetchResponse);
 
         displayResult(data);
+        if (!pushToDb) {
+            document.getElementById('pushDbButton').disabled = false;
+        }
     } catch (error) {
         handleSubmitError(error);
     } finally {
@@ -111,8 +118,20 @@ function clearAllFields() {
             resultDiv.textContent = '';
         }
         
+        // Reset the selectedCluster
+        selectedCluster = null;
+        
         console.log('All fields have been cleared');
     } else {
         console.error('Form not found when trying to clear fields');
+    }
+}
+
+// New function to handle push to DB
+function handlePushToDb() {
+    if (selectedCluster) {
+        submitWithSelectedCluster(selectedCluster, true);
+    } else {
+        submitForm(document.getElementById('zayavkiForm'), true);
     }
 }

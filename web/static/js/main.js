@@ -6,12 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const pushDbButton = document.getElementById('pushDbButton');
     const clearAllButton = document.getElementById('clearAllButton');
 
-
     if (pushDbButton) {
         pushDbButton.addEventListener('click', function() {
             this.disabled = true;
             document.getElementById('result').textContent = 'Pushing data to DB...';
-            submitForm(form, true);
+            handlePushToDb();
         });
     } else {
         console.error('Push DB button not found in the document');

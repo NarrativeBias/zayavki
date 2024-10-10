@@ -180,8 +180,10 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		return "", fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	result := fmt.Sprintf("Successfully pushed to database:\nInserted users: %s\nInserted buckets: %s",
-		strings.Join(insertedUsers, ", "), strings.Join(insertedBuckets, ", "))
+	result := fmt.Sprintf("Successfully pushed to database:\nTenant: %s\nInserted users: %s\nInserted buckets: %s",
+		variables["tenant"][0],
+		strings.Join(insertedUsers, ", "),
+		strings.Join(insertedBuckets, ", "))
 
 	return result, nil
 }
