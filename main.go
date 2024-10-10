@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -18,6 +19,17 @@ import (
 	"github.com/NarrativeBias/zayavki/variables_parser"
 )
 
+var templates *template.Template
+
+func init() {
+	templates = template.Must(template.ParseFiles(
+		"web/templates/layouts/base.html",
+		"web/templates/partials/header.html",
+		"web/templates/partials/footer.html",
+		"web/templates/pages/index.html",
+	))
+}
+
 func main() {
 	err := postgresql_push.InitDB("db_config.json")
 	if err != nil {
@@ -27,7 +39,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("static"))
+	fs := http.FileServer(http.Dir("web/static"))
 	mux.Handle("/zayavki/static/", http.StripPrefix("/zayavki/static/", fs))
 
 	mux.HandleFunc("/zayavki/submit", stripPrefix(handleSubmit))
@@ -45,7 +57,11 @@ func stripPrefix(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "templates/index.html")
+	err := templates.ExecuteTemplate(w, "base.html", nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func handleSubmit(w http.ResponseWriter, r *http.Request) {
