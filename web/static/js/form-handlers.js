@@ -12,7 +12,35 @@ function initializeFormSubmissionHandler() {
     }
 }
 
-// Helper function to handle fetch errors
+function trimFormData(formOrData) {
+    let formData;
+    if (formOrData instanceof HTMLFormElement) {
+        formData = new FormData(formOrData);
+    } else if (formOrData instanceof FormData) {
+        formData = formOrData;
+    } else {
+        return new FormData();
+    }
+
+    const trimmedData = new FormData();
+
+    for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string') {
+            value = value.trim();
+            
+            if (value.includes('\n')) {
+                value = value.split('\n')
+                             .map(line => line.trim())
+                             .filter(line => line.length > 0)
+                             .join('\n');
+            }
+        }
+        trimmedData.append(key, value);
+    }
+
+    return trimmedData;
+}
+
 async function handleFetchResponse(response) {
     if (!response.ok) {
         const text = await response.text();
@@ -21,14 +49,15 @@ async function handleFetchResponse(response) {
     return response.text();
 }
 
-// Helper function to process form data
-function processFormData(form) {
-    const formData = new FormData(form);
-    const processedVars = Object.fromEntries(
-        Array.from(formData.entries()).map(([key, value]) => [key, [value]])
-    );
+function processFormData(formData) {
+    const processedVars = {};
+    for (let [key, value] of formData.entries()) {
+        if (!processedVars[key]) {
+            processedVars[key] = [];
+        }
+        processedVars[key].push(value);
+    }
 
-    // Add env_code if not present
     if (!processedVars.hasOwnProperty('env_code')) {
         const envSelect = document.getElementById('env');
         if (envSelect) {
@@ -39,13 +68,12 @@ function processFormData(form) {
     return processedVars;
 }
 
-// Main submit function
 async function submitForm(form, pushToDb = false) {
     try {
-        const formData = new FormData(form);
-        formData.append('push_to_db', pushToDb.toString());
+        const trimmedFormData = trimFormData(form);
+        trimmedFormData.append('push_to_db', pushToDb.toString());
 
-        const data = await fetch('/zayavki/submit', { method: 'POST', body: formData })
+        const data = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData })
             .then(handleFetchResponse);
 
         if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
@@ -54,7 +82,7 @@ async function submitForm(form, pushToDb = false) {
         } else {
             displayResult(data);
             if (!pushToDb) {
-                enablePushToDbButton(); // Enable the "Send to DB" button after successful submit
+                enablePushToDbButton();
             }
         }
     } catch (error) {
@@ -62,20 +90,18 @@ async function submitForm(form, pushToDb = false) {
     }
 }
 
-// Function to submit with selected cluster
 async function submitWithSelectedCluster(cluster, pushToDb) {
     try {
-        selectedCluster = cluster;  // Store the selected cluster
+        selectedCluster = cluster;
         const form = document.getElementById('zayavkiForm');
-        const processedVars = processFormData(form);
+        const trimmedFormData = trimFormData(form);
+        const processedVars = processFormData(trimmedFormData);
 
         const requestBody = {
             processedVars,
             selectedCluster: cluster,
             pushToDb,
         };
-
-        console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
         const data = await fetch('/zayavki/cluster', {
             method: 'POST',
@@ -85,25 +111,23 @@ async function submitWithSelectedCluster(cluster, pushToDb) {
 
         displayResult(data);
         if (!pushToDb) {
-            enablePushToDbButton(); // Enable the "Send to DB" button after successful submit
+            enablePushToDbButton();
         }
     } catch (error) {
         handleSubmitError(error);
     } finally {
         if (pushToDb) {
-            disablePushToDbButton(); // Disable the button after push to DB operation
+            disablePushToDbButton();
         }
     }
 }
 
-// Error handling function
 function handleSubmitError(error) {
     console.error('Error:', error);
     document.getElementById('result').textContent = `An error occurred: ${error.message}`;
-    disablePushToDbButton(); // Disable the button on error
+    disablePushToDbButton();
 }
 
-// Clear all fields function
 function clearAllFields() {
     const form = document.getElementById('zayavkiForm');
     if (form) {
@@ -116,27 +140,20 @@ function clearAllFields() {
             }
         });
         
-        // Clear the result div
         const resultDiv = document.getElementById('result');
         if (resultDiv) {
             resultDiv.textContent = '';
         }
         
-        // Reset the selectedCluster
         selectedCluster = null;
-        
-        // Disable the "Send to DB" button
         disablePushToDbButton();
-        
-        console.log('All fields have been cleared');
     } else {
         console.error('Form not found when trying to clear fields');
     }
 }
 
-// New function to handle push to DB
 function handlePushToDb() {
-    disablePushToDbButton(); // Disable the button when starting the push to DB operation
+    disablePushToDbButton();
     if (selectedCluster) {
         submitWithSelectedCluster(selectedCluster, true);
     } else {
@@ -144,7 +161,6 @@ function handlePushToDb() {
     }
 }
 
-// Function to enable the "Send to DB" button
 function enablePushToDbButton() {
     const pushDbButton = document.getElementById('pushDbButton');
     if (pushDbButton) {
@@ -152,7 +168,6 @@ function enablePushToDbButton() {
     }
 }
 
-// Function to disable the "Send to DB" button
 function disablePushToDbButton() {
     const pushDbButton = document.getElementById('pushDbButton');
     if (pushDbButton) {
