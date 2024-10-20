@@ -74,6 +74,38 @@ func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, e
 	return exists, nil
 }
 
+func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName string) ([]string, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection not initialized")
+	}
+
+	query := fmt.Sprintf(`
+		SELECT cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant
+		FROM %s.%s
+		WHERE net_seg = $1 AND env = $2 AND ris_id = $3 AND ris_code = $4 AND cls_name = $5
+	`, config.Schema, config.Table)
+
+	rows, err := db.Query(query, segment, env, risNumber, risName, clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("error querying database: %v", err)
+	}
+	defer rows.Close()
+
+	var results []string
+	for rows.Next() {
+		var cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant string
+		err := rows.Scan(&cls_name, &net_seg, &env, &realm, &tenant, &s3_user, &bucket, &quota, &sd_num, &sr_num, &done_date, &ris_code, &ris_id, &owner_group, &owner_person, &applicant)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning row: %v", err)
+		}
+		result := fmt.Sprintf("Cluster: %s, Segment: %s, Environment: %s, Realm: %s, Tenant: %s, User: %s, Bucket: %s, Quota: %s, SD: %s, SR: %s, Date: %s, RIS Code: %s, RIS ID: %s, Owner Group: %s, Owner: %s, Applicant: %s",
+			cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant)
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func PushToDB(variables map[string][]string, clusters map[string]string) (string, error) {
 	if db == nil {
 		return "", fmt.Errorf("database connection not initialized")

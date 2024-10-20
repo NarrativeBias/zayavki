@@ -195,7 +195,13 @@ async function handleCheckButton() {
 
         if (response.ok) {
             const data = await response.json();
-            await handleClusterSelection(data.clusters, handleCheckWithCluster, checkData);
+            if (data.clusters) {
+                // Clusters returned, need to select one
+                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
+            } else {
+                // Results returned directly
+                displayResult(data);
+            }
         } else {
             throw new Error('Network response was not ok');
         }
@@ -206,14 +212,15 @@ async function handleCheckButton() {
     }
 }
 
-async function handleCheckWithCluster(cluster, checkData) {
+
+async function performCheckWithCluster(cluster, checkData) {
     try {
         const requestBody = {
             ...checkData,
-            cluster: cluster
+            cluster: cluster.Кластер // Send only the cluster name
         };
 
-        const response = await fetch('/zayavki/check-with-cluster', {
+        const response = await fetch('/zayavki/check', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

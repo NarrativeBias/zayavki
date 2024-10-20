@@ -4,7 +4,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const pushDbButton = document.getElementById('pushDbButton');
     const clearAllButton = document.getElementById('clearAllButton');
+    const checkButton = document.getElementById('checkButton');
 
+    if (checkButton) {
+        checkButton.addEventListener('click', handleCheckButton);
+    } else {
+        console.error('Check button not found in the document');
+    }
 
     if (pushDbButton) {
         pushDbButton.addEventListener('click', function() {
