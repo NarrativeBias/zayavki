@@ -68,17 +68,35 @@ function processFormData(formData) {
     return processedVars;
 }
 
+async function handleClusterSelection(clusters, operation, data) {
+    if (clusters.length === 1) {
+        // If there's only one cluster, use it directly
+        return operation(clusters[0], data);
+    } else if (clusters.length > 1) {
+        // If there are multiple clusters, show the selection modal
+        return new Promise((resolve) => {
+            showClusterSelectionModal(clusters, (selectedCluster) => {
+                resolve(operation(selectedCluster, data));
+            });
+        });
+    } else {
+        // If no clusters are found, display an error
+        displayResult('No matching clusters found');
+        return Promise.reject('No matching clusters found');
+    }
+}
+
 async function submitForm(form, pushToDb = false) {
     try {
         const trimmedFormData = trimFormData(form);
         trimmedFormData.append('push_to_db', pushToDb.toString());
 
-        const data = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData })
-            .then(handleFetchResponse);
+        const response = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData });
+        const data = await handleFetchResponse(response);
 
         if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
             const clusters = JSON.parse(data.slice('CLUSTER_SELECTION_REQUIRED:'.length));
-            showClusterSelectionModal(clusters, pushToDb);
+            await handleClusterSelection(clusters, submitFormWithCluster, { formData: trimmedFormData, pushToDb });
         } else {
             displayResult(data);
             if (!pushToDb) {
@@ -90,12 +108,9 @@ async function submitForm(form, pushToDb = false) {
     }
 }
 
-async function submitWithSelectedCluster(cluster, pushToDb) {
+async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
-        selectedCluster = cluster;
-        const form = document.getElementById('zayavkiForm');
-        const trimmedFormData = trimFormData(form);
-        const processedVars = processFormData(trimmedFormData);
+        const processedVars = processFormData(formData);
 
         const requestBody = {
             processedVars,
@@ -103,11 +118,12 @@ async function submitWithSelectedCluster(cluster, pushToDb) {
             pushToDb,
         };
 
-        const data = await fetch('/zayavki/cluster', {
+        const response = await fetch('/zayavki/cluster', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
-        }).then(handleFetchResponse);
+        });
+        const data = await handleFetchResponse(response);
 
         displayResult(data);
         if (!pushToDb) {
@@ -152,13 +168,67 @@ function clearAllFields() {
     }
 }
 
-function handlePushToDb() {
-    disablePushToDbButton();
-    if (selectedCluster) {
-        submitWithSelectedCluster(selectedCluster, true);
-    } else {
-        submitForm(document.getElementById('zayavkiForm'), true);
+async function handleCheckButton() {
+    const form = document.getElementById('zayavkiForm');
+    const formData = new FormData(form);
+    const checkData = {
+        segment: formData.get('segment'),
+        env: formData.get('env'),
+        ris_number: formData.get('ris_number'),
+        ris_name: formData.get('ris_name')
+    };
+
+    try {
+        const response = await fetch('/zayavki/check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(checkData),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            await handleClusterSelection(data.clusters, handleCheckWithCluster, checkData);
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`An error occurred: ${error.message}`);
     }
+}
+
+async function handleCheckWithCluster(cluster, checkData) {
+    try {
+        const requestBody = {
+            ...checkData,
+            cluster: cluster
+        };
+
+        const response = await fetch('/zayavki/check-with-cluster', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (response.ok) {
+            const data = await response.text();
+            displayResult(data);
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`An error occurred: ${error.message}`);
+    }
+}
+
+function handlePushToDb() {
+    const form = document.getElementById('zayavkiForm');
+    submitForm(form, true);
 }
 
 function enablePushToDbButton() {

@@ -70,7 +70,7 @@ input[type="text"], input[type="email"], select, textarea {
     gap: 25px;
     margin-top: 30px; 
 }
-.submit-button, .clear-fields-button, .push-db-button {
+.submit-button, .clear-fields-button, .push-db-button, .check-button {
     width: 100%; 
     padding: 12px 15px;
     border: none;
@@ -85,6 +85,21 @@ input[type="text"], input[type="email"], select, textarea {
     background-color: #4CAF50;
     color: white;
 }
+
+.check-button {
+    background-color: #FFA500;
+    color: white;
+}
+
+.check-button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.check-button:active {
+    transform: translateY(1px);
+}
+
 .clear-fields-button {
     background-color: #008CBA;
     color: white;

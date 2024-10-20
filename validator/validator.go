@@ -7,8 +7,8 @@ import (
 )
 
 func ValidateUsers(variables map[string][]string) (bool, error) {
-	userInput, ok := variables["users"]
-	if !ok || len(userInput) == 0 {
+	users, ok := variables["users"]
+	if !ok || len(users) == 0 {
 		return false, fmt.Errorf("no users provided")
 	}
 
@@ -26,9 +26,6 @@ func ValidateUsers(variables map[string][]string) (bool, error) {
 	pattern := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
 
 	var errors []string
-	users := strings.FieldsFunc(userInput[0], func(r rune) bool {
-		return r == '\n' || r == ',' || r == ' '
-	})
 
 	for _, username := range users {
 		username = strings.TrimSpace(strings.ToLower(username))
