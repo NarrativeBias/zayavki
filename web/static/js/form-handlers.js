@@ -194,31 +194,24 @@ async function handleCheckButton() {
         });
 
         if (response.ok) {
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                const data = await response.json();
-                if (data.clusters) {
-                    // Clusters returned, need to select one
-                    await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
-                } else {
-                    // Results returned directly
-                    displayResult(data);
-                }
+            const data = await response.json();
+            if (data.clusters) {
+                // Use existing handleClusterSelection function
+                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
             } else {
-                // Handle non-JSON response
-                const text = await response.text();
-                displayResult(text);
+                // Handle the case where results are null
+                displayResult(data, checkData);
             }
         } else {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            displayResult(`An error occurred: ${errorText}`);
         }
     } catch (error) {
         console.error('Error:', error);
         displayResult(`An error occurred: ${error.message}`);
-        selectedCluster = null; // Reset selectedCluster on error
     }
 }
+
 
 
 async function performCheckWithCluster(cluster, checkData) {
@@ -237,17 +230,11 @@ async function performCheckWithCluster(cluster, checkData) {
         });
 
         if (response.ok) {
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                const data = await response.json();
-                displayResult(JSON.stringify(data, null, 2));
-            } else {
-                const text = await response.text();
-                displayResult(text);
-            }
+            const data = await response.json();
+            displayResult(data, requestBody);
         } else {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            displayResult(`An error occurred: ${errorText}`);
         }
     } catch (error) {
         console.error('Error:', error);
@@ -281,12 +268,21 @@ function disablePushToDbButton() {
     }
 }
 
-function displayResult(data) {
+function displayResult(data, checkData = {}) {
     const resultElement = document.getElementById('result');
     if (typeof data === 'string') {
         resultElement.textContent = data;
-    } else if (data && data.results) {
-        resultElement.textContent = data.results.join('\n');
+    } else if (data && data.results === null) {
+        const risInfo = checkData.ris_number ? `RIS ${checkData.ris_number}` : 'specified RIS';
+        const envInfo = checkData.env ? `in environment ${checkData.env}` : '';
+        const segmentInfo = checkData.segment ? `for segment ${checkData.segment}` : '';
+        resultElement.textContent = `No results found for ${risInfo} ${envInfo} ${segmentInfo}.`;
+    } else if (data && Array.isArray(data.results)) {
+        if (data.results.length === 0) {
+            resultElement.textContent = "No results found.";
+        } else {
+            resultElement.textContent = data.results.join('\n');
+        }
     } else {
         resultElement.textContent = JSON.stringify(data, null, 2);
     }

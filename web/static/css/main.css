@@ -24,20 +24,26 @@ body {
 @media (max-width: 1200px) {
     .container {
         flex-direction: column;
+        padding-right: 0;
+        min-height: auto;
     }
 
     .form-container,
     .results-container {
         width: 100%;
-        min-width: auto;
+        max-width: none;
+        margin-right: 0;
+        min-height: auto;
     }
 }
 
 .container {
     display: flex;
-    max-width: 1600px;
+    max-width: 1900px; 
     margin: 0 auto;
     gap: 20px;
+    padding-right: 20px; 
+    min-height: calc(100vh - 40px);
 }
 .form-container {
     flex: 0 0 280px;
@@ -48,11 +54,15 @@ body {
 }
 .results-container {
     flex: 1;
-    min-width: calc(93.75% - 280px - 20px);
+    width: calc(93.75% - 320px); /* Adjust width calculation */
+    min-width: 0; /* Allow container to shrink if needed */
     background-color: rgba(0, 77, 77, 0.8); 
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    overflow: hidden; /* Ensure child overflow is respected */
+    margin-right: 1px;
+    min-height: calc(100vh - 40px);
 }
 h1, h2 {
     color: #333;
@@ -165,6 +175,10 @@ input[type="text"], input[type="email"], select, textarea {
     font-size: 14px;
     color: #ffffff;
     overflow-x: auto;
+    overflow-y: auto;
+    flex-grow: 1;
+    width: calc(100% - 2px); /* Subtract 2px to account for left and right borders */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 #buckets, #users {
     width: 100%;
