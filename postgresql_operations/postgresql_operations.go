@@ -1,4 +1,4 @@
-package postgresql_push
+package postgresql_operations
 
 import (
 	"database/sql"

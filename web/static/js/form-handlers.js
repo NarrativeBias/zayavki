@@ -71,17 +71,20 @@ function processFormData(formData) {
 async function handleClusterSelection(clusters, operation, data) {
     if (clusters.length === 1) {
         // If there's only one cluster, use it directly
-        return operation(clusters[0], data);
+        selectedCluster = clusters[0];
+        return operation(selectedCluster, data);
     } else if (clusters.length > 1) {
         // If there are multiple clusters, show the selection modal
         return new Promise((resolve) => {
-            showClusterSelectionModal(clusters, (selectedCluster) => {
+            showClusterSelectionModal(clusters, (chosenCluster) => {
+                selectedCluster = chosenCluster;
                 resolve(operation(selectedCluster, data));
             });
         });
     } else {
         // If no clusters are found, display an error
         displayResult('No matching clusters found');
+        selectedCluster = null;
         return Promise.reject('No matching clusters found');
     }
 }
@@ -102,9 +105,11 @@ async function submitForm(form, pushToDb = false) {
             if (!pushToDb) {
                 enablePushToDbButton();
             }
+            selectedCluster = null; // Reset selectedCluster if no cluster selection was required
         }
     } catch (error) {
         handleSubmitError(error);
+        selectedCluster = null; // Reset selectedCluster on error
     }
 }
 
@@ -134,6 +139,7 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     } finally {
         if (pushToDb) {
             disablePushToDbButton();
+            selectedCluster = null; // Reset selectedCluster after push to DB
         }
     }
 }
@@ -196,6 +202,7 @@ async function handleCheckButton() {
     } catch (error) {
         console.error('Error:', error);
         displayResult(`An error occurred: ${error.message}`);
+        selectedCluster = null; // Reset selectedCluster on error
     }
 }
 
@@ -223,12 +230,19 @@ async function handleCheckWithCluster(cluster, checkData) {
     } catch (error) {
         console.error('Error:', error);
         displayResult(`An error occurred: ${error.message}`);
+    } finally {
+        selectedCluster = null; // Reset selectedCluster after check operation
     }
 }
 
 function handlePushToDb() {
+    disablePushToDbButton();
     const form = document.getElementById('zayavkiForm');
-    submitForm(form, true);
+    if (selectedCluster) {
+        submitFormWithCluster(selectedCluster, { formData: new FormData(form), pushToDb: true });
+    } else {
+        submitForm(form, true);
+    }
 }
 
 function enablePushToDbButton() {

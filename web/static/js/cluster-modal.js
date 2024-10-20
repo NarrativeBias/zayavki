@@ -1,4 +1,4 @@
-function showClusterSelectionModal(clusters, pushToDb) {
+function showClusterSelectionModal(clusters, callback) {
     console.log('showClusterSelectionModal called with clusters:', clusters);
     const modal = document.getElementById('clusterModal');
     const select = document.getElementById('cluster-select');
@@ -12,7 +12,6 @@ function showClusterSelectionModal(clusters, pushToDb) {
     // Clear previous options
     select.innerHTML = '';
     
-    // Add new options
     clusters.forEach((cluster, index) => {
         const option = document.createElement('option');
         option.value = index;
@@ -39,7 +38,9 @@ function showClusterSelectionModal(clusters, pushToDb) {
         if (selectedOption && selectedOption.dataset.cluster) {
             const selectedCluster = JSON.parse(selectedOption.dataset.cluster);
             modal.style.display = 'none';
-            submitWithSelectedCluster(selectedCluster, pushToDb);
+            if (callback) {
+                callback(selectedCluster);
+            }
         } else {
             console.error('No cluster selected or cluster data missing');
         }

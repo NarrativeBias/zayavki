@@ -11,7 +11,7 @@ import (
 
 	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	"github.com/NarrativeBias/zayavki/email_template"
-	"github.com/NarrativeBias/zayavki/postgresql_push"
+	"github.com/NarrativeBias/zayavki/postgresql_operations"
 	"github.com/NarrativeBias/zayavki/prep_db_table_data"
 	"github.com/NarrativeBias/zayavki/rgw_commands"
 	"github.com/NarrativeBias/zayavki/tenant_name_generation"
@@ -31,11 +31,11 @@ func init() {
 }
 
 func main() {
-	err := postgresql_push.InitDB("db_config.json")
+	err := postgresql_operations.InitDB("db_config.json")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer postgresql_push.CloseDB()
+	defer postgresql_operations.CloseDB()
 
 	mux := http.NewServeMux()
 
@@ -192,7 +192,7 @@ func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[strin
 }
 
 func pushToDatabase(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
-	dbResult, err := postgresql_push.PushToDB(processedVars, clusterMap)
+	dbResult, err := postgresql_operations.PushToDB(processedVars, clusterMap)
 	if err != nil {
 		return "", fmt.Errorf("failed to push to database: %v", err)
 	}
