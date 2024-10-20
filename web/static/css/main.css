@@ -20,6 +20,19 @@ body {
         background-size: cover;
     }
 }
+
+@media (max-width: 1200px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .form-container,
+    .results-container {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
 .container {
     display: flex;
     max-width: 1600px;
@@ -35,7 +48,7 @@ body {
 }
 .results-container {
     flex: 1;
-    min-width: calc(75% - 280px - 20px);
+    min-width: calc(93.75% - 280px - 20px);
     background-color: rgba(0, 77, 77, 0.8); 
     padding: 20px;
     border-radius: 8px;
@@ -151,6 +164,7 @@ input[type="text"], input[type="email"], select, textarea {
     font-family: monospace;
     font-size: 14px;
     color: #ffffff;
+    overflow-x: auto;
 }
 #buckets, #users {
     width: 100%;

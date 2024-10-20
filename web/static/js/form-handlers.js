@@ -194,16 +194,24 @@ async function handleCheckButton() {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            if (data.clusters) {
-                // Clusters returned, need to select one
-                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await response.json();
+                if (data.clusters) {
+                    // Clusters returned, need to select one
+                    await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
+                } else {
+                    // Results returned directly
+                    displayResult(data);
+                }
             } else {
-                // Results returned directly
-                displayResult(data);
+                // Handle non-JSON response
+                const text = await response.text();
+                displayResult(text);
             }
         } else {
-            throw new Error('Network response was not ok');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
         }
     } catch (error) {
         console.error('Error:', error);
@@ -229,10 +237,17 @@ async function performCheckWithCluster(cluster, checkData) {
         });
 
         if (response.ok) {
-            const data = await response.text();
-            displayResult(data);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await response.json();
+                displayResult(JSON.stringify(data, null, 2));
+            } else {
+                const text = await response.text();
+                displayResult(text);
+            }
         } else {
-            throw new Error('Network response was not ok');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
         }
     } catch (error) {
         console.error('Error:', error);
@@ -264,4 +279,16 @@ function disablePushToDbButton() {
     if (pushDbButton) {
         pushDbButton.disabled = true;
     }
+}
+
+function displayResult(data) {
+    const resultElement = document.getElementById('result');
+    if (typeof data === 'string') {
+        resultElement.textContent = data;
+    } else if (data && data.results) {
+        resultElement.textContent = data.results.join('\n');
+    } else {
+        resultElement.textContent = JSON.stringify(data, null, 2);
+    }
+    resultElement.style.whiteSpace = 'pre-wrap';
 }

@@ -170,7 +170,7 @@ func processDataWithCluster(processedVars map[string][]string, chosenCluster clu
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -184,7 +184,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&checkData)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -192,7 +192,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		// If no cluster is provided, find matching clusters
 		clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", checkData.Segment, checkData.Env)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error finding clusters: %v", err), http.StatusInternalServerError)
+			jsonError(w, fmt.Sprintf("Error finding clusters: %v", err), http.StatusInternalServerError)
 			return
 		}
 
@@ -208,15 +208,18 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		// If a cluster is provided, perform the database check
 		results, err := postgresql_operations.CheckDBForExistingEntries(checkData.Segment, checkData.Env, checkData.RisNumber, checkData.RisName, checkData.Cluster)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error checking database: %v", err), http.StatusInternalServerError)
+			jsonError(w, fmt.Sprintf("Error checking database: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		if len(results) == 0 {
-			fmt.Fprint(w, "No results found")
-		} else {
-			fmt.Fprint(w, strings.Join(results, "\n"))
+		response := struct {
+			Results []string `json:"results"`
+		}{
+			Results: results,
 		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -297,4 +300,10 @@ func generateFullResult(processedVars map[string][]string, clusterMap map[string
 	result.WriteString("\n")
 
 	return result.String(), nil
+}
+
+func jsonError(w http.ResponseWriter, message string, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
