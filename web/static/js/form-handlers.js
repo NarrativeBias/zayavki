@@ -3,9 +3,9 @@ let selectedCluster = null;
 function initializeFormSubmissionHandler() {
     const form = document.getElementById('zayavkiForm');
     if (form) {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-            submitForm(this);
+            submitForm(form);
         });
     } else {
         console.error('Form not found in the document');
@@ -13,27 +13,12 @@ function initializeFormSubmissionHandler() {
 }
 
 function trimFormData(formOrData) {
-    let formData;
-    if (formOrData instanceof HTMLFormElement) {
-        formData = new FormData(formOrData);
-    } else if (formOrData instanceof FormData) {
-        formData = formOrData;
-    } else {
-        return new FormData();
-    }
-
+    const formData = formOrData instanceof HTMLFormElement ? new FormData(formOrData) : formOrData;
     const trimmedData = new FormData();
 
     for (let [key, value] of formData.entries()) {
         if (typeof value === 'string') {
-            value = value.trim();
-            
-            if (value.includes('\n')) {
-                value = value.split('\n')
-                             .map(line => line.trim())
-                             .filter(line => line.length > 0)
-                             .join('\n');
-            }
+            value = value.trim().split('\n').map(line => line.trim()).filter(Boolean).join('\n');
         }
         trimmedData.append(key, value);
     }
@@ -50,19 +35,17 @@ async function handleFetchResponse(response) {
 }
 
 function processFormData(formData) {
-    const processedVars = {};
-    for (let [key, value] of formData.entries()) {
-        if (!processedVars[key]) {
-            processedVars[key] = [];
-        }
-        processedVars[key].push(value);
-    }
+    const processedVars = Object.fromEntries(
+        Array.from(formData.entries()).reduce((acc, [key, value]) => {
+            if (!acc.has(key)) acc.set(key, []);
+            acc.get(key).push(value);
+            return acc;
+        }, new Map())
+    );
 
-    if (!processedVars.hasOwnProperty('env_code')) {
-        const envSelect = document.getElementById('env');
-        if (envSelect) {
-            processedVars['env_code'] = [getEnvCode(envSelect.value)];
-        }
+    const envSelect = document.getElementById('env');
+    if (envSelect && !processedVars.hasOwnProperty('env_code')) {
+        processedVars['env_code'] = [getEnvCode(envSelect.value)];
     }
 
     return processedVars;
@@ -70,11 +53,9 @@ function processFormData(formData) {
 
 async function handleClusterSelection(clusters, operation, data) {
     if (clusters.length === 1) {
-        // If there's only one cluster, use it directly
         selectedCluster = clusters[0];
         return operation(selectedCluster, data);
     } else if (clusters.length > 1) {
-        // If there are multiple clusters, show the selection modal
         return new Promise((resolve) => {
             showClusterSelectionModal(clusters, (chosenCluster) => {
                 selectedCluster = chosenCluster;
@@ -82,7 +63,6 @@ async function handleClusterSelection(clusters, operation, data) {
             });
         });
     } else {
-        // If no clusters are found, display an error
         displayResult('No matching clusters found');
         selectedCluster = null;
         return Promise.reject('No matching clusters found');
@@ -102,26 +82,18 @@ async function submitForm(form, pushToDb = false) {
             await handleClusterSelection(clusters, submitFormWithCluster, { formData: trimmedFormData, pushToDb });
         } else {
             displayResult(data);
-            if (!pushToDb) {
-                enablePushToDbButton();
-            }
-            selectedCluster = null; // Reset selectedCluster if no cluster selection was required
+            if (!pushToDb) enablePushToDbButton();
+            selectedCluster = null;
         }
     } catch (error) {
-        handleSubmitError(error);
-        selectedCluster = null; // Reset selectedCluster on error
+        handleError(error);
     }
 }
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
         const processedVars = processFormData(formData);
-
-        const requestBody = {
-            processedVars,
-            selectedCluster: cluster,
-            pushToDb,
-        };
+        const requestBody = { processedVars, selectedCluster: cluster, pushToDb };
 
         const response = await fetch('/zayavki/cluster', {
             method: 'POST',
@@ -131,20 +103,18 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
         const data = await handleFetchResponse(response);
 
         displayResult(data);
-        if (!pushToDb) {
-            enablePushToDbButton();
-        }
+        if (!pushToDb) enablePushToDbButton();
     } catch (error) {
-        handleSubmitError(error);
+        handleError(error);
     } finally {
         if (pushToDb) {
             disablePushToDbButton();
-            selectedCluster = null; // Reset selectedCluster after push to DB
+            selectedCluster = null;
         }
     }
 }
 
-function handleSubmitError(error) {
+function handleError(error) {
     console.error('Error:', error);
     document.getElementById('result').textContent = `An error occurred: ${error.message}`;
     disablePushToDbButton();
@@ -153,20 +123,10 @@ function handleSubmitError(error) {
 function clearAllFields() {
     const form = document.getElementById('zayavkiForm');
     if (form) {
-        const inputs = form.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            if (input.type === 'checkbox' || input.type === 'radio') {
-                input.checked = false;
-            } else {
-                input.value = '';
-            }
+        form.querySelectorAll('input, textarea, select').forEach(input => {
+            input.type === 'checkbox' || input.type === 'radio' ? input.checked = false : input.value = '';
         });
-        
-        const resultDiv = document.getElementById('result');
-        if (resultDiv) {
-            resultDiv.textContent = '';
-        }
-        
+        document.getElementById('result').textContent = '';
         selectedCluster = null;
         disablePushToDbButton();
     } else {
@@ -177,55 +137,37 @@ function clearAllFields() {
 async function handleCheckButton() {
     const form = document.getElementById('zayavkiForm');
     const formData = new FormData(form);
-    const checkData = {
-        segment: formData.get('segment'),
-        env: formData.get('env'),
-        ris_number: formData.get('ris_number'),
-        ris_name: formData.get('ris_name')
-    };
+    const checkData = ['segment', 'env', 'ris_number', 'ris_name'].reduce((acc, key) => {
+        acc[key] = formData.get(key);
+        return acc;
+    }, {});
 
     try {
         const response = await fetch('/zayavki/check', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(checkData),
         });
 
         if (response.ok) {
             const data = await response.json();
-            if (data.clusters) {
-                // Use existing handleClusterSelection function
-                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
-            } else {
-                // Handle the case where results are null
-                displayResult(data, checkData);
-            }
+            data.clusters
+                ? await handleClusterSelection(data.clusters, performCheckWithCluster, checkData)
+                : displayResult(data, checkData);
         } else {
-            const errorText = await response.text();
-            displayResult(`An error occurred: ${errorText}`);
+            throw new Error(await response.text());
         }
     } catch (error) {
-        console.error('Error:', error);
-        displayResult(`An error occurred: ${error.message}`);
+        handleError(error);
     }
 }
 
-
-
 async function performCheckWithCluster(cluster, checkData) {
     try {
-        const requestBody = {
-            ...checkData,
-            cluster: cluster.Кластер // Send only the cluster name
-        };
-
+        const requestBody = { ...checkData, cluster: cluster.Кластер };
         const response = await fetch('/zayavki/check', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
         });
 
@@ -233,58 +175,49 @@ async function performCheckWithCluster(cluster, checkData) {
             const data = await response.json();
             displayResult(data, requestBody);
         } else {
-            const errorText = await response.text();
-            displayResult(`An error occurred: ${errorText}`);
+            throw new Error(await response.text());
         }
     } catch (error) {
-        console.error('Error:', error);
-        displayResult(`An error occurred: ${error.message}`);
+        handleError(error);
     } finally {
-        selectedCluster = null; // Reset selectedCluster after check operation
+        selectedCluster = null;
     }
 }
 
 function handlePushToDb() {
     disablePushToDbButton();
     const form = document.getElementById('zayavkiForm');
-    if (selectedCluster) {
-        submitFormWithCluster(selectedCluster, { formData: new FormData(form), pushToDb: true });
-    } else {
-        submitForm(form, true);
-    }
+    selectedCluster
+        ? submitFormWithCluster(selectedCluster, { formData: new FormData(form), pushToDb: true })
+        : submitForm(form, true);
 }
 
 function enablePushToDbButton() {
-    const pushDbButton = document.getElementById('pushDbButton');
-    if (pushDbButton) {
-        pushDbButton.disabled = false;
-    }
+    document.getElementById('pushDbButton').disabled = false;
 }
 
 function disablePushToDbButton() {
-    const pushDbButton = document.getElementById('pushDbButton');
-    if (pushDbButton) {
-        pushDbButton.disabled = true;
-    }
+    document.getElementById('pushDbButton').disabled = true;
 }
 
 function displayResult(data, checkData = {}) {
     const resultElement = document.getElementById('result');
+    let resultText;
+
     if (typeof data === 'string') {
-        resultElement.textContent = data;
+        resultText = data;
     } else if (data && data.results === null) {
-        const risInfo = checkData.ris_number ? `RIS ${checkData.ris_number}` : 'specified RIS';
-        const envInfo = checkData.env ? `in environment ${checkData.env}` : '';
-        const segmentInfo = checkData.segment ? `for segment ${checkData.segment}` : '';
-        resultElement.textContent = `No results found for ${risInfo} ${envInfo} ${segmentInfo}.`;
+        const { ris_number, env, segment } = checkData;
+        const risInfo = ris_number ? `RIS ${ris_number}` : 'specified RIS';
+        const envInfo = env ? `in environment ${env}` : '';
+        const segmentInfo = segment ? `for segment ${segment}` : '';
+        resultText = `No results found for ${risInfo} ${envInfo} ${segmentInfo}.`;
     } else if (data && Array.isArray(data.results)) {
-        if (data.results.length === 0) {
-            resultElement.textContent = "No results found.";
-        } else {
-            resultElement.textContent = data.results.join('\n');
-        }
+        resultText = data.results.length ? data.results.join('\n') : "No results found.";
     } else {
-        resultElement.textContent = JSON.stringify(data, null, 2);
+        resultText = JSON.stringify(data, null, 2);
     }
+
+    resultElement.textContent = resultText;
     resultElement.style.whiteSpace = 'pre-wrap';
 }

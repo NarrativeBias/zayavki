@@ -1,45 +1,59 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up form submission
+    initializeFormSubmission();
+    initializeButtons();
+    initializeModal();
+});
+
+function initializeFormSubmission() {
     initializeFormSubmissionHandler();
+}
 
-    const pushDbButton = document.getElementById('pushDbButton');
-    const clearAllButton = document.getElementById('clearAllButton');
-    const checkButton = document.getElementById('checkButton');
+function initializeButtons() {
+    const buttons = {
+        'pushDbButton': handlePushToDbClick,
+        'clearAllButton': clearAllFields,
+        'checkButton': handleCheckButton
+    };
 
-    if (checkButton) {
-        checkButton.addEventListener('click', handleCheckButton);
-    } else {
-        console.error('Check button not found in the document');
-    }
+    Object.entries(buttons).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.addEventListener('click', handler);
+            if (id === 'clearAllButton') button.disabled = false;
+        } else {
+            console.error(`${id} not found in the document`);
+        }
+    });
+}
 
-    if (pushDbButton) {
-        pushDbButton.addEventListener('click', function() {
-            this.disabled = true;
-            document.getElementById('result').textContent = 'Pushing data to DB...';
-            handlePushToDb();
-        });
-    } else {
-        console.error('Push DB button not found in the document');
-    }
-
-    if (clearAllButton) {
-        clearAllButton.addEventListener('click', clearAllFields);
-        clearAllButton.disabled = false; // Enable the button
-    } else {
-        console.error('Clear All Button not found in the document');
-    }
-    // Modal initialization
+function initializeModal() {
     const modal = document.getElementById('clusterModal');
-    const closeButton = modal.querySelector('.close-button');
-
-    closeButton.onclick = function() {
-        modal.style.display = 'none';
+    if (!modal) {
+        console.error('Modal not found in the document');
+        return;
     }
 
-    // Close the modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
+    const closeButton = modal.querySelector('.close-button');
+    if (closeButton) {
+        closeButton.onclick = () => modal.style.display = 'none';
+    }
+
+    window.onclick = (event) => {
+        if (event.target === modal) {
             modal.style.display = 'none';
         }
-    }
-});
+    };
+
+    // Add keyboard support
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
+    });
+}
+
+function handlePushToDbClick() {
+    this.disabled = true;
+    document.getElementById('result').textContent = 'Pushing data to DB...';
+    handlePushToDb(); // This should be the function from form-handlers.js
+}
