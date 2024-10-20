@@ -2,82 +2,89 @@ body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    min-height: 100vh;
     background-color: #004d4d;
     background-image: url('/zayavki/static/images/background.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center center;
     background-size: cover;
-}
-@media (min-width: 2400px) { 
-    body {
-        background-size: cover;
-    }
-}
-@media (min-height: 1200px) { 
-    body {
-        background-size: cover;
-    }
-}
-
-@media (max-width: 1200px) {
-    .container {
-        flex-direction: column;
-        padding-right: 0;
-        min-height: auto;
-    }
-
-    .form-container,
-    .results-container {
-        width: 100%;
-        max-width: none;
-        margin-right: 0;
-        min-height: auto;
-    }
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .container {
     display: flex;
-    max-width: 1900px; 
-    margin: 0 auto;
+    width: 100%;
+    max-width: 1900px;
+    height: auto;
+    min-height: 600px;
+    max-height: calc(100vh - 40px);
+    margin: 0;
     gap: 20px;
-    padding-right: 20px; 
-    min-height: calc(100vh - 40px);
+    box-sizing: border-box;
 }
+
 .form-container {
-    flex: 0 0 280px;
+    flex: 0 0 300px;
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    max-height: calc(100vh - 40px);
 }
+
 .results-container {
     flex: 1;
-    width: calc(93.75% - 320px); /* Adjust width calculation */
-    min-width: 0; /* Allow container to shrink if needed */
-    background-color: rgba(0, 77, 77, 0.8); 
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(0, 77, 77, 0.8);
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    overflow: hidden; /* Ensure child overflow is respected */
-    margin-right: 1px;
-    min-height: calc(100vh - 40px);
+    overflow: hidden;
 }
+
+.results-container h2 {
+    color: #ffffff;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+
+
 h1, h2 {
     color: #333;
     margin-top: 0;
     font-size: 1.4em;
 }
-.results-container h2 {
+
+#result {
+    flex: 1;
+    white-space: pre-wrap;
+    background-color: rgba(0, 51, 51, 0.9);
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    font-family: monospace;
+    font-size: 14px;
     color: #ffffff;
+    overflow-y: auto;
+    min-height: 100px;
 }
+
 label {
     display: block;
     margin-bottom: 5px;
     color: #666;
     font-size: 0.9em;
 }
+
 input[type="text"], input[type="email"], select, textarea {
     width: 100%;
     padding: 5px;
@@ -87,50 +94,40 @@ input[type="text"], input[type="email"], select, textarea {
     box-sizing: border-box;
     font-size: 0.9em;
 }
+
 .button-container {
     display: flex;
     flex-direction: column;
-    gap: 25px;
-    margin-top: 30px; 
+    gap: 15px; /* Increased from 10px to add more space between buttons */
+    margin-top: 20px;
 }
+
 .submit-button, .clear-fields-button, .push-db-button, .check-button {
-    width: 100%; 
-    padding: 12px 15px;
+    width: 100%;
+    padding: 12px; /* Slightly increased from 10px */
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
     text-align: center;
     transition: background-color 0.3s, transform 0.1s, opacity 0.3s;
-    margin-bottom: 10px;
-}
-.submit-button {
-    background-color: #4CAF50;
-    color: white;
+    margin-bottom: 5px; /* Added to ensure spacing even without flexbox gap support */
 }
 
-.check-button {
-    background-color: #FFA500;
-    color: white;
-}
+.submit-button { background-color: #4CAF50; color: white; }
+.check-button { background-color: #FFA500; color: white; }
+.clear-fields-button { background-color: #008CBA; color: white; }
+.push-db-button { background-color: #f44336; color: white; }
 
-.check-button:hover {
+.submit-button:hover, .clear-fields-button:hover, .push-db-button:hover, .check-button:hover {
     opacity: 0.9;
     transform: translateY(-2px);
 }
 
-.check-button:active {
+.submit-button:active, .clear-fields-button:active, .push-db-button:active, .check-button:active {
     transform: translateY(1px);
 }
 
-.clear-fields-button {
-    background-color: #008CBA;
-    color: white;
-}
-.push-db-button {
-    background-color: #f44336;
-    color: white;
-}
 .push-db-button:disabled {
     background-color: #cccccc;
     color: #666666;
@@ -141,16 +138,7 @@ input[type="text"], input[type="email"], select, textarea {
 .push-db-button:disabled:hover {
     transform: none;
 }
-.form-container {
-    padding-bottom: 10px;
-}
-.submit-button:hover, .clear-fields-button:hover, .push-db-button:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-}
-.submit-button:active, .clear-fields-button:active, .push-db-button:active {
-    transform: translateY(1px);
-}
+
 .checkbox-group {
     display: flex;
     align-items: center;
@@ -165,21 +153,7 @@ input[type="text"], input[type="email"], select, textarea {
 .checkbox-group input[type="checkbox"] {
     margin: 0;
 }
-#result {
-    white-space: pre-wrap;
-    background-color: rgba(0, 51, 51, 0.9);
-    padding: 15px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 255, 255, 0.5);
-    font-family: monospace;
-    font-size: 14px;
-    color: #ffffff;
-    overflow-x: auto;
-    overflow-y: auto;
-    flex-grow: 1;
-    width: calc(100% - 2px); /* Subtract 2px to account for left and right borders */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-}
+
 #buckets, #users {
     width: 100%;
     min-height: 60px;
@@ -187,6 +161,7 @@ input[type="text"], input[type="email"], select, textarea {
     font-family: monospace;
     font-size: 14px;
 }
+
 .modal {
     display: none;
     position: fixed;
@@ -272,4 +247,44 @@ input[type="text"], input[type="email"], select, textarea {
     content: "";
     display: table;
     clear: both;
+}
+
+@media (max-width: 1200px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+    }
+
+    .form-container,
+    .results-container {
+        width: 100%;
+        max-width: none;
+    }
+
+    .form-container {
+        flex: none;
+        max-height: 50vh;
+    }
+
+    .results-container {
+        flex: none;
+        max-height: 50vh;
+    }
+}
+
+@media (min-width: 2400px) { 
+    body {
+        background-size: cover;
+    }
+}
+
+@media (min-height: 1200px) { 
+    body {
+        background-size: cover;
+    }
 }
