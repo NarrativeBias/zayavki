@@ -136,29 +136,38 @@ function clearAllFields() {
 
 async function handleCheckButton() {
     const form = document.getElementById('zayavkiForm');
-    const formData = new FormData(form);
-    const checkData = ['segment', 'env', 'ris_number', 'ris_name'].reduce((acc, key) => {
-        acc[key] = formData.get(key);
-        return acc;
-    }, {});
+    const trimmedFormData = trimFormData(form);
+    
+    const checkData = {
+        segment: trimmedFormData.get('segment'),
+        env: trimmedFormData.get('env'),
+        ris_number: trimmedFormData.get('ris_number'),
+        ris_name: trimmedFormData.get('ris_name')
+    };
 
     try {
         const response = await fetch('/zayavki/check', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(checkData),
         });
 
         if (response.ok) {
             const data = await response.json();
-            data.clusters
-                ? await handleClusterSelection(data.clusters, performCheckWithCluster, checkData)
-                : displayResult(data, checkData);
+            if (data.clusters) {
+                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
+            } else {
+                displayResult(data, checkData);
+            }
         } else {
-            throw new Error(await response.text());
+            const errorText = await response.text();
+            displayResult(`An error occurred: ${errorText}`);
         }
     } catch (error) {
-        handleError(error);
+        console.error('Error:', error);
+        displayResult(`An error occurred: ${error.message}`);
     }
 }
 
