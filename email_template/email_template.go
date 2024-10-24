@@ -24,6 +24,7 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 		"tenant":        getFirst(variables["tenant"], "N/A"),
 		"users":         variables["users"],
 		"bucketnames":   variables["bucketnames"],
+		"bucketquotas":  variables["bucketquotas"],
 		"tls_endpoint":  chosenCluster["tls_endpoint"],
 		"mtls_endpoint": chosenCluster["mtls_endpoint"],
 	}
@@ -44,7 +45,6 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 
 // Keep your existing emailTemplate const
 const emailTemplate = `
-{{.email}}
 Добрый день.
 
 Вы указаны получателем данных от УЗ созданных в рамках обращения {{.request_id_sd}} / {{.request_id_sr}}.
@@ -64,9 +64,9 @@ Endpoints для подключения:
 {{- end}}
 
 Бакеты созданы:
-{{- range .bucketnames}}
-{{- if .}}
-- {{.}}
+{{- range $index, $bucket := .bucketnames}}
+{{- if $bucket}}
+- {{$bucket}} ({{index $.bucketquotas $index}})
 {{- end}}
 {{- end}}
 
