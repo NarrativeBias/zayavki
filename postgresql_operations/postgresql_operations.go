@@ -128,7 +128,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 	defer stmt.Close()
 
 	// Get current date
-	done_date := time.Now().Format("02.01.2006") // Format: DD-MM-YYYY
+	done_date := time.Now().Format("2006-01-02 15:04:05")
 
 	var duplicates []string
 

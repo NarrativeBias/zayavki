@@ -35,7 +35,7 @@ func PopulateBuckets(variables map[string][]string, clusters map[string]string) 
 	var rows bytes.Buffer
 
 	// Get current date
-	current_date := time.Now().Format("02.01.2006") // Format: DD-MM-YYYY
+	current_date := time.Now().Format("2006-01-02 15:04:05")
 
 	// Create a row for each bucket
 	for i, bucket := range variables["bucketnames"] {
