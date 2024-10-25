@@ -82,7 +82,7 @@ func ValidateBuckets(variables map[string][]string) (bool, error) {
 	}
 
 	envCode := variables["env_code"][0]
-	risName := variables["ris_name"][0]
+	risName := strings.ReplaceAll(variables["ris_name"][0], "_", "-")
 	prefix := envCode + "-" + risName + "-"
 
 	pattern := regexp.MustCompile("^[a-zA-Z0-9-]+$")

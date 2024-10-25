@@ -248,11 +248,28 @@ func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[strin
 }
 
 func pushToDatabase(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
+	var result strings.Builder
+
+	// Get database push result
 	dbResult, err := postgresql_operations.PushToDB(processedVars, clusterMap)
 	if err != nil {
 		return "", fmt.Errorf("failed to push to database: %v", err)
 	}
-	return fmt.Sprintf("~~~~~~~Результат отправки данных в БД~~~~~~~\n%s", dbResult), nil
+
+	// Add database result to output
+	result.WriteString("~~~~~~~Результат отправки данных в БД~~~~~~~\n")
+	result.WriteString(dbResult)
+	result.WriteString("\n\n")
+
+	// Generate and add email template
+	emailTemplate, err := email_template.PopulateEmailTemplate(processedVars, clusterMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate email template: %v", err)
+	}
+	result.WriteString("~~~~~~~Шаблон для закрытия задания и письма с данными УЗ~~~~~~~\n")
+	result.WriteString(emailTemplate)
+
+	return result.String(), nil
 }
 
 func generateFullResult(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
@@ -290,14 +307,6 @@ func generateFullResult(processedVars map[string][]string, clusterMap map[string
 	result.WriteString("\n")
 	result.WriteString(rgw_commands.ResultCheck(processedVars, clusterMap))
 	result.WriteString("\n\n")
-
-	result.WriteString("~~~~~~~Шаблон для закрытия задания и письма с данными УЗ~~~~~~~\n")
-	email, err := email_template.PopulateEmailTemplate(processedVars, clusterMap)
-	if err != nil {
-		return "", fmt.Errorf("error generating email template: %v", err)
-	}
-	result.WriteString(email)
-	result.WriteString("\n")
 
 	return result.String(), nil
 }
