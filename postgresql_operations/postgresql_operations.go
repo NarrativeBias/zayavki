@@ -21,6 +21,54 @@ type DBConfig struct {
 	Table    string `json:"table"`
 }
 
+type CheckResult struct {
+	ClsName     string         `json:"cluster"`
+	NetSeg      string         `json:"segment"`
+	Env         string         `json:"environment"`
+	Realm       string         `json:"realm"`
+	Tenant      string         `json:"tenant"`
+	S3User      sql.NullString `json:"-"` // Using custom JSON marshaling
+	Bucket      sql.NullString `json:"-"` // Using custom JSON marshaling
+	Quota       sql.NullString `json:"-"` // Using custom JSON marshaling
+	SdNum       string         `json:"sd_num"`
+	SrNum       string         `json:"sr_num"`
+	DoneDate    string         `json:"done_date"`
+	RisCode     string         `json:"ris_code"`
+	RisId       string         `json:"ris_id"`
+	OwnerGroup  string         `json:"owner_group"`
+	OwnerPerson string         `json:"owner"`
+	Applicant   string         `json:"applicant"`
+	Email       sql.NullString `json:"-"` // Using custom JSON marshaling
+	CsppComment sql.NullString `json:"-"` // Using custom JSON marshaling
+}
+
+func (cr CheckResult) MarshalJSON() ([]byte, error) {
+	type Alias CheckResult // prevent recursive marshaling
+
+	return json.Marshal(&struct {
+		Alias
+		S3User      string `json:"user"`
+		Bucket      string `json:"bucket"`
+		Quota       string `json:"quota"`
+		Email       string `json:"email"`
+		CsppComment string `json:"cspp_comment"`
+	}{
+		Alias:       Alias(cr),
+		S3User:      getStringValue(cr.S3User),
+		Bucket:      getStringValue(cr.Bucket),
+		Quota:       getStringValue(cr.Quota),
+		Email:       getStringValue(cr.Email),
+		CsppComment: getStringValue(cr.CsppComment),
+	})
+}
+
+func getStringValue(ns sql.NullString) string {
+	if !ns.Valid {
+		return "-"
+	}
+	return ns.String
+}
+
 var (
 	db     *sql.DB
 	config DBConfig
@@ -74,33 +122,90 @@ func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, e
 	return exists, nil
 }
 
-func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName string) ([]string, error) {
+func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName string) ([]CheckResult, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection not initialized")
 	}
 
 	query := fmt.Sprintf(`
-		SELECT cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant
-		FROM %s.%s
-		WHERE net_seg = $1 AND env = $2 AND ris_id = $3 AND ris_code = $4 AND cls_name = $5
-	`, config.Schema, config.Table)
+        SELECT 
+            cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota,
+            sd_num, sr_num, done_date, ris_code, ris_id, owner_group,
+            owner_person, applicant, email, cspp_comment
+        FROM %s.%s
+        WHERE 1=1
+    `, config.Schema, config.Table)
 
-	rows, err := db.Query(query, segment, env, risNumber, risName, clusterName)
+	args := make([]interface{}, 0)
+	paramCount := 1
+
+	// Build dynamic query based on provided parameters
+	if segment != "" {
+		query += fmt.Sprintf(" AND net_seg = $%d", paramCount)
+		args = append(args, segment)
+		paramCount++
+	}
+	if env != "" {
+		query += fmt.Sprintf(" AND env = $%d", paramCount)
+		args = append(args, env)
+		paramCount++
+	}
+	if risNumber != "" {
+		query += fmt.Sprintf(" AND ris_id = $%d", paramCount)
+		args = append(args, risNumber)
+		paramCount++
+	}
+	if risName != "" {
+		query += fmt.Sprintf(" AND ris_code = $%d", paramCount)
+		args = append(args, risName)
+		paramCount++
+	}
+	if clusterName != "" {
+		query += fmt.Sprintf(" AND cls_name = $%d", paramCount)
+		args = append(args, clusterName)
+	}
+
+	// Add ordering for consistent results
+	query += " ORDER BY done_date DESC, cls_name, tenant"
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("error querying database: %v", err)
 	}
 	defer rows.Close()
 
-	var results []string
+	var results []CheckResult
 	for rows.Next() {
-		var cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant string
-		err := rows.Scan(&cls_name, &net_seg, &env, &realm, &tenant, &s3_user, &bucket, &quota, &sd_num, &sr_num, &done_date, &ris_code, &ris_id, &owner_group, &owner_person, &applicant)
+		var result CheckResult
+		err := rows.Scan(
+			&result.ClsName,
+			&result.NetSeg,
+			&result.Env,
+			&result.Realm,
+			&result.Tenant,
+			&result.S3User,
+			&result.Bucket,
+			&result.Quota,
+			&result.SdNum,
+			&result.SrNum,
+			&result.DoneDate,
+			&result.RisCode,
+			&result.RisId,
+			&result.OwnerGroup,
+			&result.OwnerPerson,
+			&result.Applicant,
+			&result.Email,
+			&result.CsppComment,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row: %v", err)
 		}
-		result := fmt.Sprintf("Cluster: %s, Segment: %s, Environment: %s, Realm: %s, Tenant: %s, User: %s, Bucket: %s, Quota: %s, SD: %s, SR: %s, Date: %s, RIS Code: %s, RIS ID: %s, Owner Group: %s, Owner: %s, Applicant: %s",
-			cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant)
+
 		results = append(results, result)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
 	}
 
 	return results, nil

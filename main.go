@@ -188,39 +188,26 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if checkData.Cluster == "" {
-		// If no cluster is provided, find matching clusters
-		clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", checkData.Segment, checkData.Env)
-		if err != nil {
-			jsonError(w, fmt.Sprintf("Error finding clusters: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		response := struct {
-			Clusters []cluster_endpoint_parser.ClusterInfo `json:"clusters"`
-		}{
-			Clusters: clusters,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	} else {
-		// If a cluster is provided, perform the database check
-		results, err := postgresql_operations.CheckDBForExistingEntries(checkData.Segment, checkData.Env, checkData.RisNumber, checkData.RisName, checkData.Cluster)
-		if err != nil {
-			jsonError(w, fmt.Sprintf("Error checking database: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		response := struct {
-			Results []string `json:"results"`
-		}{
-			Results: results,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+	results, err := postgresql_operations.CheckDBForExistingEntries(
+		checkData.Segment,
+		checkData.Env,
+		checkData.RisNumber,
+		checkData.RisName,
+		checkData.Cluster,
+	)
+	if err != nil {
+		jsonError(w, fmt.Sprintf("Error checking database: %v", err), http.StatusInternalServerError)
+		return
 	}
+
+	response := struct {
+		Results []postgresql_operations.CheckResult `json:"results"`
+	}{
+		Results: results,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[string]string) error {

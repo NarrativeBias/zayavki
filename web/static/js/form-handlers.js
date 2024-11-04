@@ -209,24 +209,30 @@ function disablePushToDbButton() {
     document.getElementById('pushDbButton').disabled = true;
 }
 
-function displayResult(data, checkData = {}) {
+function displayResult(data) {
     const resultElement = document.getElementById('result');
-    let resultText;
-
+    
     if (typeof data === 'string') {
-        resultText = data;
-    } else if (data && data.results === null) {
-        const { ris_number, env, segment } = checkData;
-        const risInfo = ris_number ? `RIS ${ris_number}` : 'specified RIS';
-        const envInfo = env ? `in environment ${env}` : '';
-        const segmentInfo = segment ? `for segment ${segment}` : '';
-        resultText = `No results found for ${risInfo} ${envInfo} ${segmentInfo}.`;
-    } else if (data && Array.isArray(data.results)) {
-        resultText = data.results.length ? data.results.join('\n') : "No results found.";
-    } else {
-        resultText = JSON.stringify(data, null, 2);
+        resultElement.textContent = data;
+        return;
     }
 
-    resultElement.textContent = resultText;
-    resultElement.style.whiteSpace = 'pre-wrap';
+    // Get or create root element for React
+    let rootElement = document.getElementById('react-results-root');
+    if (!rootElement) {
+        rootElement = document.createElement('div');
+        rootElement.id = 'react-results-root';
+        resultElement.appendChild(rootElement);
+    }
+
+    // Clear any existing content
+    resultElement.textContent = '';
+    resultElement.appendChild(rootElement);
+
+    // Render the React component
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(React.createElement(DatabaseCheckResults, { 
+        results: data.results,
+        loading: false 
+    }));
 }
