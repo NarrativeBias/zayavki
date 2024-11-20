@@ -142,7 +142,7 @@ async function handleCheckButton() {
         segment: trimmedFormData.get('segment'),
         env: trimmedFormData.get('env'),
         ris_number: trimmedFormData.get('ris_number'),
-        ris_name: trimmedFormData.get('ris_name')
+        ris_name: trimmedFormData.get('ris_name')?.toLowerCase()
     };
 
     try {
@@ -229,10 +229,12 @@ function displayResult(data) {
     resultElement.textContent = '';
     resultElement.appendChild(rootElement);
 
-    // Render the React component
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(React.createElement(DatabaseCheckResults, { 
-        results: data.results,
-        loading: false 
-    }));
+    // Use older React rendering method
+    ReactDOM.render(
+        React.createElement(DatabaseCheckResults, { 
+            results: data.results,
+            loading: false 
+        }),
+        rootElement
+    );
 }
