@@ -209,6 +209,49 @@ function disablePushToDbButton() {
     document.getElementById('pushDbButton').disabled = true;
 }
 
+function initializeEmailValidation() {
+    const ownerInput = document.getElementById('owner');
+    const debounceTimeout = 500; // ms
+    let timeoutId;
+    let validationDiv;
+
+    if (ownerInput) {
+        validationDiv = document.createElement('div');
+        validationDiv.classList.add('validation-message');
+        ownerInput.parentNode.insertBefore(validationDiv, ownerInput.nextSibling);
+
+        ownerInput.addEventListener('input', (e) => {
+            clearTimeout(timeoutId);
+            
+            timeoutId = setTimeout(() => {
+                const value = e.target.value.trim();
+                if (!value) {
+                    validationDiv.textContent = '';
+                    return;
+                }
+
+                const emails = value.split(';').map(email => email.trim()).filter(Boolean);
+                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                const invalidEmails = emails.filter(email => !emailPattern.test(email));
+
+                if (invalidEmails.length > 0) {
+                    validationDiv.textContent = `Некорректный формат записи: ${invalidEmails.join(', ')}. Используйте формат: email@vtb.ru`;
+                    validationDiv.classList.add('error');
+                } else {
+                    validationDiv.textContent = '';
+                    validationDiv.classList.remove('error');
+                }
+            }, debounceTimeout);
+        });
+    }
+}
+
+function showValidationMessage(container, message, type) {
+    container.textContent = message;
+    container.className = 'validation-message ' + type;
+}
+
+
 function displayResult(data) {
     const resultElement = document.getElementById('result');
     

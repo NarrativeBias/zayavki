@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormSubmission();
     initializeButtons();
     initializeModal();
+    initializeEmailValidation();
 });
 
 function initializeFormSubmission() {

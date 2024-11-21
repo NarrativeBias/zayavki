@@ -290,6 +290,16 @@ input[type="text"], input[type="email"], select, textarea {
     color: #6b7280;
 }
 
+.validation-message {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.validation-message.error {
+    color: #dc3545;
+}
+
 /* Add loading state styles */
 .loading-spinner {
     display: flex;
