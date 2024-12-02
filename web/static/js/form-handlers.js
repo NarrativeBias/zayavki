@@ -230,12 +230,19 @@ function initializeEmailValidation() {
                     return;
                 }
 
+                // First check for incorrect separators
+                if (value.includes(',')) {
+                    validationDiv.textContent = 'Используйте точку с запятой (;) для разделения email адресов';
+                    validationDiv.classList.add('error');
+                    return;
+                }
+
                 const emails = value.split(';').map(email => email.trim()).filter(Boolean);
                 const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                 const invalidEmails = emails.filter(email => !emailPattern.test(email));
 
                 if (invalidEmails.length > 0) {
-                    validationDiv.textContent = `Некорректный формат записи: ${invalidEmails.join(', ')}. Используйте формат: email@vtb.ru`;
+                    validationDiv.textContent = `Некорректный формат email: ${invalidEmails.join(', ')}. Используйте формат: email@vtb.ru`;
                     validationDiv.classList.add('error');
                 } else {
                     validationDiv.textContent = '';

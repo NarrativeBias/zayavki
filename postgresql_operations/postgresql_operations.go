@@ -243,8 +243,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		if username != "" {
 			exists, err := rowExists(tx, config.Schema, config.Table,
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
-				clusters["Реалм"], variables["tenant"][0], username, "-",
-				variables["request_id_sd"][0], variables["request_id_sr"][0])
+				clusters["Реалм"], variables["tenant"][0], username, "-")
 			if err != nil {
 				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
@@ -259,8 +258,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		if bucket != "" {
 			exists, err := rowExists(tx, config.Schema, config.Table,
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
-				clusters["Реалм"], variables["tenant"][0], "-", bucket,
-				variables["request_id_sd"][0], variables["request_id_sr"][0])
+				clusters["Реалм"], variables["tenant"][0], "-", bucket)
 			if err != nil {
 				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
