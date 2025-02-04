@@ -111,7 +111,7 @@ func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, e
 		SELECT EXISTS (
 			SELECT 1 FROM %s.%s 
 			WHERE cls_name = $1 AND net_seg = $2 AND env = $3 AND realm = $4 AND tenant = $5 
-			AND s3_user = $6 AND bucket = $7 AND sd_num = $8 AND sr_num = $9
+			AND s3_user = $6 AND bucket = $7
 		)`, schema, table)
 
 	var exists bool
@@ -243,8 +243,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		if username != "" {
 			exists, err := rowExists(tx, config.Schema, config.Table,
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
-				clusters["Реалм"], variables["tenant"][0], username, "-",
-				variables["request_id_sd"][0], variables["request_id_sr"][0])
+				clusters["Реалм"], variables["tenant"][0], username, "-")
 			if err != nil {
 				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
@@ -259,8 +258,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		if bucket != "" {
 			exists, err := rowExists(tx, config.Schema, config.Table,
 				clusters["Кластер"], variables["segment"][0], variables["env"][0],
-				clusters["Реалм"], variables["tenant"][0], "-", bucket,
-				variables["request_id_sd"][0], variables["request_id_sr"][0])
+				clusters["Реалм"], variables["tenant"][0], "-", bucket)
 			if err != nil {
 				return "", fmt.Errorf("error checking row existence: %v", err)
 			}
