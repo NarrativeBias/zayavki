@@ -6,19 +6,34 @@ import (
 )
 
 func BucketCreation(variables map[string][]string, clusters map[string]string) string {
-	// Iterate over the buckets to generate terminal commands for bucket creation
 	var rows bytes.Buffer
 	for i, bucket := range variables["bucketnames"] {
-		// Check if UID is empty
 		if bucket != "" {
-			bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --req %s", clusters["Реалм"], variables["tenant"][0], variables["bucketnames"][i], variables["bucketquotas"][i], variables["request_id_sr"][0])
-			rows.WriteString(bucketcreate)
-			// Add newline character only if it's not the last row
+			createTenant, ok := variables["create_tenant"]
+			if i == 0 && ok && len(createTenant) > 0 && createTenant[0] == "true" {
+				displayName := fmt.Sprintf("%s;%s;%s",
+					variables["resp_group"][0],
+					variables["owner"][0],
+					variables["request_id_sr"][0])
+				bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --display-name \"%s\"",
+					clusters["Реалм"],
+					variables["tenant"][0],
+					variables["bucketnames"][i],
+					variables["bucketquotas"][i],
+					displayName)
+				rows.WriteString(bucketcreate)
+			} else {
+				bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s",
+					clusters["Реалм"],
+					variables["tenant"][0],
+					variables["bucketnames"][i],
+					variables["bucketquotas"][i])
+				rows.WriteString(bucketcreate)
+			}
 			if i < len(variables["bucketnames"])-1 {
 				rows.WriteString(" &&\\\n")
 			}
 		}
-
 	}
 	return rows.String()
 }
