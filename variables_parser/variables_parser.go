@@ -70,6 +70,8 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		env_code = "if"
 	case "HOTFIX":
 		env_code = "hf"
+	case "LT":
+		env_code = "lt"
 	case "":
 		return nil, fmt.Errorf("environment is empty")
 	default:

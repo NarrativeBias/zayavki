@@ -11,6 +11,7 @@ function getEnvCode(env) {
         case 'PREPROD': return 'rr';
         case 'IFT': return 'if';
         case 'HOTFIX': return 'hf';
+        case 'LT': return 'lt';
         default: return '';
     }
 }
