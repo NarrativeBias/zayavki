@@ -16,7 +16,7 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 	}
 
 	variablesToProcess := []string{
-		"request_id_sd", "request_id_sr", "segment", "env", "ris_number", "ris_name",
+		"request_id_sd", "request_id_srt", "segment", "env", "ris_number", "ris_name",
 		"resp_group", "owner", "create_tenant", "tenant_override", "requester",
 		"email_for_credentials",
 	}
@@ -25,7 +25,7 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 		rawValue := getFirst(rawVariables[varName])
 		var processedValue string
 		switch varName {
-		case "request_id_sd", "request_id_sr", "segment", "env":
+		case "request_id_sd", "request_id_srt", "segment", "env":
 			processedValue = strings.ToUpper(rawValue)
 		case "ris_name", "create_tenant", "tenant_override":
 			processedValue = strings.ToLower(rawValue)

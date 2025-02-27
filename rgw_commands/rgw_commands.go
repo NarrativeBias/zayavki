@@ -14,7 +14,7 @@ func BucketCreation(variables map[string][]string, clusters map[string]string) s
 				displayName := fmt.Sprintf("%s;%s;%s",
 					variables["resp_group"][0],
 					variables["owner"][0],
-					variables["request_id_sr"][0])
+					variables["request_id_srt"][0])
 				bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %s --display-name \"%s\"",
 					clusters["Реалм"],
 					variables["tenant"][0],
@@ -48,7 +48,7 @@ func UserCreation(variables map[string][]string, clusters map[string]string) str
 		}
 		// Check if UID is empty
 		if user != "" {
-			usercreate := fmt.Sprintf("sudo radosgw-admin user create --rgw-realm %s --tenant %s --uid %s --display-name %s --max-buckets -1 | grep -A2 '\"user\"';", clusters["Реалм"], variables["tenant"][0], user, variables["request_id_sr"][0])
+			usercreate := fmt.Sprintf("sudo radosgw-admin user create --rgw-realm %s --tenant %s --uid %s --display-name %s --max-buckets -1 | grep -A2 '\"user\"';", clusters["Реалм"], variables["tenant"][0], user, variables["request_id_srt"][0])
 			rows.WriteString(usercreate)
 			// Add newline character only if it's not the last row
 			if i < len(variables["users"])-1 {

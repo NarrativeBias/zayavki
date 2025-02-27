@@ -16,17 +16,17 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 	}
 
 	data := map[string]interface{}{
-		"email":         getFirst(variables["email"], "N/A"),
-		"request_id_sd": getFirst(variables["request_id_sd"], "N/A"),
-		"request_id_sr": getFirst(variables["request_id_sr"], "N/A"),
-		"segment":       getFirst(variables["segment"], "N/A"),
-		"env":           getFirst(variables["env"], "N/A"),
-		"tenant":        getFirst(variables["tenant"], "N/A"),
-		"users":         variables["users"],
-		"bucketnames":   variables["bucketnames"],
-		"bucketquotas":  variables["bucketquotas"],
-		"tls_endpoint":  chosenCluster["tls_endpoint"],
-		"mtls_endpoint": chosenCluster["mtls_endpoint"],
+		"email":          getFirst(variables["email"], "N/A"),
+		"request_id_sd":  getFirst(variables["request_id_sd"], "N/A"),
+		"request_id_srt": getFirst(variables["request_id_srt"], "N/A"),
+		"segment":        getFirst(variables["segment"], "N/A"),
+		"env":            getFirst(variables["env"], "N/A"),
+		"tenant":         getFirst(variables["tenant"], "N/A"),
+		"users":          variables["users"],
+		"bucketnames":    variables["bucketnames"],
+		"bucketquotas":   variables["bucketquotas"],
+		"tls_endpoint":   chosenCluster["tls_endpoint"],
+		"mtls_endpoint":  chosenCluster["mtls_endpoint"],
 	}
 
 	tmpl, err := template.New("email_template").Parse(emailTemplate)
@@ -47,7 +47,7 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 const emailTemplate = `
 Добрый день.
 
-Вы указаны получателем данных от УЗ созданных в рамках обращения {{.request_id_sd}} / {{.request_id_sr}}.
+Вы указаны получателем данных от УЗ созданных в рамках обращения {{.request_id_sd}} / {{.request_id_srt}}.
 
 Сегмент: {{.segment}}
 Окружение: {{.env}}

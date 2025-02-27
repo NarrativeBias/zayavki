@@ -29,7 +29,7 @@ const DatabaseCheckResults = ({ results, loading, error }) => {
         { key: 'bucket', label: 'Bucket' },
         { key: 'quota', label: 'Quota' },
         { key: 'sd_num', label: 'SD' },
-        { key: 'sr_num', label: 'SR' },
+        { key: 'srt_num', label: 'SRT' },
         { key: 'done_date', label: 'Date' },
         { key: 'owner_group', label: 'Owner Group' },
         { key: 'owner', label: 'Owner' },
