@@ -1,7 +1,10 @@
 package variables_parser
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 )
 
@@ -80,4 +83,36 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 	processedVars["env_code"] = []string{env_code}
 
 	return processedVars, nil
+}
+
+type SRTData struct {
+	RequestID string `json:"request_id"`
+	Segment   string `json:"segment"`
+	Env       string `json:"env"`
+	RisNumber string `json:"ris_number"`
+	RisName   string `json:"ris_name"`
+	// Add other fields as needed
+}
+
+func LoadFromJSON(url string) (map[string]interface{}, error) {
+	// Make HTTP GET request
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch JSON: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	// Parse JSON into a generic map
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	return data, nil
 }

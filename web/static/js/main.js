@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeFormSubmission() {
     initializeFormSubmissionHandler();
+    initializeSRTAutoFill();
 }
 
 function initializeButtons() {

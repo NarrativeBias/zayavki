@@ -288,3 +288,44 @@ function displayResult(data) {
         rootElement
     );
 }
+
+function initializeSRTAutoFill() {
+    const srtInput = document.getElementById('request_id_srt');
+    if (!srtInput) return;
+
+    srtInput.addEventListener('blur', async function() {
+        const srtNumber = this.value.trim();
+        if (!srtNumber) return;
+
+        try {
+            const response = await fetch(`/zayavki/srt-data?srt=${encodeURIComponent(srtNumber)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            // Auto-fill form fields with SRT data
+            if (data) {
+                const fieldMappings = {
+                    'segment': 'segment',
+                    'env': 'env',
+                    'ris_number': 'ris_number',
+                    'ris_name': 'ris_name'
+                };
+
+                for (const [formField, jsonField] of Object.entries(fieldMappings)) {
+                    const input = document.getElementById(formField);
+                    if (input && data[jsonField]) {
+                        input.value = data[jsonField];
+                    }
+                }
+
+                // Display the raw JSON data in the result field
+                displayResult(JSON.stringify(data, null, 2));
+            }
+        } catch (error) {
+            console.error('Error fetching SRT data:', error);
+            displayResult(`Error fetching SRT data: ${error.message}`);
+        }
+    });
+}
