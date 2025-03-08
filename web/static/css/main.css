@@ -595,30 +595,44 @@ input[type="text"], input[type="email"], select, textarea {
 
 .search-controls {
     display: flex;
-    gap: 10px;
+    flex-direction: column;  /* Changed from row to column */
+    gap: 15px;  /* Increased from 10px to match button-container */
     margin-top: 20px;
-    justify-content: flex-start;
 }
 
 .search-button,
 .clear-search-button {
-    padding: 10px 20px;
+    width: 100%;
+    padding: 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9em;
-    transition: all 0.3s ease;
-    min-width: 120px;
+    font-size: 1em;
+    text-align: center;
+    transition: background-color 0.3s, transform 0.1s, opacity 0.3s;
+    margin-bottom: 5px;
 }
 
 .search-button {
-    background-color: #4CAF50;
+    background-color: #4CAF50;  /* Green color for search */
     color: white;
 }
 
 .clear-search-button {
-    background-color: #f44336;
+    background-color: #008CBA;  /* Changed from #f44336 (red) to #008CBA (blue) */
     color: white;
+}
+
+/* Add hover and active states to match other buttons */
+.search-button:hover,
+.clear-search-button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.search-button:active,
+.clear-search-button:active {
+    transform: translateY(1px);
 }
 
 /* Responsive adjustments */

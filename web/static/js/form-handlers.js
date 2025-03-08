@@ -313,8 +313,8 @@ function displayResult(data) {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     const headers = [
-        'Cluster', 'Tenant', 'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
-        'Owner', 'Group', 'Owner', 'Applicant'
+        'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
+        'Owner', 'Group', 'Applicant'
     ];
 
     headers.forEach(headerText => {
@@ -332,6 +332,9 @@ function displayResult(data) {
             const row = document.createElement('tr');
             [
                 item.cluster || '-',
+                item.segment || '-',
+                item.environment || '-',
+                item.realm || '-',
                 item.tenant || '-',
                 item.user || '-',
                 item.bucket || '-',
@@ -341,7 +344,6 @@ function displayResult(data) {
                 item.done_date || '-',
                 item.owner || '-',
                 item.owner_group || '-',
-                item.owner || '-',
                 item.applicant || '-'
             ].forEach(cellText => {
                 const td = document.createElement('td');

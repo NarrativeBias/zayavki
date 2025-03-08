@@ -117,10 +117,7 @@
                             <label for="tenant_override">Имя тенанта (override):</label>
                             <input type="text" id="tenant_override" name="tenant_override" autocomplete="off" data-custom-tabindex="11">
 
-                            <div class="checkbox-group">
-                                <label for="create_tenant">Создать тенант:</label>
-                                <input type="checkbox" id="create_tenant" name="create_tenant" value="true">
-                            </div>
+                            <input type="hidden" name="create_tenant" value="true">
 
                             <label for="buckets">Бакеты (один в строке + объем):</label>
                             <textarea id="buckets" name="buckets" rows="3" data-custom-tabindex="11"></textarea></textarea>
