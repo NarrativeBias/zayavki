@@ -1,4 +1,12 @@
+// Wait for DOM to be loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Get all modal elements
+    const modals = document.querySelectorAll('.modal');
+    if (!modals || modals.length === 0) {
+        console.log('No modals found on page');
+        return;
+    }
+
     const form = document.getElementById('zayavkiForm');
     const focusableElements = form.querySelectorAll('input, select, textarea, button:not([disabled])');
     const firstFocusableElement = focusableElements[0];

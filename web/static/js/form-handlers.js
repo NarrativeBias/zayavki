@@ -1,7 +1,7 @@
 let selectedCluster = null;
 
 function initializeFormSubmissionHandler() {
-    const form = document.getElementById('zayavkiForm');
+    const form = document.getElementById('mainForm');
     if (form) {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -9,33 +9,6 @@ function initializeFormSubmissionHandler() {
         });
     } else {
         console.error('Form not found in the document');
-    }
-
-    // Add search button handler
-    const searchButton = document.getElementById('searchButton');
-    if (searchButton) {
-        searchButton.addEventListener('click', handleCheckButton); // Reuse check functionality
-    }
-
-    // Add clear search button handler
-    const clearSearchButton = document.getElementById('clearSearchButton');
-    if (clearSearchButton) {
-        clearSearchButton.addEventListener('click', () => {
-            // Clear all search fields
-            const searchForm = document.getElementById('searchForm');
-            if (searchForm) {
-                const inputs = searchForm.querySelectorAll('input, select');
-                inputs.forEach(input => {
-                    if (input.type === 'select-one') {
-                        input.selectedIndex = 0;
-                    } else {
-                        input.value = '';
-                    }
-                });
-            }
-            // Clear result area
-            displayResult('');
-        });
     }
 }
 
@@ -168,7 +141,7 @@ function handleError(error) {
 }
 
 function clearAllFields() {
-    const form = document.getElementById('zayavkiForm');
+    const form = document.getElementById('mainForm');
     if (form) {
         form.querySelectorAll('input, textarea, select').forEach(input => {
             input.type === 'checkbox' || input.type === 'radio' ? input.checked = false : input.value = '';
@@ -181,79 +154,9 @@ function clearAllFields() {
     }
 }
 
-function handleCheckButton(e) {
-    e.preventDefault();
-    
-    const form = document.getElementById('searchForm');
-    if (!form) {
-        console.error('Form not found');
-        return;
-    }
-
-    const formData = new FormData(form);
-    const checkData = {
-        segment: formData.get('search_segment'),
-        env: formData.get('search_env'),
-        ris_number: formData.get('search_ris_number'),
-        ris_name: formData.get('search_ris_name')?.toLowerCase(),
-        tenant: formData.get('search_tenant'),
-        bucket: formData.get('search_bucket'),
-        user: formData.get('search_user')
-    };
-
-    // Remove empty parameters
-    Object.keys(checkData).forEach(key => {
-        if (!checkData[key]) {
-            delete checkData[key];
-        }
-    });
-
-    fetch('/zayavki/check', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(checkData)
-    })
-    .then(handleFetchResponse)
-    .then(data => {
-        if (data.clusters) {
-            handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
-        } else {
-            displayResult(data);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        displayResult(`Error: ${error.message}`);
-    });
-}
-
-async function performCheckWithCluster(cluster, checkData) {
-    try {
-        const requestBody = { ...checkData, cluster: cluster.Кластер };
-        const response = await fetch('/zayavki/check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            displayResult(data, requestBody);
-        } else {
-            throw new Error(await response.text());
-        }
-    } catch (error) {
-        handleError(error);
-    } finally {
-        selectedCluster = null;
-    }
-}
-
 function handlePushToDb() {
     disablePushToDbButton();
-    const form = document.getElementById('zayavkiForm');
+    const form = document.getElementById('mainForm');
     selectedCluster
         ? submitFormWithCluster(selectedCluster, { formData: new FormData(form), pushToDb: true })
         : submitForm(form, true);
@@ -487,3 +390,78 @@ function initializeFormSubmission() {
     initializeFormSubmissionHandler();
     initializeJsonParser();
 }
+
+window.displayResults = function(results) {
+    const resultDiv = document.getElementById('result');
+    
+    // Create table container
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'table-container';
+    
+    // Create table
+    const table = document.createElement('table');
+    table.className = 'data-table';
+    
+    // Create table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const headers = [
+        'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 
+        'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
+        'RIS Code', 'RIS ID', 'Owner Group', 'Owner', 'Applicant'
+    ];
+
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table body
+    const tbody = document.createElement('tbody');
+    if (results && results.length > 0) {
+        results.forEach(result => {
+            const row = document.createElement('tr');
+            [
+                result.cluster,
+                result.segment,
+                result.environment,
+                result.realm,
+                result.tenant,
+                result.user,
+                result.bucket,
+                result.quota,
+                result.sd_num,
+                result.srt_num,
+                result.done_date,
+                result.ris_code,
+                result.ris_id,
+                result.owner_group,
+                result.owner,
+                result.applicant
+            ].forEach(text => {
+                const td = document.createElement('td');
+                td.textContent = text || '-';
+                row.appendChild(td);
+            });
+            tbody.appendChild(row);
+        });
+    } else {
+        const row = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = headers.length;
+        td.textContent = 'No results found';
+        td.className = 'empty-message';
+        row.appendChild(td);
+        tbody.appendChild(row);
+    }
+
+    table.appendChild(tbody);
+    tableContainer.appendChild(table);
+    
+    // Clear previous results and add new table
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(tableContainer);
+};
