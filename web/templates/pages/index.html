@@ -5,10 +5,10 @@
         <div class="tabs-container">
             <div class="tabs">
                 <button class="tab-button active" data-tab="search">Поиск</button>
-                <button class="tab-button" data-tab="new-tenant">Новый тенант</button>
-                <button class="tab-button" data-tab="tenant-mod">Изменение тенанта</button>
-                <button class="tab-button" data-tab="user-mod">Изменение пользователя</button>
-                <button class="tab-button" data-tab="bucket-mod">Изменение бакета</button>
+                <button class="tab-button" data-tab="new-tenant">Создание нового тенанта</button>
+                <button class="tab-button" data-tab="tenant-mod">Создание пользователя/бакета в существующем тенанте</button>
+                <button class="tab-button" data-tab="user-bucket-del">Удаление пользователя/бакета в существующем тенанте</button>
+                <button class="tab-button" data-tab="bucket-mod">Изменение квотыбакета</button>
             </div>
         </div>
 
@@ -132,7 +132,7 @@
                         <p>Функционал в разработке</p>
                     </div>
 
-                    <div id="user-mod" class="tab-pane">
+                    <div id="user-bucket-del" class="tab-pane">
                         <p>Функционал в разработке</p>
                     </div>
 
@@ -182,12 +182,12 @@
             </div>
             <div class="modal-body">
                 <div class="json-input-group">
-                    <label for="srt_json">JSON из SRT:</label>
-                    <textarea id="srt_json" rows="5" placeholder="Вставьте JSON из SRT..."></textarea>
+                    <label for="srt_json">JSON SRT:</label>
+                    <textarea id="srt_json" name="srt_json" rows="5" placeholder="Вставьте JSON SRT..." spellcheck="false"></textarea>
                 </div>
                 <div class="json-input-group">
-                    <label for="params_json">JSON с параметрами:</label>
-                    <textarea id="params_json" rows="5" placeholder="Вставьте JSON с параметрами..."></textarea>
+                    <label for="params_json">JSON с параметрами SRT:</label>
+                    <textarea id="params_json" name="params_json" rows="5" placeholder="Вставьте JSON с параметрами SRT..." spellcheck="false"></textarea>
                 </div>
             </div>
             <div class="modal-footer">

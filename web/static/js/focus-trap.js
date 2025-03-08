@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const lastFocusableElement = focusableElements[focusableElements.length - 1];
 
     function trapFocus(e) {
+        // Check if any modal is open
+        const modalOpen = document.querySelector('.modal[style*="display: block"]');
+        if (modalOpen) {
+            return; // Don't trap focus if a modal is open
+        }
+
         if (e.key === 'Tab') {
             if (e.shiftKey) {
                 if (document.activeElement === firstFocusableElement) {
@@ -25,9 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set initial focus
     firstFocusableElement.focus();
 
-    // Prevent focus from leaving the form
+    // Prevent focus from leaving the form, but not when modal is open
     document.addEventListener('focus', function(event) {
-        if (!form.contains(event.target)) {
+        const modalOpen = document.querySelector('.modal[style*="display: block"]');
+        if (!modalOpen && !form.contains(event.target)) {
             event.preventDefault();
             firstFocusableElement.focus();
         }
