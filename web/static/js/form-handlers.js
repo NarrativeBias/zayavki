@@ -58,8 +58,22 @@ async function handleFetchResponse(response) {
         const text = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
     }
-    // Parse response as JSON instead of text
-    return response.json();
+    
+    const text = await response.text();
+    console.log('Raw response:', text);
+
+    // Check if it's a cluster selection response
+    if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+        return text; // Return the raw text for cluster selection
+    }
+    
+    try {
+        // Try to parse as JSON
+        return JSON.parse(text);
+    } catch (e) {
+        // If it's not JSON, return the text as is
+        return text;
+    }
 }
 
 function processFormData(formData) {
@@ -105,8 +119,13 @@ async function submitForm(form, pushToDb = false) {
         const response = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData });
         const data = await handleFetchResponse(response);
 
-        if (data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            const clusters = JSON.parse(data.slice('CLUSTER_SELECTION_REQUIRED:'.length));
+        // Add debug logging
+        console.log('Response data:', data);
+
+        if (typeof data === 'string' && data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clusterData = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
+            console.log('Cluster data:', clusterData);
+            const clusters = JSON.parse(clusterData);
             await handleClusterSelection(clusters, submitFormWithCluster, { formData: trimmedFormData, pushToDb });
         } else {
             displayResult(data);
@@ -371,77 +390,97 @@ function displayResult(data) {
 }
 
 function initializeJsonParser() {
-    const parseButton = document.getElementById('parseJsonButton');
-    if (!parseButton) {
-        console.error('Parse JSON button not found');
+    console.log('Initializing JSON parser...');
+    const importButton = document.getElementById('importJsonButton');
+    const modal = document.getElementById('jsonImportModal');
+    
+    if (!importButton) {
+        console.error('Import JSON button not found');
+        return;
+    }
+    if (!modal) {
+        console.error('JSON import modal not found');
         return;
     }
 
-    parseButton.addEventListener('click', function() {
-        const jsonInput = document.getElementById('json_input');
-        if (!jsonInput) {
-            console.error('JSON input field not found');
-            return;
-        }
+    console.log('Found import button and modal');
+    
+    const closeButton = modal.querySelector('.close-button');
+    const confirmButton = document.getElementById('confirmJsonImport');
 
-        const jsonText = jsonInput.value.trim();
-        if (!jsonText) {
-            displayResult('Пожалуйста, введите JSON для парсинга');
-            return;
+    importButton.addEventListener('click', () => {
+        console.log('Import button clicked');
+        modal.style.display = 'block';
+    });
+
+    closeButton.addEventListener('click', () => {
+        console.log('Close button clicked');
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            console.log('Clicked outside modal');
+            modal.style.display = 'none';
         }
+    });
+
+    confirmButton.addEventListener('click', () => {
+        console.log('Confirm button clicked');
+        const srtJson = document.getElementById('srt_json').value.trim();
+        const paramsJson = document.getElementById('params_json').value.trim();
 
         try {
-            const data = JSON.parse(jsonText);
+            if (srtJson) {
+                const srtData = JSON.parse(srtJson);
+                parseSrtJson(srtData);
+            }
             
-            // Extract values from customFieldsValues
-            const customFields = {};
-            if (data.customFieldsValues && Array.isArray(data.customFieldsValues)) {
-                data.customFieldsValues.forEach(field => {
-                    customFields[field.code] = field.value;
-                });
+            if (paramsJson) {
+                const paramsData = JSON.parse(paramsJson);
+                parseParamsJson(paramsData);
             }
 
-            // Map the fields to form inputs
-            const formMappings = {
-                'request_id_srt': data.number,
-                'request_id_sd': customFields.appealNumber,
-                'requester': customFields.applicant
-            };
-
-            // Fill form fields
-            for (const [formField, value] of Object.entries(formMappings)) {
-                const input = document.getElementById(formField);
-                if (input && value) {
-                    input.value = value;
-                    if (input.tagName === 'SELECT') {
-                        input.dispatchEvent(new Event('change'));
-                    }
-                }
-            }
-
-            // Prepare result summary
-            const resultSummary = {
-                "Номер задания": data.number || 'Не указан',
-                "Название задания": data.name || 'Не указано',
-                "Описание": data.description || 'Не указано',
-                "Номер обращения": customFields.appealNumber || 'Не указан',
-                "Заявитель": customFields.applicant || 'Не указан'
-            };
-
-            // Format the result summary as a string
-            let formattedResult = "=== Данные из JSON ===\n\n";
-            for (const [key, value] of Object.entries(resultSummary)) {
-                formattedResult += `${key}: ${value}\n`;
-            }
-
-            // Display the formatted result
-            displayResult(formattedResult);
-
+            modal.style.display = 'none';
+            displayResult('JSON данные успешно импортированы');
         } catch (error) {
             console.error('Error parsing JSON:', error);
             displayResult(`Ошибка парсинга JSON: ${error.message}`);
         }
     });
+}
+
+function parseSrtJson(data) {
+    const customFields = {};
+    if (data.customFieldsValues && Array.isArray(data.customFieldsValues)) {
+        data.customFieldsValues.forEach(field => {
+            customFields[field.code] = field.value;
+        });
+    }
+
+    // Map SRT JSON fields
+    setFieldValue('request_id_srt', data.number);
+    setFieldValue('request_id_sd', customFields.appealNumber);
+    setFieldValue('requester', customFields.applicant);
+}
+
+function parseParamsJson(data) {
+    // Map parameter JSON fields - add the mappings as needed
+    setFieldValue('segment', data.segment);
+    setFieldValue('env', data.environment);
+    setFieldValue('ris_number', data.risNumber);
+    setFieldValue('ris_name', data.risName);
+    // Add more field mappings as needed
+}
+
+function setFieldValue(fieldId, value) {
+    const input = document.getElementById(fieldId);
+    if (input && value) {
+        input.value = value;
+        if (input.tagName === 'SELECT') {
+            input.dispatchEvent(new Event('change'));
+        }
+    }
 }
 
 function initializeFormSubmission() {

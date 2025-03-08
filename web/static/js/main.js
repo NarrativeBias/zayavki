@@ -1,14 +1,16 @@
+// Initialize all functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing...');
     initializeFormSubmission();
     initializeButtons();
     initializeModal();
     initializeEmailValidation();
     initializeTabs();
+    initializeJsonImport();
 });
 
 function initializeFormSubmission() {
     initializeFormSubmissionHandler();
-    initializeJsonParser();
 }
 
 function initializeButtons() {

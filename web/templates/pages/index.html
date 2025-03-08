@@ -72,11 +72,7 @@
                     <!-- New Tenant Tab -->
                     <div id="new-tenant" class="tab-pane">
                         <form id="zayavkiForm">
-                            <div class="json-section">
-                                <label for="json_input">JSON для парсинга:</label>
-                                <textarea id="json_input" name="json_input" rows="5"></textarea>
-                                <button type="button" id="parseJsonButton" class="parse-json-button">Разобрать JSON</button>
-                            </div>
+                            <button type="button" id="importJsonButton" class="import-json-button">Импорт данных из JSON</button>
 
                             <label for="request_id_srt">Номер задания SRT:</label>
                             <input type="text" id="request_id_srt" name="request_id_srt" pattern="SRT-.*" autocomplete="off" data-custom-tabindex="2" required>
@@ -153,21 +149,50 @@
         </div>
     </div>
 
-    <!-- Keep modal at the end -->
+    <!-- Modals -->
     <div id="clusterModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Выберите кластер</h2>
-            <select id="cluster-select">
-            </select>
-            <div id="cluster-details">
-              <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
-              <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
-              <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
-              <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
-              <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
-              <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
+            <div class="modal-header">
+                <h2>Выберите кластер</h2>
+                <span class="close-button">&times;</span>
             </div>
-            <button id="confirm-cluster">Подтвердить</button>
-          </div>
+            <div class="modal-body">
+                <select id="cluster-select">
+                </select>
+                <div id="cluster-details">
+                    <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
+                    <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
+                    <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
+                    <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
+                    <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
+                    <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-cluster" class="confirm-button">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="jsonImportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Импорт данных из JSON</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="json-input-group">
+                    <label for="srt_json">JSON из SRT:</label>
+                    <textarea id="srt_json" rows="5" placeholder="Вставьте JSON из SRT..."></textarea>
+                </div>
+                <div class="json-input-group">
+                    <label for="params_json">JSON с параметрами:</label>
+                    <textarea id="params_json" rows="5" placeholder="Вставьте JSON с параметрами..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmJsonImport" class="confirm-button">Подтвердить</button>
+            </div>
+        </div>
+    </div>
 {{end}}
