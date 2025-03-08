@@ -8,7 +8,7 @@
                 <button class="tab-button" data-tab="new-tenant">Создание нового тенанта</button>
                 <button class="tab-button" data-tab="tenant-mod">Создание пользователя/бакета в существующем тенанте</button>
                 <button class="tab-button" data-tab="user-bucket-del">Удаление пользователя/бакета в существующем тенанте</button>
-                <button class="tab-button" data-tab="bucket-mod">Изменение квотыбакета</button>
+                <button class="tab-button" data-tab="bucket-mod">Изменение квоты бакета</button>
             </div>
         </div>
 
@@ -183,10 +183,12 @@
             <div class="modal-body">
                 <div class="json-input-group">
                     <label for="srt_json">JSON SRT:</label>
+                    <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER</div>
                     <textarea id="srt_json" name="srt_json" rows="5" placeholder="Вставьте JSON SRT..." spellcheck="false"></textarea>
                 </div>
                 <div class="json-input-group">
                     <label for="params_json">JSON с параметрами SRT:</label>
+                    <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER/parameters</div>
                     <textarea id="params_json" name="params_json" rows="5" placeholder="Вставьте JSON с параметрами SRT..." spellcheck="false"></textarea>
                 </div>
             </div>

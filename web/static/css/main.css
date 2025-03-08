@@ -742,3 +742,10 @@ input[type="text"], input[type="email"], select, textarea {
 .confirm-button:hover {
     background-color: #45a049;
 }
+
+.json-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 5px;
+    font-style: italic;
+}

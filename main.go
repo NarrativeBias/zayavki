@@ -85,7 +85,8 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cluster, err := cluster_endpoint_parser.GetCluster("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
+	var cluster cluster_endpoint_parser.ClusterInfo
+	cluster, err = cluster_endpoint_parser.GetCluster("clusters.xlsx", processedVars["segment"][0], processedVars["env"][0])
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "no matching clusters found") {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -102,7 +103,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Process data with the single cluster found
+	// Process data with the cluster
 	result, err := processDataWithCluster(processedVars, cluster, pushToDb)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
@@ -112,6 +113,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte(result))
 }
+
 func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
@@ -153,8 +155,52 @@ func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(result))
 }
 
+func checkTenantExists(processedVars map[string][]string, clusterMap map[string]string) error {
+	if createTenant, ok := processedVars["create_tenant"]; !ok || len(createTenant) == 0 || createTenant[0] != "true" {
+		return nil // Not creating a tenant, skip check
+	}
+
+	// Determine tenant name (override or generated)
+	var tenantName string
+	if len(processedVars["tenant_override"]) > 0 && processedVars["tenant_override"][0] != "" {
+		tenantName = processedVars["tenant_override"][0]
+	} else {
+		var err error
+		tenantName, err = tenant_name_generation.GenerateTenantName(processedVars, clusterMap)
+		if err != nil {
+			return fmt.Errorf("error generating tenant name: %v", err)
+		}
+	}
+
+	// Check if tenant already exists
+	results, err := postgresql_operations.CheckDBForExistingEntries(
+		processedVars["segment"][0],
+		processedVars["env"][0],
+		"", // ris_number
+		"", // ris_name
+		tenantName,
+		"",         // bucket
+		tenantName, // user
+		"",         // cluster
+	)
+	if err != nil {
+		return fmt.Errorf("error checking database: %v", err)
+	}
+
+	if len(results) > 0 {
+		return fmt.Errorf("tenant '%s' already exists in the database", tenantName)
+	}
+
+	return nil
+}
+
 func processDataWithCluster(processedVars map[string][]string, chosenCluster cluster_endpoint_parser.ClusterInfo, pushToDb bool) (string, error) {
 	clusterMap := chosenCluster.ConvertToMap()
+
+	// Check for existing tenant first
+	if err := checkTenantExists(processedVars, clusterMap); err != nil {
+		return "", err
+	}
 
 	// Set up tenant and users
 	if err := setupTenantAndUsers(processedVars, clusterMap); err != nil {

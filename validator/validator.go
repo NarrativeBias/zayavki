@@ -48,22 +48,6 @@ func ValidateUsers(variables map[string][]string) (bool, error) {
 	return true, nil
 }
 
-func ValidateOwnerEmail(variables map[string][]string) (bool, error) {
-	emails, ok := variables["email"]
-	if !ok || len(emails) == 0 {
-		return false, fmt.Errorf("no email provided")
-	}
-
-	var errors []string
-	for _, email := range emails {
-		if !strings.Contains(email, "@") {
-			errors = append(errors, fmt.Sprintf("Owner should be listed as email, %s is missing @ symbol", email))
-		}
-	}
-
-	return len(errors) == 0, joinErrors(errors)
-}
-
 func ValidateBuckets(variables map[string][]string) (bool, error) {
 	bucketNames, okNames := variables["bucketnames"]
 	bucketQuotas, okQuotas := variables["bucketquotas"]
