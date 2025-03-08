@@ -31,7 +31,7 @@ type CheckResult struct {
 	Bucket      sql.NullString `json:"-"` // Using custom JSON marshaling
 	Quota       sql.NullString `json:"-"` // Using custom JSON marshaling
 	SdNum       string         `json:"sd_num"`
-	SrNum       string         `json:"sr_num"`
+	SrtNum      string         `json:"srt_num"`
 	DoneDate    string         `json:"done_date"`
 	RisCode     string         `json:"ris_code"`
 	RisId       string         `json:"ris_id"`
@@ -122,7 +122,7 @@ func rowExists(tx *sql.Tx, schema, table string, params ...interface{}) (bool, e
 	return exists, nil
 }
 
-func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName string) ([]CheckResult, error) {
+func CheckDBForExistingEntries(segment, env, risNumber, risName, tenant, bucket, user, clusterName string) ([]CheckResult, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection not initialized")
 	}
@@ -130,7 +130,7 @@ func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName str
 	query := fmt.Sprintf(`
         SELECT 
             cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota,
-            sd_num, sr_num, done_date, ris_code, ris_id, owner_group,
+            sd_num, srt_num, done_date, ris_code, ris_id, owner_group,
             owner_person, applicant, email, cspp_comment
         FROM %s.%s
         WHERE 1=1
@@ -160,6 +160,21 @@ func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName str
 		args = append(args, risName)
 		paramCount++
 	}
+	if tenant != "" {
+		query += fmt.Sprintf(" AND tenant = $%d", paramCount)
+		args = append(args, tenant)
+		paramCount++
+	}
+	if bucket != "" {
+		query += fmt.Sprintf(" AND bucket = $%d", paramCount)
+		args = append(args, bucket)
+		paramCount++
+	}
+	if user != "" {
+		query += fmt.Sprintf(" AND s3_user = $%d", paramCount)
+		args = append(args, user)
+		paramCount++
+	}
 	if clusterName != "" {
 		query += fmt.Sprintf(" AND cls_name = $%d", paramCount)
 		args = append(args, clusterName)
@@ -187,7 +202,7 @@ func CheckDBForExistingEntries(segment, env, risNumber, risName, clusterName str
 			&result.Bucket,
 			&result.Quota,
 			&result.SdNum,
-			&result.SrNum,
+			&result.SrtNum,
 			&result.DoneDate,
 			&result.RisCode,
 			&result.RisId,
@@ -225,7 +240,7 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 
 	// Prepare the SQL insert statement
 	stmt, err := tx.Prepare(fmt.Sprintf(`INSERT INTO %s.%s
-        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, sr_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
+        (cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota, sd_num, srt_num, done_date, ris_code, ris_id, owner_group, owner_person, applicant, email, cspp_comment) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`, config.Schema, config.Table))
 	if err != nil {
 		return "", fmt.Errorf("failed to prepare SQL statement: %v", err)

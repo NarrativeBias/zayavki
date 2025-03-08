@@ -15,7 +15,7 @@ function showClusterSelectionModal(clusters, callback) {
     clusters.forEach((cluster, index) => {
         const option = document.createElement('option');
         option.value = index;
-        option.textContent = `${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ}`;
+        option.textContent = `${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ} - ${cluster.Кластер}`;
         option.dataset.cluster = JSON.stringify(cluster);
         select.appendChild(option);
     });

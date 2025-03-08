@@ -10,6 +10,33 @@ function initializeFormSubmissionHandler() {
     } else {
         console.error('Form not found in the document');
     }
+
+    // Add search button handler
+    const searchButton = document.getElementById('searchButton');
+    if (searchButton) {
+        searchButton.addEventListener('click', handleCheckButton); // Reuse check functionality
+    }
+
+    // Add clear search button handler
+    const clearSearchButton = document.getElementById('clearSearchButton');
+    if (clearSearchButton) {
+        clearSearchButton.addEventListener('click', () => {
+            // Clear all search fields
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
+                const inputs = searchForm.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.type === 'select-one') {
+                        input.selectedIndex = 0;
+                    } else {
+                        input.value = '';
+                    }
+                });
+            }
+            // Clear result area
+            displayResult('');
+        });
+    }
 }
 
 function trimFormData(formOrData) {
@@ -31,7 +58,8 @@ async function handleFetchResponse(response) {
         const text = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
     }
-    return response.text();
+    // Parse response as JSON instead of text
+    return response.json();
 }
 
 function processFormData(formData) {
@@ -134,41 +162,52 @@ function clearAllFields() {
     }
 }
 
-async function handleCheckButton() {
-    const form = document.getElementById('zayavkiForm');
-    const trimmedFormData = trimFormData(form);
+function handleCheckButton(e) {
+    e.preventDefault();
     
+    const form = document.getElementById('searchForm');
+    if (!form) {
+        console.error('Form not found');
+        return;
+    }
+
+    const formData = new FormData(form);
     const checkData = {
-        segment: trimmedFormData.get('segment'),
-        env: trimmedFormData.get('env'),
-        ris_number: trimmedFormData.get('ris_number'),
-        ris_name: trimmedFormData.get('ris_name')?.toLowerCase()
+        segment: formData.get('search_segment'),
+        env: formData.get('search_env'),
+        ris_number: formData.get('search_ris_number'),
+        ris_name: formData.get('search_ris_name')?.toLowerCase(),
+        tenant: formData.get('search_tenant'),
+        bucket: formData.get('search_bucket'),
+        user: formData.get('search_user')
     };
 
-    try {
-        const response = await fetch('/zayavki/check', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(checkData),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.clusters) {
-                await handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
-            } else {
-                displayResult(data, checkData);
-            }
-        } else {
-            const errorText = await response.text();
-            displayResult(`An error occurred: ${errorText}`);
+    // Remove empty parameters
+    Object.keys(checkData).forEach(key => {
+        if (!checkData[key]) {
+            delete checkData[key];
         }
-    } catch (error) {
+    });
+
+    fetch('/zayavki/check', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(checkData)
+    })
+    .then(handleFetchResponse)
+    .then(data => {
+        if (data.clusters) {
+            handleClusterSelection(data.clusters, performCheckWithCluster, checkData);
+        } else {
+            displayResult(data);
+        }
+    })
+    .catch(error => {
         console.error('Error:', error);
-        displayResult(`An error occurred: ${error.message}`);
-    }
+        displayResult(`Error: ${error.message}`);
+    });
 }
 
 async function performCheckWithCluster(cluster, checkData) {
@@ -258,7 +297,6 @@ function showValidationMessage(container, message, type) {
     container.className = 'validation-message ' + type;
 }
 
-
 function displayResult(data) {
     const resultElement = document.getElementById('result');
     
@@ -267,65 +305,144 @@ function displayResult(data) {
         return;
     }
 
-    // Get or create root element for React
-    let rootElement = document.getElementById('react-results-root');
-    if (!rootElement) {
-        rootElement = document.createElement('div');
-        rootElement.id = 'react-results-root';
-        resultElement.appendChild(rootElement);
+    // Create table for results
+    const table = document.createElement('table');
+    table.className = 'data-table';
+
+    // Create table header with only needed fields
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const headers = [
+        'Cluster', 'Tenant', 'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
+        'Owner', 'Group', 'Owner', 'Applicant'
+    ];
+
+    headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table body
+    const tbody = document.createElement('tbody');
+    if (data.results && data.results.length > 0) {
+        data.results.forEach(item => {
+            const row = document.createElement('tr');
+            [
+                item.cluster || '-',
+                item.tenant || '-',
+                item.user || '-',
+                item.bucket || '-',
+                item.quota || '-',
+                item.sd_num || '-',
+                item.srt_num || '-',
+                item.done_date || '-',
+                item.owner || '-',
+                item.owner_group || '-',
+                item.owner || '-',
+                item.applicant || '-'
+            ].forEach(cellText => {
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                row.appendChild(td);
+            });
+            tbody.appendChild(row);
+        });
+    } else {
+        // If no results, show a message
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = headers.length;
+        emptyCell.textContent = 'Нет данных';
+        emptyCell.className = 'empty-message';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
     }
 
-    // Clear any existing content
-    resultElement.textContent = '';
-    resultElement.appendChild(rootElement);
+    table.appendChild(tbody);
 
-    // Use older React rendering method
-    ReactDOM.render(
-        React.createElement(DatabaseCheckResults, { 
-            results: data.results,
-            loading: false 
-        }),
-        rootElement
-    );
+    // Clear previous results and add new table
+    resultElement.innerHTML = '';
+    resultElement.appendChild(table);
 }
 
-function initializeSRTAutoFill() {
-    const srtInput = document.getElementById('request_id_srt');
-    if (!srtInput) return;
+function initializeJsonParser() {
+    const parseButton = document.getElementById('parseJsonButton');
+    if (!parseButton) {
+        console.error('Parse JSON button not found');
+        return;
+    }
 
-    srtInput.addEventListener('blur', async function() {
-        const srtNumber = this.value.trim();
-        if (!srtNumber) return;
+    parseButton.addEventListener('click', function() {
+        const jsonInput = document.getElementById('json_input');
+        if (!jsonInput) {
+            console.error('JSON input field not found');
+            return;
+        }
+
+        const jsonText = jsonInput.value.trim();
+        if (!jsonText) {
+            displayResult('Пожалуйста, введите JSON для парсинга');
+            return;
+        }
 
         try {
-            const response = await fetch(`/zayavki/srt-data?srt=${encodeURIComponent(srtNumber)}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
+            const data = JSON.parse(jsonText);
             
-            // Auto-fill form fields with SRT data
-            if (data) {
-                const fieldMappings = {
-                    'segment': 'segment',
-                    'env': 'env',
-                    'ris_number': 'ris_number',
-                    'ris_name': 'ris_name'
-                };
+            // Extract values from customFieldsValues
+            const customFields = {};
+            if (data.customFieldsValues && Array.isArray(data.customFieldsValues)) {
+                data.customFieldsValues.forEach(field => {
+                    customFields[field.code] = field.value;
+                });
+            }
 
-                for (const [formField, jsonField] of Object.entries(fieldMappings)) {
-                    const input = document.getElementById(formField);
-                    if (input && data[jsonField]) {
-                        input.value = data[jsonField];
+            // Map the fields to form inputs
+            const formMappings = {
+                'request_id_srt': data.number,
+                'request_id_sd': customFields.appealNumber,
+                'requester': customFields.applicant
+            };
+
+            // Fill form fields
+            for (const [formField, value] of Object.entries(formMappings)) {
+                const input = document.getElementById(formField);
+                if (input && value) {
+                    input.value = value;
+                    if (input.tagName === 'SELECT') {
+                        input.dispatchEvent(new Event('change'));
                     }
                 }
-
-                // Display the raw JSON data in the result field
-                displayResult(JSON.stringify(data, null, 2));
             }
+
+            // Prepare result summary
+            const resultSummary = {
+                "Номер задания": data.number || 'Не указан',
+                "Название задания": data.name || 'Не указано',
+                "Описание": data.description || 'Не указано',
+                "Номер обращения": customFields.appealNumber || 'Не указан',
+                "Заявитель": customFields.applicant || 'Не указан'
+            };
+
+            // Format the result summary as a string
+            let formattedResult = "=== Данные из JSON ===\n\n";
+            for (const [key, value] of Object.entries(resultSummary)) {
+                formattedResult += `${key}: ${value}\n`;
+            }
+
+            // Display the formatted result
+            displayResult(formattedResult);
+
         } catch (error) {
-            console.error('Error fetching SRT data:', error);
-            displayResult(`Error fetching SRT data: ${error.message}`);
+            console.error('Error parsing JSON:', error);
+            displayResult(`Ошибка парсинга JSON: ${error.message}`);
         }
     });
+}
+
+function initializeFormSubmission() {
+    initializeFormSubmissionHandler();
+    initializeJsonParser();
 }

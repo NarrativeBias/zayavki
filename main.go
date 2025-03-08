@@ -46,7 +46,6 @@ func main() {
 	mux.HandleFunc("/zayavki/", stripPrefix(handleIndex))
 	mux.HandleFunc("/zayavki/cluster", stripPrefix(handleClusterSelection))
 	mux.HandleFunc("/zayavki/check", stripPrefix(handleCheck))
-	mux.HandleFunc("/zayavki/srt-data", stripPrefix(handleSRTData))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -181,6 +180,9 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		RisNumber string `json:"ris_number"`
 		RisName   string `json:"ris_name"`
 		Cluster   string `json:"cluster,omitempty"`
+		Tenant    string `json:"tenant,omitempty"`
+		Bucket    string `json:"bucket,omitempty"`
+		User      string `json:"user,omitempty"`
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&checkData)
@@ -194,6 +196,9 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		checkData.Env,
 		checkData.RisNumber,
 		checkData.RisName,
+		checkData.Tenant,
+		checkData.Bucket,
+		checkData.User,
 		checkData.Cluster,
 	)
 	if err != nil {
@@ -303,22 +308,4 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
-}
-
-func handleSRTData(w http.ResponseWriter, r *http.Request) {
-	srtNumber := r.URL.Query().Get("srt")
-	if srtNumber == "" {
-		http.Error(w, "SRT number is required", http.StatusBadRequest)
-		return
-	}
-
-	url := fmt.Sprintf("http://127.0.0.1:8079/%s.json", srtNumber)
-	data, err := variables_parser.LoadFromJSON(url)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error loading SRT data: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
 }

@@ -30,7 +30,7 @@ body {
 }
 
 .form-container {
-    flex: 0 0 300px;
+    flex: 0 0 400px;
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
@@ -55,8 +55,6 @@ body {
     margin-top: 0;
     margin-bottom: 15px;
 }
-
-
 
 h1, h2 {
     color: #333;
@@ -259,35 +257,44 @@ input[type="text"], input[type="email"], select, textarea {
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    background: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 0.9em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
 }
 
 .data-table th {
-    background-color: #f3f4f6;
-    padding: 0.75rem;
-    text-align: left;
+    background-color: #f8f9fa;
     font-weight: 600;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    color: #333;
 }
 
 .data-table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
-    color: #1f2937;
+    background-color: #fff;
+    color: #333;
 }
 
-.data-table tbody tr:hover {
+.data-table tbody tr:nth-child(even) td {
     background-color: #f9fafb;
 }
 
-.empty-message {
+.data-table tbody tr:hover td {
+    background-color: #f0f4f8;
+}
+
+.data-table .empty-message {
     text-align: center;
-    padding: 2rem;
-    color: #6b7280;
+    padding: 20px;
+    color: #666;
+    background-color: #fff;
 }
 
 .validation-message {
@@ -345,5 +352,283 @@ input[type="text"], input[type="email"], select, textarea {
 @media (min-height: 1200px) { 
     body {
         background-size: cover;
+    }
+}
+
+.parse-json-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.parse-json-button:hover {
+    background-color: #45a049;
+}
+
+#json_input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    resize: vertical;
+    font-family: monospace;
+}
+
+/* Add these styles to your existing CSS */
+
+.tabs {
+    display: flex;
+    gap: 2px;
+    background: #f0f0f0;
+    padding: 2px;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 15px;
+    border: none;
+    background: #e0e0e0;
+    cursor: pointer;
+    flex: 1;
+    white-space: nowrap;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.tab-button:first-child {
+    border-radius: 6px 0 0 0;
+}
+
+.tab-button:last-child {
+    border-radius: 0 6px 0 0;
+}
+
+.tab-button.active {
+    background: #fff;
+    font-weight: bold;
+}
+
+.tab-button:hover:not(.active) {
+    background: #d0d0d0;
+}
+
+.tab-content {
+    background: #fff;
+    border-radius: 0 0 8px 8px;
+    padding: 15px;
+}
+
+.tab-pane {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Adjust existing form container styles */
+.form-container {
+    padding: 0;
+    background: transparent;
+}
+
+.form-container > h1 {
+    padding: 20px;
+    margin: 0;
+    background: #fff;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Make the forms inside tabs look consistent */
+.tab-pane form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Add these new styles and modify existing ones */
+
+.page-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1900px;
+    gap: 20px;
+}
+
+.tabs-container {
+    background: transparent;
+    margin-bottom: -10px; /* Negative margin to reduce gap with content */
+}
+
+.content-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 120px); /* Adjust based on tabs height */
+}
+
+/* Update tabs styles */
+.tabs {
+    display: flex;
+    gap: 2px;
+    background: transparent;
+    padding: 2px;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-bottom: none;
+}
+
+.tab-button.active {
+    background: #fff;
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+    transform: translateY(2px);
+}
+
+.tab-button:hover:not(.active) {
+    background: rgba(255, 255, 255, 1);
+}
+
+/* Update form container styles */
+.form-container {
+    flex: 0 0 400px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-container > h1 {
+    padding: 20px;
+    margin: 0;
+    background: #fff;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Update container styles */
+.container {
+    height: auto;
+}
+
+/* Update media queries */
+@media (max-width: 1200px) {
+    .content-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .form-container,
+    .results-container {
+        width: 100%;
+        max-width: none;
+    }
+
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}
+
+/* Search tab styles */
+.search-fields {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column */
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.search-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 5px;
+}
+
+.search-field label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.search-field input,
+.search-field select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: 100%;
+}
+
+.search-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-start;
+}
+
+.search-button,
+.clear-search-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.search-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.clear-search-button {
+    background-color: #f44336;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-controls {
+        flex-direction: column;
+    }
+
+    .search-button,
+    .clear-search-button {
+        width: 100%;
     }
 }
