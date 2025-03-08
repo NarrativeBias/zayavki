@@ -78,7 +78,8 @@ function updateFormForTab(tabId) {
                         ris_name: formData.get('ris_name')?.toLowerCase(),
                         tenant: formData.get('tenant'),
                         bucket: formData.get('bucket'),
-                        user: formData.get('user')
+                        user: formData.get('user'),
+                        cluster: formData.get('cluster')
                     };
                     
                     fetch('/zayavki/check', {
