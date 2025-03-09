@@ -1,246 +1,291 @@
 console.log('Loading main.js...');
-// Initialize all functionality when DOM is loaded
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing...');
-    console.log('ALL_FIELDS available:', !!ALL_FIELDS);
-    console.log('TAB_CONFIGS available:', !!TAB_CONFIGS);
-    initializeFields();
-    initializeFormSubmission();
-    initializeButtons();
-    initializeModal();
-    initializeEmailValidation();
     initializeTabs();
-    initializeJsonImport();
+    initializeFormSubmission();
+    initializeModal();
+    initializeJsonParser();
+    initializeFieldValidation();
 });
 
-// Store field values between tab switches
-const fieldValues = {};
+// Store field values for each tab separately
+const fieldValues = {
+    'search': {},
+    'new-tenant': {},
+    'tenant-mod': {},
+    'user-bucket-del': {},
+    'bucket-mod': {}
+};
+
+// Remove the hardcoded SHARED_FIELDS array and add a function to find shared fields
+function getSharedFields() {
+    const allFields = new Set();
+    const fieldCounts = {};
+    
+    // Collect all field IDs and count their occurrences across tabs
+    Object.values(TAB_CONFIGS).forEach(tabConfig => {
+        const fields = tabConfig.fields.map(field => typeof field === 'string' ? field : field.id);
+        fields.forEach(fieldId => {
+            // Skip fields that should not be shared
+            if (!NON_SHARED_FIELDS.includes(fieldId)) {
+                allFields.add(fieldId);
+                fieldCounts[fieldId] = (fieldCounts[fieldId] || 0) + 1;
+            }
+        });
+    });
+
+    // Return fields that appear in more than one tab
+    return Array.from(allFields).filter(fieldId => fieldCounts[fieldId] > 1);
+}
 
 function saveFieldValues() {
-    const inputs = document.querySelectorAll('#formFields input, #formFields select, #formFields textarea');
+    const activeTab = document.querySelector('.tab-pane.active');
+    const tabId = activeTab.id;
+    const inputs = activeTab.querySelectorAll('input, select, textarea');
+    
     inputs.forEach(input => {
-        fieldValues[input.id] = input.value;
+        // Only save values for fields that should remember their values
+        if (!NO_MEMORY_FIELDS.includes(input.id)) {
+            fieldValues[tabId][input.id] = input.value;
+        }
+        // NO_MEMORY_FIELDS values won't be saved but will remain in the form until cleared
     });
 }
 
-function restoreFieldValues() {
-    const inputs = document.querySelectorAll('#formFields input, #formFields select, #formFields textarea');
+function restoreFieldValues(tabId) {
+    const inputs = document.querySelectorAll(`#${tabId}Fields input, #${tabId}Fields select, #${tabId}Fields textarea`);
+    
     inputs.forEach(input => {
-        if (fieldValues[input.id] !== undefined) {
-            input.value = fieldValues[input.id];
+        // Restore any saved values
+        if (fieldValues[tabId] && fieldValues[tabId][input.id] !== undefined) {
+            input.value = fieldValues[tabId][input.id];
         }
     });
 }
 
-function initializeFields() {
-    const formFields = document.getElementById('formFields');
-    const buttonContainer = document.getElementById('buttonContainer');
-    
-    // Get initial tab
-    const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
-    updateFormForTab(activeTab);
-}
+function createTabContent(tabId) {
+    const tabContent = document.createElement('div');
+    tabContent.id = tabId;
+    tabContent.className = `tab-pane ${tabId === 'search' ? 'active' : ''}`;
 
-function updateFormForTab(tabId) {
-    const formFields = document.getElementById('formFields');
-    const buttonContainer = document.getElementById('buttonContainer');
+    // Add header
+    const header = document.createElement('h1');
+    header.textContent = getTabTitle(tabId);
+    tabContent.appendChild(header);
+
+    // Add content wrapper
+    const contentInner = document.createElement('div');
+    contentInner.className = 'tab-content-inner';
+
+    // Add fields container
+    const fieldsContainer = document.createElement('div');
+    fieldsContainer.id = `${tabId}Fields`;
+    fieldsContainer.className = 'form-fields';
+
+    // Generate fields based on configuration
     const config = TAB_CONFIGS[tabId];
-    
-    // Save current field values before clearing
-    saveFieldValues();
-    
-    // Clear existing fields and buttons
-    formFields.innerHTML = '';
-    buttonContainer.innerHTML = '';
-    
-    // Generate fields
-    config.fields.forEach(fieldId => {
-        const field = ALL_FIELDS[fieldId];
-        const fieldElement = createFieldElement(fieldId, field, config.required_fields.includes(fieldId));
-        formFields.appendChild(fieldElement);
+    config.fields.forEach(field => {
+        const fieldElement = createFormField(field, config.required_fields?.includes(field.id));
+        fieldsContainer.appendChild(fieldElement);
     });
-    
-    // Generate buttons
-    config.buttons.forEach(buttonId => {
-        const button = ALL_BUTTONS[buttonId];
-        const buttonElement = createButtonElement(buttonId, button);
-        
-        // Add button handlers
-        switch(buttonId) {
-            case 'search':
-                buttonElement.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(document.getElementById('mainForm'));
-                    const searchData = {
-                        segment: formData.get('segment'),
-                        env: formData.get('env'),
-                        ris_number: formData.get('ris_number'),
-                        ris_name: formData.get('ris_name')?.toLowerCase(),
-                        tenant: formData.get('tenant'),
-                        bucket: formData.get('bucket'),
-                        user: formData.get('user'),
-                        cluster: formData.get('cluster')
-                    };
-                    
-                    fetch('/zayavki/check', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(searchData)
-                    })
-                    .then(handleFetchResponse)
-                    .then(data => {
-                        if (data.clusters) {
-                            handleClusterSelection(data.clusters, performCheckWithCluster, searchData);
-                        } else {
-                            displayResults(data.results);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        document.getElementById('result').textContent = 'Error performing search: ' + error.message;
-                    });
-                });
-                break;
-            case 'clear_all':
-                buttonElement.addEventListener('click', () => {
-                    const inputs = document.querySelectorAll('#formFields input, #formFields select, #formFields textarea');
-                    inputs.forEach(input => {
-                        input.value = '';
-                        fieldValues[input.id] = '';
-                    });
-                });
-                break;
-            case 'submit':
-                buttonElement.addEventListener('click', (e) => submitForm(document.getElementById('mainForm')));
-                break;
-            case 'push_db':
-                buttonElement.addEventListener('click', handlePushToDbClick);
-                buttonElement.disabled = true;
-                break;
-        }
-        
-        buttonContainer.appendChild(buttonElement);
+
+    // Add buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'button-container';
+
+    // Generate buttons based on configuration
+    config.buttons.forEach(button => {
+        const buttonElement = createButton(button);
+        buttonsContainer.appendChild(buttonElement);
     });
-    
-    // Restore field values
-    restoreFieldValues();
+
+    contentInner.appendChild(fieldsContainer);
+    contentInner.appendChild(buttonsContainer);
+    tabContent.appendChild(contentInner);
+
+    return tabContent;
 }
 
-function createFieldElement(id, field, required) {
-    const div = document.createElement('div');
-    div.className = 'field-group';
-    
+function getTabTitle(tabId) {
+    const titles = {
+        'search': 'Поиск',
+        'new-tenant': 'Создание нового тенанта',
+        'tenant-mod': 'Создание пользователя/бакета в существующем тенанте',
+        'user-bucket-del': 'Удаление пользователя/бакета в существующем тенанте',
+        'bucket-mod': 'Изменение квоты бакета'
+    };
+    return titles[tabId] || '';
+}
+
+function createFormField(fieldConfig, required = false) {
+    const fieldWrapper = document.createElement('div');
+    fieldWrapper.className = 'form-field';
+
     const label = document.createElement('label');
-    label.htmlFor = id;
-    label.textContent = field.label;
+    label.htmlFor = fieldConfig.id;
+    label.textContent = fieldConfig.label;
     
     let input;
-    if (field.type === 'select') {
+    if (fieldConfig.type === 'select') {
         input = document.createElement('select');
-        input.innerHTML = '<option value="">Выберите значение</option>';
-        field.options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            input.appendChild(option);
-        });
-    } else if (field.type === 'textarea') {
+        if (fieldConfig.options) {
+            fieldConfig.options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = typeof option === 'object' ? option.value : option;
+                opt.textContent = typeof option === 'object' ? option.label : option;
+                input.appendChild(opt);
+            });
+        }
+    } else if (fieldConfig.type === 'textarea') {
         input = document.createElement('textarea');
-        input.rows = 3;
+        input.rows = 5;
     } else {
         input = document.createElement('input');
-        input.type = field.type;
+        input.type = fieldConfig.type || 'text';
+    }
+
+    // Add attributes to disable autofill for all fields except 'segment'
+    if (fieldConfig.id !== 'segment') {
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('spellcheck', 'false');
+    }
+
+    input.id = fieldConfig.id;
+    input.name = fieldConfig.id;
+    input.required = required;
+    if (fieldConfig.placeholder) {
+        input.placeholder = fieldConfig.placeholder;
+    }
+
+    fieldWrapper.appendChild(label);
+    fieldWrapper.appendChild(input);
+    return fieldWrapper;
+}
+
+function createButton(buttonConfig) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = buttonConfig.id;
+    button.className = buttonConfig.className;
+    button.textContent = buttonConfig.label;
+    
+    // Add event listeners based on button id
+    switch (buttonConfig.id) {
+        case 'searchButton':
+            button.addEventListener('click', handleSearch);
+            break;
+        case 'clearButton':
+            button.addEventListener('click', clearAllFields);
+            break;
     }
     
-    input.id = id;
-    input.name = id;
-    if (required) input.required = true;
-    
-    div.appendChild(label);
-    div.appendChild(input);
-    return div;
-}
-
-function createButtonElement(id, button) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = id;
-    btn.className = button.class;
-    btn.textContent = button.label;
-    if (id === 'push_db') btn.disabled = true;
-    return btn;
-}
-
-function initializeFormSubmission() {
-    initializeFormSubmissionHandler();
-}
-
-function initializeButtons() {
-    const buttons = {
-        'pushDbButton': handlePushToDbClick,
-        'clearAllButton': clearAllFields
-    };
-
-    Object.entries(buttons).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.addEventListener('click', handler);
-            if (id === 'clearAllButton') button.disabled = false;
-        } else {
-            console.error(`${id} not found in the document`);
-        }
-    });
-}
-
-function initializeModal() {
-    const modal = document.getElementById('clusterModal');
-    if (!modal) {
-        console.error('Modal not found in the document');
-        return;
-    }
-
-    const closeButton = modal.querySelector('.close-button');
-    if (closeButton) {
-        closeButton.onclick = () => modal.style.display = 'none';
-    }
-
-    window.onclick = (event) => {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    };
-
-    // Add keyboard support
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && modal.style.display === 'block') {
-            modal.style.display = 'none';
-        }
-    });
-}
-
-function handlePushToDbClick() {
-    this.disabled = true;
-    document.getElementById('result').textContent = 'Pushing data to DB...';
-    handlePushToDb();
+    return button;
 }
 
 function initializeTabs() {
-    const tabs = document.querySelectorAll('.tab-button');
-    const tabPanes = document.querySelectorAll('.tab-pane');
+    const form = document.getElementById('mainForm');
+    if (!form) {
+        console.error('Main form not found');
+        return;
+    }
     
+    // Generate tab content for each tab
+    Object.keys(TAB_CONFIGS).forEach(tabId => {
+        const tabContent = createTabContent(tabId);
+        form.appendChild(tabContent);
+        // Initialize empty field values for this tab
+        fieldValues[tabId] = {};
+    });
+
+    // Add tab switching logic
+    const tabs = document.querySelectorAll('.tab-button');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remove active class from all tabs and panes
+            const currentTab = document.querySelector('.tab-pane.active');
+            const newTabId = tab.dataset.tab;
+            
+            // Save current values before switching
+            if (currentTab) {
+                saveFieldValues();
+            }
+            
+            // Update active tab button
             tabs.forEach(t => t.classList.remove('active'));
-            tabPanes.forEach(p => p.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding pane
             tab.classList.add('active');
-            const tabId = tab.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
             
-            // Update form for this tab
-            updateFormForTab(tabId);
+            // Update active tab content
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            tabPanes.forEach(pane => {
+                pane.classList.remove('active');
+                if (pane.id === newTabId) {
+                    pane.classList.add('active');
+                }
+            });
+            
+            // Restore values for the new tab
+            restoreFieldValues(newTabId);
         });
+    });
+}
+
+function handleSearch(e) {
+    e.preventDefault();
+    const formData = new FormData(document.getElementById('mainForm'));
+    const searchData = {
+        segment: formData.get('segment'),
+        env: formData.get('env'),
+        ris_number: formData.get('ris_number'),
+        ris_name: formData.get('ris_name')?.toLowerCase(),
+        tenant: formData.get('tenant'),
+        bucket: formData.get('bucket'),
+        user: formData.get('user'),
+        cluster: formData.get('cluster')
+    };
+    
+    fetch('/zayavki/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayResults(data.results);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('result').textContent = 'Error performing search: ' + error.message;
+    });
+}
+
+function clearAllFields() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (activeTab) {
+        const inputs = activeTab.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.value = '';
+            if (input.id) {
+                fieldValues[activeTab.id][input.id] = '';
+            }
+        });
+    }
+    document.getElementById('result').textContent = '';
+}
+
+function initializeModal() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        const closeButton = modal.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.onclick = () => modal.style.display = 'none';
+        }
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
     });
 }

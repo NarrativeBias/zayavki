@@ -170,50 +170,6 @@ function disablePushToDbButton() {
     document.getElementById('pushDbButton').disabled = true;
 }
 
-function initializeEmailValidation() {
-    const ownerInput = document.getElementById('owner');
-    const debounceTimeout = 500; // ms
-    let timeoutId;
-    let validationDiv;
-
-    if (ownerInput) {
-        validationDiv = document.createElement('div');
-        validationDiv.classList.add('validation-message');
-        ownerInput.parentNode.insertBefore(validationDiv, ownerInput.nextSibling);
-
-        ownerInput.addEventListener('input', (e) => {
-            clearTimeout(timeoutId);
-            
-            timeoutId = setTimeout(() => {
-                const value = e.target.value.trim();
-                if (!value) {
-                    validationDiv.textContent = '';
-                    return;
-                }
-
-                // First check for incorrect separators
-                if (value.includes(',')) {
-                    validationDiv.textContent = 'Используйте точку с запятой (;) для разделения email адресов';
-                    validationDiv.classList.add('error');
-                    return;
-                }
-
-                const emails = value.split(';').map(email => email.trim()).filter(Boolean);
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                const invalidEmails = emails.filter(email => !emailPattern.test(email));
-
-                if (invalidEmails.length > 0) {
-                    validationDiv.textContent = `Некорректный формат email: ${invalidEmails.join(', ')}. Используйте формат: email@vtb.ru`;
-                    validationDiv.classList.add('error');
-                } else {
-                    validationDiv.textContent = '';
-                    validationDiv.classList.remove('error');
-                }
-            }, debounceTimeout);
-        });
-    }
-}
-
 function showValidationMessage(container, message, type) {
     container.textContent = message;
     container.className = 'validation-message ' + type;
@@ -465,3 +421,109 @@ window.displayResults = function(results) {
     resultDiv.innerHTML = '';
     resultDiv.appendChild(tableContainer);
 };
+
+function handleFormSubmit(event, pushToDb = false) {
+    event.preventDefault();
+    
+    const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+    const form = document.getElementById('mainForm');
+    const formData = new FormData(form);
+    
+    // Add create_tenant flag for new-tenant tab
+    if (activeTab === 'new-tenant') {
+        formData.append('create_tenant', 'true');
+    }
+    
+    formData.append('push_to_db', pushToDb.toString());
+
+    fetch('/zayavki/submit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(result => {
+        if (result.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clustersData = JSON.parse(result.substring('CLUSTER_SELECTION_REQUIRED:'.length));
+            showClusterModal(clustersData, formData, pushToDb);
+        } else {
+            document.getElementById('result').textContent = result;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('result').textContent = `Error: ${error.message}`;
+    });
+}
+
+function initializeFieldValidation() {
+    // SD number validation
+    const sdInput = document.getElementById('request_id_sd');
+    if (sdInput) {
+        sdInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim().toLowerCase();
+            if (value && !value.startsWith('sd-')) {
+                showValidationMessage(
+                    getOrCreateValidationDiv(sdInput),
+                    'Номер должен начинаться с "SD-"',
+                    'error'
+                );
+            } else {
+                clearValidationMessage(getOrCreateValidationDiv(sdInput));
+            }
+        });
+    }
+
+    // SRT number validation
+    const srtInput = document.getElementById('request_id_srt');
+    if (srtInput) {
+        srtInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim().toLowerCase();
+            if (value && !value.startsWith('srt-')) {
+                showValidationMessage(
+                    getOrCreateValidationDiv(srtInput),
+                    'Номер должен начинаться с "SRT-"',
+                    'error'
+                );
+            } else {
+                clearValidationMessage(getOrCreateValidationDiv(srtInput));
+            }
+        });
+    }
+
+    // Email validation for owner and deputy owner
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailFields = ['owner', 'zam_owner'];
+    
+    emailFields.forEach(fieldId => {
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.trim();
+                if (value && !emailPattern.test(value)) {
+                    showValidationMessage(
+                        getOrCreateValidationDiv(input),
+                        'Введите корректный email адрес',
+                        'error'
+                    );
+                } else {
+                    clearValidationMessage(getOrCreateValidationDiv(input));
+                }
+            });
+        }
+    });
+}
+
+function getOrCreateValidationDiv(inputElement) {
+    let validationDiv = inputElement.parentNode.querySelector('.validation-message');
+    if (!validationDiv) {
+        validationDiv = document.createElement('div');
+        validationDiv.className = 'validation-message';
+        inputElement.parentNode.insertBefore(validationDiv, inputElement.nextSibling);
+    }
+    return validationDiv;
+}
+
+function clearValidationMessage(validationDiv) {
+    validationDiv.textContent = '';
+    validationDiv.className = 'validation-message';
+}

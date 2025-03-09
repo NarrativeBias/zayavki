@@ -34,14 +34,147 @@ const ALL_BUTTONS = {
 // Tab configurations
 const TAB_CONFIGS = {
     'search': {
-        fields: ['segment', 'env', 'ris_number', 'ris_name', 'cluster', 'tenant', 'bucket', 'user'],
-        buttons: ['search', 'clear_all'],
+        fields: [
+            { id: 'segment', label: 'Сегмент', type: 'text' },
+            { 
+                id: 'env', 
+                label: 'Среда', 
+                type: 'select',
+                options: [
+                    { value: '', label: 'Выберите среду' },
+                    { value: 'PROD', label: 'PROD' },
+                    { value: 'PREPROD', label: 'PREPROD' },
+                    { value: 'IFT', label: 'IFT' },
+                    { value: 'HOTFIX', label: 'HOTFIX' }
+                ]
+            },
+            { id: 'ris_number', label: 'РИС номер', type: 'text' },
+            { id: 'ris_name', label: 'РИС имя', type: 'text' },
+            { id: 'cluster', label: 'Кластер', type: 'text' },
+            { id: 'tenant', label: 'Тенант', type: 'text' },
+            { id: 'bucket', label: 'Бакет', type: 'text' },
+            { id: 'user', label: 'Пользователь', type: 'text' }
+        ],
+        buttons: [
+            { id: 'searchButton', label: 'Поиск', className: 'button-container button' },
+            { id: 'clearButton', label: 'Очистить', className: 'button-container button' }
+        ],
         required_fields: ['segment', 'env']
     },
     'new-tenant': {
-        fields: ['segment', 'env', 'ris_number', 'ris_name', 'tenant_override', 'buckets', 'users'],
-        buttons: ['submit', 'push_db', 'clear_all'],
-        required_fields: ['segment', 'env', 'ris_number', 'ris_name']
+        fields: [
+            {
+                id: 'request_id_sd',
+                label: 'Номер обращения SD',
+                type: 'text',
+                required: true,
+                placeholder: 'SD-XXXXXXX'
+            },
+            {
+                id: 'request_id_srt',
+                label: 'Номер задания SRT',
+                type: 'text',
+                required: true,
+                placeholder: 'SRT-XXXXXXX'
+            },
+            {
+                id: 'segment',
+                label: 'Зона безопасности',
+                type: 'text',
+                required: true,
+                placeholder: 'INET-DEVTEST-SYNT'
+            },
+            {
+                id: 'env',
+                label: 'Среда',
+                type: 'select',
+                required: true,
+                options: [
+                    { value: '', label: 'Выберите среду' },
+                    { value: 'PROD', label: 'PROD' },
+                    { value: 'PREPROD', label: 'PREPROD' },
+                    { value: 'IFT', label: 'IFT' },
+                    { value: 'HOTFIX', label: 'HOTFIX' },
+                    { value: 'LT', label: 'LT' }
+                ]
+            },
+            {
+                id: 'ris_number',
+                label: 'РИС номер',
+                type: 'text',
+                required: true,
+                placeholder: '1763'
+            },
+            {
+                id: 'ris_name',
+                label: 'РИС имя',
+                type: 'text',
+                required: true,
+                placeholder: 'cosd'
+            },
+            {
+                id: 'resp_group',
+                label: 'Группа сопровождения',
+                type: 'text',
+                required: true,
+                placeholder: 'Ответственная РГ'
+            },
+            {
+                id: 'owner',
+                label: 'Владелец',
+                type: 'email',
+                required: true,
+                placeholder: 'email владельца'
+            },
+            {
+                id: 'zam_owner',
+                label: 'Зам.владелец',
+                type: 'email',
+                required: true,
+                placeholder: 'email зам.владельца'
+            },
+            {
+                id: 'requester',
+                label: 'Заявитель',
+                type: 'text',
+                required: true,
+                placeholder: 'ФИО заявителя'
+            },
+            {
+                id: 'email_for_credentials',
+                label: 'Email для отправки данных УЗ',
+                type: 'email',
+                required: true,
+                placeholder: 'email@vtb.ru'
+            },
+            {
+                id: 'tenant_override',
+                label: 'Имя тенанта (override)',
+                type: 'text',
+                required: false,
+                placeholder: 'Оставьте пустым для автогенерации'
+            },
+            {
+                id: 'users',
+                label: 'Дополнительные пользователи (по одному на строку)',
+                type: 'textarea',
+                required: false,
+                placeholder: 'if_cosd_user1\nif_cosd_user2'
+            },
+            {
+                id: 'buckets',
+                label: 'Бакеты с указанием квоты (формат: имя_бакета квота)',
+                type: 'textarea',
+                required: false,
+                placeholder: 'if_cosd_bucket1 100G\nif_cosd_bucket2 200G'
+            }
+        ],
+        buttons: [
+            { id: 'import-json', label: 'Импорт из JSON', className: 'secondary-button' },
+            { id: 'check-form', label: 'Проверить', className: 'primary-button' },
+            { id: 'submit-form', label: 'Отправить', className: 'primary-button' }
+        ],
+        required_fields: ['segment', 'env', 'request_id_sd', 'request_id_srt', 'ris_number', 'ris_name', 'resp_group', 'owner', 'requester', 'email_for_credentials']
     },
     'tenant-mod': {
         fields: ['segment', 'env', 'ris_number', 'ris_name', 'tenant', 'buckets', 'users'],
@@ -58,4 +191,20 @@ const TAB_CONFIGS = {
         buttons: ['submit', 'push_db', 'clear_all'],
         required_fields: ['segment', 'env', 'tenant', 'bucket']
     }
-}; 
+};
+
+// Fields that should not remember their values
+const NO_MEMORY_FIELDS = [
+    'request_id_sd',    // SD number
+    'request_id_srt',   // SR number
+    'ris_name',         // RIS name
+    'ris_number',       // RIS ID
+    'owner',            // Owner email
+    'zam_owner',        // Deputy owner email
+    'resp_group',       // Owner group
+    'requester',        // Applicant
+    'email_for_credentials', // Email
+    'tenant_override',  // Tenant name
+    'users',            // Users list
+    'buckets'          // Buckets list
+]; 

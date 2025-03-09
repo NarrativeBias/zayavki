@@ -1,90 +1,75 @@
 {{define "content"}}
-<body>
-    <div class="page-container">
-        <!-- Separate tabs navigation -->
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab-button active" data-tab="search">Поиск</button>
-                <button class="tab-button" data-tab="new-tenant">Создание нового тенанта</button>
-                <button class="tab-button" data-tab="tenant-mod">Создание пользователя/бакета в существующем тенанте</button>
-                <button class="tab-button" data-tab="user-bucket-del">Удаление пользователя/бакета в существующем тенанте</button>
-                <button class="tab-button" data-tab="bucket-mod">Изменение квоты бакета</button>
-            </div>
-        </div>
-
-        <div class="content-container">
-            <div class="form-container">
-                <form id="mainForm">
-                    <div class="tab-content">
-                        <div id="search" class="tab-pane active">
-                            <h1>Поиск</h1>
-                            <div class="tab-content-inner">
-                                <div id="formFields" class="form-fields">
-                                    <!-- Fields will be generated dynamically -->
-                                </div>
-                                <div id="buttonContainer" class="button-container">
-                                    <!-- Buttons will be generated dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Other tabs... -->
-                    </div>
-                </form>
-            </div>
-
-            <div class="results-container">
-                <h2>Результат</h2>
-                <div id="result"></div>
-            </div>
+<div class="page-container">
+    <!-- Tabs navigation -->
+    <div class="tabs-container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="search">Поиск</button>
+            <button class="tab-button" data-tab="new-tenant">Создание нового тенанта</button>
+            <button class="tab-button" data-tab="tenant-mod">Создание пользователя/бакета в существующем тенанте</button>
+            <button class="tab-button" data-tab="user-bucket-del">Удаление пользователя/бакета в существующем тенанте</button>
+            <button class="tab-button" data-tab="bucket-mod">Изменение квоты бакета</button>
         </div>
     </div>
 
-    <!-- Modals -->
-    <div id="clusterModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Выберите кластер</h2>
-                <span class="close-button">&times;</span>
-            </div>
-            <div class="modal-body">
-                <select id="cluster-select">
-                </select>
-                <div id="cluster-details">
-                    <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
-                    <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
-                    <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
-                    <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
-                    <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
-                    <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="confirm-cluster" class="confirm-button">Подтвердить</button>
-            </div>
+    <div class="content-container">
+        <div class="form-container">
+            <form id="mainForm">
+                <!-- Tab content will be generated dynamically -->
+            </form>
         </div>
-    </div>
 
-    <div id="jsonImportModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Импорт данных из JSON</h2>
-                <span class="close-button">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="json-input-group">
-                    <label for="srt_json">JSON SRT:</label>
-                    <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER</div>
-                    <textarea id="srt_json" name="srt_json" rows="5" placeholder="Вставьте JSON SRT..." spellcheck="false"></textarea>
-                </div>
-                <div class="json-input-group">
-                    <label for="params_json">JSON с параметрами SRT:</label>
-                    <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER/parameters</div>
-                    <textarea id="params_json" name="params_json" rows="5" placeholder="Вставьте JSON с параметрами SRT..." spellcheck="false"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="confirmJsonImport" class="confirm-button">Подтвердить</button>
-            </div>
+        <div class="results-container">
+            <h2>Результат</h2>
+            <div id="result"></div>
         </div>
     </div>
+</div>
+
+<!-- Modals -->
+<div id="clusterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Выберите кластер</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+            <select id="cluster-select"></select>
+            <div id="cluster-details">
+                <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
+                <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
+                <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
+                <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
+                <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
+                <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-cluster" class="confirm-button">Подтвердить</button>
+        </div>
+    </div>
+</div>
+
+<div id="jsonImportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Импорт данных из JSON</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="json-input-group">
+                <label for="srt_json">JSON SRT:</label>
+                <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER</div>
+                <textarea id="srt_json" name="srt_json" rows="5" placeholder="Вставьте JSON SRT..." spellcheck="false"></textarea>
+            </div>
+            <div class="json-input-group">
+                <label for="params_json">JSON с параметрами SRT:</label>
+                <div class="json-description">Что бы получить JSON необходимо с помощью браузера перейти по адресу: https://sfera.vtb.ru/app/sr/api/v0.1/entities/SRT-$NUMBER/parameters</div>
+                <textarea id="params_json" name="params_json" rows="5" placeholder="Вставьте JSON с параметрами SRT..." spellcheck="false"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="confirmJsonImport" class="confirm-button">Подтвердить</button>
+        </div>
+    </div>
+</div>
 {{end}}
