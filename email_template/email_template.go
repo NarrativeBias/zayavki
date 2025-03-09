@@ -66,7 +66,7 @@ Endpoints для подключения:
 Бакеты созданы:
 {{- range $index, $bucket := .bucketnames}}
 {{- if $bucket}}
-- {{$bucket}} ({{index $.bucketquotas $index}})
+- {{$bucket}} ({{index $.bucketquotas $index}}G)
 {{- end}}
 {{- end}}
 

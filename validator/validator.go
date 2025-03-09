@@ -70,7 +70,7 @@ func ValidateBuckets(variables map[string][]string) (bool, error) {
 	prefix := envCode + "-" + risName + "-"
 
 	pattern := regexp.MustCompile("^[a-zA-Z0-9-]+$")
-	quotaPattern := regexp.MustCompile(`^\d+[GMTPK]B?$`)
+	quotaPattern := regexp.MustCompile(`^\d+$`)
 
 	var errors []string
 	for i, bucket := range bucketNames {
@@ -87,8 +87,9 @@ func ValidateBuckets(variables map[string][]string) (bool, error) {
 			errors = append(errors, fmt.Sprintf("bucket name '%s' contains invalid characters", bucket))
 		}
 
-		if !quotaPattern.MatchString(bucketQuotas[i]) {
-			errors = append(errors, fmt.Sprintf("invalid quota format for bucket '%s': '%s'", bucket, bucketQuotas[i]))
+		quota := strings.TrimSpace(strings.ReplaceAll(bucketQuotas[i], "|", ""))
+		if !quotaPattern.MatchString(quota) {
+			errors = append(errors, fmt.Sprintf("invalid quota format for bucket '%s': '%s' (should be a number)", bucket, quota))
 		}
 	}
 

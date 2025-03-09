@@ -24,7 +24,12 @@ func PopulateUsers(variables map[string][]string, clusters map[string]string) st
 	for i, username := range variables["users"] {
 		username = strings.ToLower(username)
 		if username != "" {
-			row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", clusters["Кластер"], variables["segment"][0], variables["env"][0], clusters["Реалм"], variables["tenant"][0], username, "-", "-", variables["request_id_sd"][0], variables["request_id_srt"][0], current_date, variables["ris_name"][0], variables["ris_number"][0], variables["resp_group"][0], ownerInfo, variables["requester"][0])
+			row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
+				variables["request_id_sd"][0], variables["request_id_srt"][0], current_date,
+				variables["ris_name"][0], variables["ris_number"][0], variables["resp_group"][0],
+				ownerInfo, variables["requester"][0])
 			rows.WriteString(row)
 
 			// Add newline character only if it's not the last row
@@ -52,7 +57,18 @@ func PopulateBuckets(variables map[string][]string, clusters map[string]string) 
 	// Create a row for each bucket
 	for i, bucket := range variables["bucketnames"] {
 		if bucket != "" {
-			row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", clusters["Кластер"], variables["segment"][0], variables["env"][0], clusters["Реалм"], variables["tenant"][0], "-", variables["bucketnames"][i], variables["bucketquotas"][i], variables["request_id_sd"][0], variables["request_id_srt"][0], current_date, variables["ris_name"][0], variables["ris_number"][0], variables["resp_group"][0], ownerInfo, variables["requester"][0])
+			// Get quota and clean it up
+			quota := variables["bucketquotas"][i]
+			// Remove any pipe characters and trim spaces
+			quota = strings.ReplaceAll(quota, "|", "")
+			quota = strings.TrimSpace(quota)
+
+			row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
+				clusters["Кластер"], variables["segment"][0], variables["env"][0],
+				clusters["Реалм"], variables["tenant"][0], "-", bucket, quota,
+				variables["request_id_sd"][0], variables["request_id_srt"][0],
+				current_date, variables["ris_name"][0], variables["ris_number"][0],
+				variables["resp_group"][0], ownerInfo, variables["requester"][0])
 			rows.WriteString(row)
 
 			// Add newline character only if it's not the last row

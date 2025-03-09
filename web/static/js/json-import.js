@@ -88,7 +88,7 @@ function parseSrtJson(data) {
     
     // Parse requestDetails for buckets and users
     if (data.requestDetails) {
-        // Parse buckets section - fixed regex and parsing
+        // Parse buckets section - updated regex and parsing
         const bucketsMatch = data.requestDetails.match(/Список бакетов\s*\nИмя бакета \| Объём бакет, ГБ\s*([\s\S]+?)(?=\n\s*\n|\n*Список|$)/);
         if (bucketsMatch) {
             const bucketLines = bucketsMatch[1].trim().split('\n');
@@ -97,13 +97,14 @@ function parseSrtJson(data) {
                 .filter(line => line && !line.includes('Имя бакета'))
                 .map(line => {
                     const [name, size] = line.split('|').map(s => s.trim());
-                    return `${name} ${size}G`;
+                    // Don't add 'G' suffix, just return the formatted string
+                    return `${name} | ${size}`;
                 })
                 .join('\n');
             setFieldValue('buckets', bucketsList);
         }
 
-        // Parse users section - updated regex
+        // Parse users section - no changes needed here
         const usersMatch = data.requestDetails.match(/Список дополнительных учетных записей[\s\S]*?Имя дополнительной учетной записи\s*([\s\S]+?)(?=\n\s*\n|$)/i);
         if (usersMatch) {
             const userLines = usersMatch[1].trim().split('\n');

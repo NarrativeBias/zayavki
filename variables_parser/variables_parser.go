@@ -51,14 +51,12 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 	// Process buckets
 	bucketInput := getFirst(rawVariables["buckets"])
 	if bucketInput != "" {
-		bucketList := strings.Split(bucketInput, "\n")
-		for _, bucket := range bucketList {
-			parts := strings.Fields(strings.TrimSpace(bucket))
-			if len(parts) >= 2 {
-				processedVars["bucketnames"] = append(processedVars["bucketnames"], strings.ToLower(parts[0]))
-				processedVars["bucketquotas"] = append(processedVars["bucketquotas"], strings.ToUpper(parts[1]))
-			}
+		bucketNames, bucketQuotas, err := parseBuckets(bucketInput)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse buckets: %v", err)
 		}
+		processedVars["bucketnames"] = bucketNames
+		processedVars["bucketquotas"] = bucketQuotas
 	}
 
 	// Process environment code
@@ -115,4 +113,37 @@ func LoadFromJSON(url string) (map[string]interface{}, error) {
 	}
 
 	return data, nil
+}
+
+func parseBuckets(bucketStr string) ([]string, []string, error) {
+	var bucketNames []string
+	var bucketQuotas []string
+
+	// Split into lines and process each line
+	lines := strings.Split(bucketStr, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Split by pipe and trim spaces
+		parts := strings.Split(line, "|")
+		if len(parts) != 2 {
+			return nil, nil, fmt.Errorf("invalid bucket format: %s (expected: name | quota)", line)
+		}
+
+		bucketName := strings.TrimSpace(parts[0])
+		quota := strings.TrimSpace(parts[1])
+
+		// Validate bucket name and quota
+		if bucketName == "" || quota == "" {
+			return nil, nil, fmt.Errorf("bucket name and quota cannot be empty")
+		}
+
+		bucketNames = append(bucketNames, bucketName)
+		bucketQuotas = append(bucketQuotas, quota)
+	}
+
+	return bucketNames, bucketQuotas, nil
 }

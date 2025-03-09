@@ -106,7 +106,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	// Process data with the cluster
 	result, err := processDataWithCluster(processedVars, cluster, pushToDb)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
