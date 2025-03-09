@@ -95,45 +95,74 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 .button-container {
-    margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
 }
 
-/* Base button styles */
-.button-container button {
+/* Base styles for all form buttons */
+.button-container button,
+.search-button,
+.clear-search-button,
+.confirm-button,
+.import-json-button {
     width: 100%;
-    padding: 10px;
+    max-width: 400px;
+    padding: 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 1em;
     text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* Individual button styles */
+.search-button {
+    background-color: #FFA500 !important; /* Orange */
     color: white;
-    transition: opacity 0.2s;
 }
 
-/* Colors for each button */
-.button-container button:first-child {
-    background-color: #FFA500; /* Orange */
-}
-
-.button-container button:last-child {
-    background-color: #007bff; /* Blue */
-}
-
-/* Hover effect for both buttons */
-.button-container button:hover {
+.search-button:hover {
+    background-color: #FF8C00 !important; /* Darker orange */
     opacity: 0.9;
+    transform: translateY(-2px);
 }
 
-/* Disabled state for both buttons */
-.button-container button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.7;
+.search-button:active {
+    background-color: #FF7000 !important; /* Even darker orange */
+    transform: translateY(1px);
+}
+
+.clear-search-button {
+    background-color: #008CBA;
+    color: white;
+}
+
+.confirm-button,
+.import-json-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* General hover effects for other buttons */
+.button-container button:hover:not(.search-button),
+.clear-search-button:hover,
+.confirm-button:hover,
+.import-json-button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+/* General active state for other buttons */
+.button-container button:active:not(.search-button),
+.clear-search-button:active,
+.confirm-button:active,
+.import-json-button:active {
+    transform: translateY(1px);
 }
 
 .checkbox-group {
@@ -173,17 +202,22 @@ input[type="text"], input[type="email"], select, textarea {
 .modal-content {
     background-color: #fefefe;
     margin: 15% auto;
-    padding: 20px;
+    padding: 0;  /* Remove padding since we have it in header/body/footer */
     border: 1px solid #888;
     width: 80%;
     max-width: 600px;
     border-radius: 5px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .modal-header {
     padding: 20px;
     border-bottom: 1px solid #ddd;
     position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .modal-header h2 {
@@ -204,11 +238,17 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 .close-button {
+    position: absolute;
+    right: 20px;
+    top: 10px;
     color: #aaa;
-    float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    background: none;
+    border: none;
 }
 
 .close-button:hover,

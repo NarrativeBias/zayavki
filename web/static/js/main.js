@@ -78,6 +78,20 @@ function createTabContent(tabId) {
     const contentInner = document.createElement('div');
     contentInner.className = 'tab-content-inner';
 
+    // Add import JSON button at the top for new-tenant tab
+    if (tabId === 'new-tenant') {
+        const importButton = document.createElement('button');
+        importButton.type = 'button';
+        importButton.id = 'import-json';
+        importButton.className = 'import-json-button';
+        importButton.textContent = 'Импорт из JSON';
+        importButton.addEventListener('click', () => {
+            const modal = document.getElementById('jsonImportModal');
+            if (modal) modal.style.display = 'block';
+        });
+        contentInner.appendChild(importButton);
+    }
+
     // Add fields container
     const fieldsContainer = document.createElement('div');
     fieldsContainer.id = `${tabId}Fields`;
@@ -96,8 +110,11 @@ function createTabContent(tabId) {
 
     // Generate buttons based on configuration
     config.buttons.forEach(button => {
-        const buttonElement = createButton(button);
-        buttonsContainer.appendChild(buttonElement);
+        // Skip import-json button since we've moved it to the top
+        if (button.id !== 'import-json') {
+            const buttonElement = createButton(button);
+            buttonsContainer.appendChild(buttonElement);
+        }
     });
 
     contentInner.appendChild(fieldsContainer);
@@ -169,7 +186,26 @@ function createButton(buttonConfig) {
     const button = document.createElement('button');
     button.type = 'button';
     button.id = buttonConfig.id;
-    button.className = buttonConfig.className;
+    
+    // Use existing button styles from main.css
+    switch (buttonConfig.id) {
+        case 'searchButton':
+            button.className = 'search-button';
+            break;
+        case 'clearButton':
+            button.className = 'clear-search-button';
+            break;
+        case 'import-json':
+            button.className = 'import-json-button';
+            break;
+        case 'check-form':
+        case 'submit-form':
+            button.className = 'confirm-button';
+            break;
+        default:
+            button.className = 'button-container button';
+    }
+    
     button.textContent = buttonConfig.label;
     
     // Add event listeners based on button id
@@ -180,17 +216,11 @@ function createButton(buttonConfig) {
         case 'clearButton':
             button.addEventListener('click', clearAllFields);
             break;
-        case 'import-json':
-            button.addEventListener('click', () => {
-                const modal = document.getElementById('jsonImportModal');
-                if (modal) modal.style.display = 'block';
-            });
-            break;
         case 'check-form':
-            button.addEventListener('click', (e) => handleFormSubmit(e, false));
+            button.addEventListener('click', () => handleFormSubmit(false));
             break;
         case 'submit-form':
-            button.addEventListener('click', (e) => handleFormSubmit(e, true));
+            button.addEventListener('click', () => handleFormSubmit(true));
             break;
     }
     

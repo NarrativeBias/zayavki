@@ -175,77 +175,17 @@ function showValidationMessage(container, message, type) {
     container.className = 'validation-message ' + type;
 }
 
-function displayResult(data) {
-    const resultElement = document.getElementById('result');
-    
-    if (typeof data === 'string') {
-        resultElement.textContent = data;
-        return;
-    }
+function displayResult(text) {
+    const resultDiv = document.getElementById('result');
+    if (!resultDiv) return;
 
-    // Create table for results
-    const table = document.createElement('table');
-    table.className = 'data-table';
+    // Clear previous content
+    resultDiv.innerHTML = '';
 
-    // Create table header with only needed fields
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    const headers = [
-        'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
-        'Owner', 'Group', 'Applicant'
-    ];
-
-    headers.forEach(headerText => {
-        const th = document.createElement('th');
-        th.textContent = headerText;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Create table body
-    const tbody = document.createElement('tbody');
-    if (data.results && data.results.length > 0) {
-        data.results.forEach(item => {
-            const row = document.createElement('tr');
-            [
-                item.cluster || '-',
-                item.segment || '-',
-                item.environment || '-',
-                item.realm || '-',
-                item.tenant || '-',
-                item.user || '-',
-                item.bucket || '-',
-                item.quota || '-',
-                item.sd_num || '-',
-                item.srt_num || '-',
-                item.done_date || '-',
-                item.owner || '-',
-                item.owner_group || '-',
-                item.applicant || '-'
-            ].forEach(cellText => {
-                const td = document.createElement('td');
-                td.textContent = cellText;
-                row.appendChild(td);
-            });
-            tbody.appendChild(row);
-        });
-    } else {
-        // If no results, show a message
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.colSpan = headers.length;
-        emptyCell.textContent = 'Нет данных';
-        emptyCell.className = 'empty-message';
-        emptyRow.appendChild(emptyCell);
-        tbody.appendChild(emptyRow);
-    }
-
-    table.appendChild(tbody);
-
-    // Clear previous results and add new table
-    resultElement.innerHTML = '';
-    resultElement.appendChild(table);
+    // Create pre element to preserve formatting
+    const pre = document.createElement('pre');
+    pre.textContent = text;
+    resultDiv.appendChild(pre);
 }
 
 function initializeJsonParser() {
@@ -515,7 +455,22 @@ function clearValidationMessage(validationDiv) {
 
 function handleSearch(e) {
     e.preventDefault();
-    const formData = new FormData(document.getElementById('mainForm'));
+    
+    // Get the search tab's fields
+    const searchTab = document.getElementById('search');
+    if (!searchTab) {
+        console.error('Search tab not found');
+        return;
+    }
+
+    const formData = new FormData();
+    const inputs = searchTab.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.id && input.value) {
+            formData.append(input.id, input.value);
+        }
+    });
+
     const searchData = {
         segment: formData.get('segment'),
         env: formData.get('env'),
@@ -527,6 +482,9 @@ function handleSearch(e) {
         cluster: formData.get('cluster')
     };
     
+    // Log the search data for debugging
+    console.log('Search data:', searchData);
+
     fetch('/zayavki/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -542,33 +500,58 @@ function handleSearch(e) {
     });
 }
 
-async function handleFormSubmit(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const pushToDb = form.querySelector('button[type="submit"]').dataset.pushToDb === 'true';
+async function handleFormSubmit(pushToDb = false) {
+    const form = document.getElementById('mainForm');
+    if (!form) {
+        console.error('Form element not found');
+        return;
+    }
 
     try {
+        // Get the active tab
+        const activeTab = document.querySelector('.tab-pane.active');
+        if (!activeTab) {
+            console.error('No active tab found');
+            return;
+        }
+
+        // Create FormData only from the active tab's fields
+        const formData = new FormData();
+        
+        // Add fields from the active tab
+        const inputs = activeTab.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.id && input.value) {
+                formData.append(input.id, input.value);
+            }
+        });
+
+        // Add create_tenant=true if we're in the new-tenant tab
+        if (activeTab.id === 'new-tenant') {
+            formData.append('create_tenant', 'true');
+        }
+
+        // Add push_to_db parameter
+        formData.append('push_to_db', pushToDb.toString());
+
         const response = await fetch('/zayavki/submit', {
             method: 'POST',
             body: formData
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
         const text = await response.text();
         
-        // Check if cluster selection is required
         if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
             const clusters = JSON.parse(text.substring('CLUSTER_SELECTION_REQUIRED:'.length));
             showClusterModal(clusters, formData, pushToDb);
             return;
         }
 
-        // Display the result
         displayResult(text);
 
     } catch (error) {
@@ -579,13 +562,21 @@ async function handleFormSubmit(event) {
 
 async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     try {
+        // Convert FormData to an object
+        const formDataObj = {};
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'push_to_db') { // Skip the push_to_db entry
+                formDataObj[key] = [value]; // Backend expects array values
+            }
+        }
+
         const response = await fetch('/zayavki/cluster', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                processedVars: Object.fromEntries(formData),
+                processedVars: formDataObj,
                 selectedCluster: selectedCluster,
                 pushToDb: pushToDb
             })
