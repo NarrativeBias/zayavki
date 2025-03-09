@@ -1,44 +1,37 @@
 function initializeJsonParser() {
     const modal = document.getElementById('jsonImportModal');
-    if (!modal) {
-        return;
-    }
+    if (!modal) return;
 
     const closeButton = modal.querySelector('.close-button');
     const confirmButton = document.getElementById('confirmJsonImport');
     const srtTextarea = document.getElementById('srt_json');
     const paramsTextarea = document.getElementById('params_json');
 
-    if (!confirmButton || !srtTextarea || !paramsTextarea) {
-        return;
-    }
+    if (!confirmButton || !srtTextarea || !paramsTextarea) return;
 
-    // Close button handler
     if (closeButton) {
         closeButton.onclick = () => modal.style.display = 'none';
     }
 
-    // Handle modal backdrop click
     window.onclick = (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
         }
     };
 
-    // Add keyboard support
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && modal.style.display === 'block') {
             modal.style.display = 'none';
         }
     });
 
-    // Handle JSON parsing and form filling
-    confirmButton.onclick = () => {
+    confirmButton.onclick = async () => {
         const srtJson = srtTextarea.value.trim();
         const paramsJson = paramsTextarea.value.trim();
 
         try {
             let extractedRequestDetails = '';
+            let paramsFields = {};
             
             if (srtJson) {
                 const srtData = JSON.parse(srtJson);
@@ -47,25 +40,32 @@ function initializeJsonParser() {
             
             if (paramsJson) {
                 const paramsData = JSON.parse(paramsJson);
-                parseParamsJson(paramsData);
+                paramsFields = parseParamsJson(paramsData);
             }
+
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             modal.style.display = 'none';
 
-            // Format the imported values message
-            let resultMessage = 'Импортированы:\n';
+            // Format the imported values message with all fields
+            let resultMessage = 'Импортированы:\n\n';
             resultMessage += `Номер SRT: ${document.getElementById('request_id_srt').value}\n`;
             resultMessage += `Номер SD: ${document.getElementById('request_id_sd').value}\n`;
             resultMessage += `Заявитель: ${document.getElementById('requester').value}\n`;
+            resultMessage += `Сегмент: ${paramsFields.segment || ''}\n`;
+            resultMessage += `Среда: ${paramsFields.env || ''}\n`;
+            resultMessage += `РИС номер: ${paramsFields.ris_number || ''}\n`;
+            resultMessage += `РИС имя: ${paramsFields.ris_name || ''}\n`;
+            resultMessage += `Группа сопровождения: ${paramsFields.resp_group || ''}\n`;
+            resultMessage += `Владелец: ${paramsFields.owner || ''}\n`;
+            resultMessage += `Зам. владельца: ${paramsFields.zam_owner || ''}\n`;
+            resultMessage += `Email для учетных данных: ${paramsFields.email_for_credentials || ''}\n`;
 
-            // Add requestDetails from the JSON
             if (extractedRequestDetails) {
                 resultMessage += '\nrequestDetails:\n';
                 resultMessage += extractedRequestDetails;
             }
 
-            console.log('Result message before display:', resultMessage);
-            console.log('Result message newlines:', resultMessage.match(/\n/g)?.length || 0);
             displayFormResult(resultMessage);
         } catch (error) {
             displayFormResult(`Ошибка парсинга JSON: ${error.message}`);
@@ -129,48 +129,52 @@ function parseParamsJson(data) {
         newTenantButton.click();
     }
 
+    const formFields = {};  // Collect all fields first
+
     data.forEach(item => {
         switch (item.label) {
             case 'Электронная почта с поддержкой шифрования для отправки учетных данных':
-                setFieldValue('email_for_credentials', item.value);
+                formFields.email_for_credentials = item.value;
                 break;
             case 'Зона безопасности (выделенный кластер)':
-                setFieldValue('segment', item.value);
+                formFields.segment = item.value;
                 break;
             case 'Рабочая группа сопровождения ИС: название':
-                setFieldValue('resp_group', item.value);
+                formFields.resp_group = item.value;
                 break;
             case 'Основной владелец бакета: email':
-                setFieldValue('owner', item.value);
+                formFields.owner = item.value;
                 break;
             case 'Замещающий владелец бакета: email':
-                setFieldValue('zam_owner', item.value);
+                formFields.zam_owner = item.value;
                 break;
             case 'Среда':
                 const envValue = item.value.toUpperCase();
-                let mappedEnv = '';
-                
                 if (envValue.includes('ХОТФИКС') || envValue.includes('HF')) {
-                    mappedEnv = 'HOTFIX';
+                    formFields.env = 'HOTFIX';
                 } else if (envValue.includes('ПРЕПРОД') || envValue.includes('PP')) {
-                    mappedEnv = 'PREPROD';
+                    formFields.env = 'PREPROD';
                 } else if (envValue.includes('ИФТ')) {
-                    mappedEnv = 'IFT';
+                    formFields.env = 'IFT';
                 } else if (envValue.includes('ПРОД') || envValue.includes('PROD')) {
-                    mappedEnv = 'PROD';
-                }
-                
-                if (mappedEnv) {
-                    setFieldValue('env', mappedEnv);
+                    formFields.env = 'PROD';
                 }
                 break;
             case 'Номер РИС и идентификационный код':
                 const [risNumber, risName] = item.value.split('-').map(s => s.trim());
-                if (risNumber) setFieldValue('ris_number', risNumber);
-                if (risName) setFieldValue('ris_name', risName);
+                if (risNumber) formFields.ris_number = risNumber;
+                if (risName) formFields.ris_name = risName;
                 break;
         }
     });
+
+    // Set all fields at once
+    Object.entries(formFields).forEach(([id, value]) => {
+        setFieldValue(id, value);
+    });
+
+    // Return the collected fields for verification
+    return formFields;
 }
 
 function setFieldValue(fieldId, value) {
