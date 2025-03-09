@@ -41,25 +41,50 @@ function getSharedFields() {
 
 function saveFieldValues() {
     const activeTab = document.querySelector('.tab-pane.active');
-    const tabId = activeTab.id;
-    const inputs = activeTab.querySelectorAll('input, select, textarea');
+    if (!activeTab) return;
     
+    const tabId = activeTab.id;
+    if (!fieldValues[tabId]) {
+        fieldValues[tabId] = {};
+    }
+
+    // Get all input elements in the active tab
+    const inputs = activeTab.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
-        // Only save values for fields that should remember their values
-        if (!NO_MEMORY_FIELDS.includes(input.id)) {
-            fieldValues[tabId][input.id] = input.value;
+        if (input.id && !NO_MEMORY_FIELDS.includes(input.id)) {
+            // For shared fields, update value in all tabs
+            if (getSharedFields().includes(input.id)) {
+                Object.keys(fieldValues).forEach(tab => {
+                    fieldValues[tab][input.id] = input.value;
+                });
+            } else {
+                // For non-shared fields, just update in current tab
+                fieldValues[tabId][input.id] = input.value;
+            }
         }
-        // NO_MEMORY_FIELDS values won't be saved but will remain in the form until cleared
     });
 }
 
 function restoreFieldValues(tabId) {
-    const inputs = document.querySelectorAll(`#${tabId}Fields input, #${tabId}Fields select, #${tabId}Fields textarea`);
-    
+    const tabPane = document.getElementById(tabId);
+    if (!tabPane) return;
+
+    const inputs = tabPane.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
-        // Restore any saved values
-        if (fieldValues[tabId] && fieldValues[tabId][input.id] !== undefined) {
-            input.value = fieldValues[tabId][input.id];
+        if (input.id) {
+            // Check if it's a shared field
+            if (getSharedFields().includes(input.id)) {
+                // Get the value from any tab that has it
+                for (const tab in fieldValues) {
+                    if (fieldValues[tab][input.id]) {
+                        input.value = fieldValues[tab][input.id];
+                        break;
+                    }
+                }
+            } else if (fieldValues[tabId] && fieldValues[tabId][input.id] !== undefined) {
+                // Restore non-shared field value
+                input.value = fieldValues[tabId][input.id];
+            }
         }
     });
 }
@@ -187,24 +212,8 @@ function createButton(buttonConfig) {
     button.type = 'button';
     button.id = buttonConfig.id;
     
-    // Use existing button styles from main.css
-    switch (buttonConfig.id) {
-        case 'searchButton':
-            button.className = 'search-button';
-            break;
-        case 'clearButton':
-            button.className = 'clear-search-button';
-            break;
-        case 'import-json':
-            button.className = 'import-json-button';
-            break;
-        case 'check-form':
-        case 'submit-form':
-            button.className = 'confirm-button';
-            break;
-        default:
-            button.className = 'button-container button';
-    }
+    // Use button class from config or fall back to default styles
+    button.className = buttonConfig.className || 'button-container button';
     
     button.textContent = buttonConfig.label;
     
@@ -334,10 +343,7 @@ function initializeModal() {
 
 function switchTab(tabName) {
     // Save current tab's values before switching
-    const currentTab = document.querySelector('.tab-pane.active');
-    if (currentTab) {
-        saveFieldValues();
-    }
+    saveFieldValues();
 
     // Update active tab button
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -354,13 +360,42 @@ function switchTab(tabName) {
         pane.classList.remove('active');
         if (pane.id === tabName) {
             pane.classList.add('active');
+            // Restore values for the new tab
+            restoreFieldValues(tabName);
         }
     });
-
-    // Restore values for the new tab
-    restoreFieldValues(tabName);
 }
 
+// Add event listeners for input changes to save values immediately
+function initializeFieldSync() {
+    document.querySelectorAll('.tab-pane').forEach(tabPane => {
+        const tabId = tabPane.id;
+        if (!fieldValues[tabId]) {
+            fieldValues[tabId] = {};
+        }
+
+        const inputs = tabPane.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.id) {
+                input.addEventListener('change', () => {
+                    if (!NO_MEMORY_FIELDS.includes(input.id)) {
+                        if (getSharedFields().includes(input.id)) {
+                            // Update shared field in all tabs
+                            Object.keys(fieldValues).forEach(tab => {
+                                fieldValues[tab][input.id] = input.value;
+                            });
+                        } else {
+                            // Update non-shared field in current tab
+                            fieldValues[tabId][input.id] = input.value;
+                        }
+                    }
+                });
+            }
+        });
+    });
+}
+
+// Update the initialization to include field sync
 function initializeForm() {
     const form = document.getElementById('mainForm');
     if (form) {
@@ -375,6 +410,9 @@ function initializeForm() {
             switchTab(tabName);
         });
     });
+
+    // Initialize field synchronization
+    initializeFieldSync();
 
     // Initialize with the first tab (search)
     switchTab('search');

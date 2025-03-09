@@ -56,8 +56,8 @@ const TAB_CONFIGS = {
             { id: 'user', label: 'Пользователь', type: 'text' }
         ],
         buttons: [
-            { id: 'searchButton', label: 'Поиск', className: 'button-container button' },
-            { id: 'clearButton', label: 'Очистить', className: 'button-container button' }
+            { id: 'searchButton', label: 'Поиск', className: 'search-button' },
+            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['segment', 'env']
     },
@@ -170,9 +170,9 @@ const TAB_CONFIGS = {
             }
         ],
         buttons: [
-            { id: 'import-json', label: 'Импорт из JSON', className: 'secondary-button' },
+            { id: 'import-json', label: 'Импорт из JSON', className: 'import-json-button' },
             { id: 'check-form', label: 'Проверить', className: 'primary-button' },
-            { id: 'submit-form', label: 'Отправить', className: 'primary-button' }
+            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' }
         ],
         required_fields: ['segment', 'env', 'request_id_sd', 'request_id_srt', 'ris_number', 'ris_name', 'resp_group', 'owner', 'requester', 'email_for_credentials']
     },
@@ -193,12 +193,27 @@ const TAB_CONFIGS = {
     }
 };
 
-// Fields that should not remember their values
+// Fields that should not be shared between tabs
+const NON_SHARED_FIELDS = [
+    'request_id_sd',    // SD number
+    'request_id_srt',   // SRT number
+    'tenant',           // Tenant name
+    'tenant_override',  // Tenant override name
+    'users',           // Users list
+    'buckets',         // Buckets list
+    'user',            // Single user
+    'bucket',          // Single bucket
+    'requester',       // Applicant
+    'email_for_credentials', // Email for credentials
+    'resp_group',      // Owner group
+    'owner',           // Owner email
+    'zam_owner'        // Deputy owner email
+];
+
+// Fields that should not persist between page reloads
 const NO_MEMORY_FIELDS = [
     'request_id_sd',    // SD number
     'request_id_srt',   // SR number
-    'ris_name',         // RIS name
-    'ris_number',       // RIS ID
     'owner',            // Owner email
     'zam_owner',        // Deputy owner email
     'resp_group',       // Owner group
