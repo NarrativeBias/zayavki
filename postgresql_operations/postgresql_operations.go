@@ -381,21 +381,14 @@ func GetTenantInfo(tenant string) (*TenantInfo, error) {
 		return nil, fmt.Errorf("database error: %v", err)
 	}
 
-	fmt.Printf("Looking up cluster info for segment: %s, env: %s\n", result.NetSeg, result.Env)
 	// Get matching clusters
 	clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", result.NetSeg, result.Env)
 	if err != nil {
 		return nil, fmt.Errorf("error finding clusters: %v", err)
 	}
 
-	fmt.Printf("Found %d matching clusters\n", len(clusters))
-	for i, c := range clusters {
-		fmt.Printf("Cluster %d: %+v\n", i+1, c)
-	}
-
 	// Find the cluster that matches our cls_name
 	for _, cluster := range clusters {
-		fmt.Printf("Comparing cluster %s with %s\n", cluster.Кластер, result.ClsName)
 		if cluster.Кластер == result.ClsName {
 			result.TlsEndpoint = cluster.TLSEndpoint
 			result.MtlsEndpoint = cluster.MTLSEndpoint

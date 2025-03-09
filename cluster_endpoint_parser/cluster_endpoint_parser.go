@@ -87,8 +87,13 @@ func HandleClusterSelection(w http.ResponseWriter, r *http.Request) (*ClusterInf
 
 func (c ClusterInfo) ConvertToMap() map[string]string {
 	return map[string]string{
-		"Выдача": c.Выдача, "ЦОД": c.ЦОД, "Среда": c.Среда, "ЗБ": c.ЗБ,
-		"tls_endpoint": c.TLSEndpoint, "mtls_endpoint": c.MTLSEndpoint,
-		"Кластер": c.Кластер, "Реалм": c.Реалм,
+		"Выдача":        c.Выдача,
+		"ЦОД":           c.ЦОД,
+		"Среда":         c.Среда,
+		"ЗБ":            c.ЗБ,
+		"tls_endpoint":  c.TLSEndpoint,
+		"mtls_endpoint": c.MTLSEndpoint,
+		"Кластер":       c.Кластер,
+		"Реалм":         c.Реалм,
 	}
 }

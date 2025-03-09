@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -47,6 +46,7 @@ func main() {
 	mux.HandleFunc("/zayavki/cluster", stripPrefix(handleClusterSelection))
 	mux.HandleFunc("/zayavki/check", stripPrefix(handleCheck))
 	mux.HandleFunc("/zayavki/tenant-info", stripPrefix(handleTenantInfo))
+	mux.HandleFunc("/zayavki/cluster-info", stripPrefix(handleClusterInfo))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -116,38 +116,39 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleClusterSelection(w http.ResponseWriter, r *http.Request) {
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading request body: %v", err)
-		http.Error(w, fmt.Sprintf("Error reading request: %v", err), http.StatusBadRequest)
-		return
+	var requestData struct {
+		ProcessedVars   map[string][]string `json:"processedVars"`
+		SelectedCluster map[string]string   `json:"selectedCluster"`
+		PushToDb        bool                `json:"pushToDb"`
 	}
 
-	var data struct {
-		ProcessedVars   map[string][]string                 `json:"processedVars"`
-		SelectedCluster cluster_endpoint_parser.ClusterInfo `json:"selectedCluster"`
-		PushToDb        bool                                `json:"pushToDb"`
-	}
-
-	if err := json.Unmarshal(body, &data); err != nil {
-		log.Printf("Error unmarshaling JSON: %v", err)
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		http.Error(w, fmt.Sprintf("Error parsing request: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	// Process the variables
-	processedVars, err := variables_parser.ParseAndProcessVariables(data.ProcessedVars)
+	processedVars, err := variables_parser.ParseAndProcessVariables(requestData.ProcessedVars)
 	if err != nil {
-		log.Printf("Error processing variables: %v", err)
 		http.Error(w, fmt.Sprintf("Error processing variables: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Convert map to ClusterInfo
+	clusterInfo := cluster_endpoint_parser.ClusterInfo{
+		Выдача:       requestData.SelectedCluster["Выдача"],
+		ЦОД:          requestData.SelectedCluster["ЦОД"],
+		Среда:        requestData.SelectedCluster["Среда"],
+		ЗБ:           requestData.SelectedCluster["ЗБ"],
+		TLSEndpoint:  requestData.SelectedCluster["tls_endpoint"],
+		MTLSEndpoint: requestData.SelectedCluster["mtls_endpoint"],
+		Кластер:      requestData.SelectedCluster["Кластер"],
+		Реалм:        requestData.SelectedCluster["Реалм"],
+	}
+
 	// Process data with the selected cluster
-	result, err := processDataWithCluster(processedVars, data.SelectedCluster, data.PushToDb)
+	result, err := processDataWithCluster(processedVars, clusterInfo, requestData.PushToDb)
 	if err != nil {
-		log.Printf("Error processing data: %v", err)
 		http.Error(w, fmt.Sprintf("Error processing data: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -195,24 +196,44 @@ func checkTenantExists(processedVars map[string][]string, clusterMap map[string]
 	return nil
 }
 
-func processDataWithCluster(processedVars map[string][]string, chosenCluster cluster_endpoint_parser.ClusterInfo, pushToDb bool) (string, error) {
-	clusterMap := chosenCluster.ConvertToMap()
+func processDataWithCluster(variables map[string][]string, cluster cluster_endpoint_parser.ClusterInfo, pushToDb bool) (string, error) {
+	// Convert ClusterInfo to map for easier handling
+	clusterMap := cluster.ConvertToMap()
+
+	// Skip tenant name generation if we have tenant_override or existing tenant
+	if _, hasExistingTenant := variables["tenant"]; !hasExistingTenant {
+		if override, hasOverride := variables["tenant_override"]; hasOverride && len(override) > 0 && override[0] != "" {
+			variables["tenant"] = []string{override[0]}
+		} else {
+			// Generate tenant name only for new tenant creation without override
+			tenant, err := tenant_name_generation.GenerateTenantName(variables, clusterMap)
+			if err != nil {
+				return "", fmt.Errorf("error generating tenant name: %v", err)
+			}
+			variables["tenant"] = []string{tenant}
+		}
+	}
+
+	// Validate the data
+	if err := validator.ValidateData(variables); err != nil {
+		return "", fmt.Errorf("validation error: %v", err)
+	}
 
 	// Check for existing tenant first
-	if err := checkTenantExists(processedVars, clusterMap); err != nil {
+	if err := checkTenantExists(variables, clusterMap); err != nil {
 		return "", err
 	}
 
 	// Set up tenant and users
-	if err := setupTenantAndUsers(processedVars, clusterMap); err != nil {
+	if err := setupTenantAndUsers(variables, clusterMap); err != nil {
 		return "", err
 	}
 
 	if pushToDb {
-		return pushToDatabase(processedVars, clusterMap)
+		return pushToDatabase(variables, clusterMap)
 	}
 
-	return generateFullResult(processedVars, clusterMap)
+	return generateFullResult(variables, clusterMap)
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
@@ -263,18 +284,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[string]string) error {
-	// Generate tenant name
-	if len(processedVars["tenant_override"]) > 0 && processedVars["tenant_override"][0] != "" {
-		processedVars["tenant"] = []string{processedVars["tenant_override"][0]}
-	} else {
-		tenantName, err := tenant_name_generation.GenerateTenantName(processedVars, clusterMap)
-		if err != nil {
-			return fmt.Errorf("error generating tenant name: %v", err)
-		}
-		processedVars["tenant"] = []string{tenantName}
-	}
-
+func setupTenantAndUsers(processedVars map[string][]string, _ map[string]string) error {
 	// Check if creating tenant is needed and add to users list if so
 	if createTenant, ok := processedVars["create_tenant"]; ok && len(createTenant) > 0 && createTenant[0] == "true" {
 		if len(processedVars["users"]) == 0 {
@@ -283,7 +293,6 @@ func setupTenantAndUsers(processedVars map[string][]string, clusterMap map[strin
 			processedVars["users"] = append([]string{processedVars["tenant"][0]}, processedVars["users"]...)
 		}
 	}
-
 	return nil
 }
 
@@ -385,4 +394,34 @@ func handleTenantInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+func handleClusterInfo(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Segment string `json:"segment"`
+		Env     string `json:"env"`
+		Cluster string `json:"cluster"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", request.Segment, request.Env)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Find the specific cluster
+	for _, cluster := range clusters {
+		if cluster.Кластер == request.Cluster {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(cluster)
+			return
+		}
+	}
+
+	http.Error(w, "Cluster not found", http.StatusNotFound)
 }

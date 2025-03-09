@@ -115,3 +115,14 @@ func joinErrors(errors []string) error {
 	}
 	return nil
 }
+
+func ValidateData(variables map[string][]string) error {
+	// Check required fields
+	requiredFields := []string{"segment", "env", "tenant"}
+	for _, field := range requiredFields {
+		if values, exists := variables[field]; !exists || len(values) == 0 || values[0] == "" {
+			return fmt.Errorf("missing required field: %s", field)
+		}
+	}
+	return nil
+}

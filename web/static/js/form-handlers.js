@@ -34,7 +34,6 @@ async function handleFetchResponse(response) {
     }
     
     const text = await response.text();
-    console.log('Raw response:', text);
 
     // Check if it's a cluster selection response
     if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
@@ -93,12 +92,8 @@ async function submitForm(form, pushToDb = false) {
         const response = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData });
         const data = await handleFetchResponse(response);
 
-        // Add debug logging
-        console.log('Response data:', data);
-
         if (typeof data === 'string' && data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
             const clusterData = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
-            console.log('Cluster data:', clusterData);
             const clusters = JSON.parse(clusterData);
             await handleClusterSelection(clusters, submitFormWithCluster, { formData: trimmedFormData, pushToDb });
         } else {
@@ -107,7 +102,7 @@ async function submitForm(form, pushToDb = false) {
             selectedCluster = null;
         }
     } catch (error) {
-        handleError(error);
+        displayResult(`Error: ${error.message}`);
     }
 }
 
@@ -126,7 +121,7 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
         displayResult(data);
         if (!pushToDb) enablePushToDbButton();
     } catch (error) {
-        handleError(error);
+        displayResult(`Error: ${error.message}`);
     } finally {
         if (pushToDb) {
             disablePushToDbButton();
@@ -136,8 +131,7 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
 }
 
 function handleError(error) {
-    console.error('Error:', error);
-    document.getElementById('result').textContent = `An error occurred: ${error.message}`;
+    displayResult(`An error occurred: ${error.message}`);
     disablePushToDbButton();
 }
 
@@ -147,7 +141,7 @@ function clearAllFields() {
         form.querySelectorAll('input, textarea, select').forEach(input => {
             input.type === 'checkbox' || input.type === 'radio' ? input.checked = false : input.value = '';
         });
-        document.getElementById('result').textContent = '';
+        displayResult('');
         selectedCluster = null;
         disablePushToDbButton();
     } else {
@@ -180,24 +174,10 @@ function displayResult(text) {
     const resultDiv = document.getElementById('result');
     if (!resultDiv) return;
 
-    console.log('displayResult received:', text);
-    console.log('Newlines in received text:', text.match(/\n/g)?.length || 0);
-
-    // Clear previous content
-    resultDiv.innerHTML = '';
-
-    // Create pre element to preserve formatting
-    const pre = document.createElement('pre');
-    pre.textContent = text;
-    
-    console.log('pre element content:', pre.textContent);
-    console.log('pre element innerHTML:', pre.innerHTML);
-    
-    resultDiv.appendChild(pre);
+    resultDiv.textContent = text;
 }
 
 function initializeJsonParser() {
-    console.log('Initializing JSON parser...');
     const importButton = document.getElementById('importJsonButton');
     const modal = document.getElementById('jsonImportModal');
     
@@ -210,30 +190,24 @@ function initializeJsonParser() {
         return;
     }
 
-    console.log('Found import button and modal');
-    
     const closeButton = modal.querySelector('.close-button');
     const confirmButton = document.getElementById('confirmJsonImport');
 
     importButton.addEventListener('click', () => {
-        console.log('Import button clicked');
         modal.style.display = 'block';
     });
 
     closeButton.addEventListener('click', () => {
-        console.log('Close button clicked');
         modal.style.display = 'none';
     });
 
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
-            console.log('Clicked outside modal');
             modal.style.display = 'none';
         }
     });
 
     confirmButton.addEventListener('click', () => {
-        console.log('Confirm button clicked');
         const srtJson = document.getElementById('srt_json').value.trim();
         const paramsJson = document.getElementById('params_json').value.trim();
 
@@ -251,7 +225,6 @@ function initializeJsonParser() {
             modal.style.display = 'none';
             displayResult('JSON данные успешно импортированы');
         } catch (error) {
-            console.error('Error parsing JSON:', error);
             displayResult(`Ошибка парсинга JSON: ${error.message}`);
         }
     });
@@ -379,12 +352,12 @@ function displaySearchResults(results) {
     if (!resultDiv) return;
 
     if (!results || results.length === 0) {
-        resultDiv.innerHTML = '<div class="empty-message">No results found</div>';
+        resultDiv.textContent = 'No results found';
         return;
     }
 
     const table = createResultsTable(results);
-    resultDiv.innerHTML = '';
+    resultDiv.textContent = '';
     resultDiv.appendChild(table);
 }
 
@@ -490,9 +463,6 @@ function handleSearch(e) {
         cluster: formData.get('cluster')
     };
     
-    // Log the search data for debugging
-    console.log('Search data:', searchData);
-
     fetch('/zayavki/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -503,8 +473,7 @@ function handleSearch(e) {
         displaySearchResults(data.results);
     })
     .catch(error => {
-        console.error('Error:', error);
-        displayFormResult('Error performing search: ' + error.message);
+        displayResult(`Error performing search: ${error.message}`);
     });
 }
 
@@ -568,7 +537,6 @@ async function handleFormSubmit(pushToDb = false) {
         displayResult(text);
 
     } catch (error) {
-        console.error('Error:', error);
         displayResult(`Error: ${error.message}`);
     }
 }
@@ -604,7 +572,6 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
         displayResult(text);
 
     } catch (error) {
-        console.error('Error:', error);
         displayResult(`Error: ${error.message}`);
     }
 }
@@ -615,14 +582,12 @@ async function handleTenantModCheck(formData) {
         const tenantInput = activeTab.querySelector('#tenant');
         const tenant = tenantInput ? tenantInput.value : '';
 
-        console.log('Check - Tenant from form:', tenant);
-
         if (!tenant) {
             displayResult('Ошибка: Имя тенанта не указано');
             return;
         }
 
-        // First, get tenant info
+        // Get tenant info
         const infoResponse = await fetch('/zayavki/tenant-info', {
             method: 'POST',
             headers: {
@@ -639,105 +604,87 @@ async function handleTenantModCheck(formData) {
         // Parse the tenant info
         const tenantInfo = JSON.parse(infoData);
         tenantInfo.tenant = tenant;
-        console.log('Check - TenantInfo after adding tenant:', tenantInfo);
-
-        // Store the tenant info for later use
         lastCheckedTenantInfo = tenantInfo;
 
-        // Prepare submit data using tenant info
-        const submitData = new FormData();
-        submitData.append('segment', tenantInfo.net_seg);
-        submitData.append('env', tenantInfo.env);
-        submitData.append('tenant', tenant);
-        console.log('Check - Submit data tenant:', tenant);
+        // Get cluster info
+        const clusterResponse = await fetch('/zayavki/cluster-info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                segment: tenantInfo.net_seg,
+                env: tenantInfo.env,
+                cluster: tenantInfo.cls_name
+            })
+        });
 
-        // Get SD and SRT numbers from the form
+        const clusterInfo = await clusterResponse.json();
+
+        // Create complete clusters map
+        const clustersMap = {
+            "Кластер": tenantInfo.cls_name,
+            "Реалм": tenantInfo.realm,
+            "ЦОД": clusterInfo.ЦОД,
+            "Выдача": clusterInfo.Выдача,
+            "Среда": clusterInfo.Среда,
+            "ЗБ": clusterInfo.ЗБ,
+            "tls_endpoint": clusterInfo.tls_endpoint,
+            "mtls_endpoint": clusterInfo.mtls_endpoint
+        };
+
+        // Create processedVars with all necessary tenant info
+        const processedVars = {
+            segment: [tenantInfo.net_seg],
+            env: [tenantInfo.env],
+            tenant_override: [tenant],
+            ris_number: [tenantInfo.ris_id],
+            ris_name: [tenantInfo.ris_code],
+            resp_group: [tenantInfo.owner_group],
+            owner: [tenantInfo.owner_person],
+            cluster: [tenantInfo.cls_name],
+            realm: [tenantInfo.realm]
+        };
+
+        // Add form fields to processedVars
         const sdInput = activeTab.querySelector('#request_id_sd');
         const srtInput = activeTab.querySelector('#request_id_srt');
-        
-        if (sdInput && sdInput.value) {
-            submitData.append('request_id_sd', sdInput.value);
-        }
-        if (srtInput && srtInput.value) {
-            submitData.append('request_id_srt', srtInput.value);
-        }
-
-        // Add users and buckets from the form
         const usersInput = activeTab.querySelector('#users');
         const bucketsInput = activeTab.querySelector('#buckets');
         const emailInput = activeTab.querySelector('#email_for_credentials');
 
-        if (usersInput) submitData.append('users', usersInput.value);
-        if (bucketsInput) submitData.append('buckets', bucketsInput.value);
-        if (emailInput) submitData.append('email_for_credentials', emailInput.value);
-
-        // Log the full processedVars before sending to cluster endpoint
-        const processedVars = {};
-        for (let [key, value] of submitData.entries()) {
-            processedVars[key] = [value];
+        if (sdInput?.value) processedVars.request_id_sd = [sdInput.value];
+        if (srtInput?.value) processedVars.request_id_srt = [srtInput.value];
+        if (usersInput?.value) processedVars.users = usersInput.value.split('\n').filter(Boolean);
+        if (bucketsInput?.value) {
+            const bucketLines = bucketsInput.value.split('\n').filter(Boolean);
+            processedVars.bucketnames = bucketLines.map(line => line.split('|')[0].trim());
+            processedVars.bucketquotas = bucketLines.map(line => line.split('|')[1]?.trim() || '');
         }
-        console.log('Check - ProcessedVars before cluster request:', processedVars);
+        if (emailInput?.value) processedVars.email = [emailInput.value];
 
-        // Send submit request
-        const submitResponse = await fetch('/zayavki/submit', {
+        // Send to cluster endpoint
+        const endpointResponse = await fetch('/zayavki/cluster', {
             method: 'POST',
-            body: submitData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                processedVars,
+                selectedCluster: clustersMap,
+                pushToDb: false
+            })
         });
 
-        if (!submitResponse.ok) {
-            const errorText = await submitResponse.text();
+        if (!endpointResponse.ok) {
+            const errorText = await endpointResponse.text();
             throw new Error(errorText);
         }
 
-        const text = await submitResponse.text();
-        
-        // Handle cluster selection case
-        if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            // Create cluster info object from tenant info
-            const clusterInfo = {
-                cls_name: tenantInfo.cls_name,
-                net_seg: tenantInfo.net_seg,
-                env: tenantInfo.env,
-                realm: tenantInfo.realm,
-                tls_endpoint: '',
-                mtls_endpoint: ''
-            };
-
-            // Create the clusters map in the format expected by rgw_commands
-            const clustersMap = {
-                "Кластер": tenantInfo.cls_name,
-                "Реалм": tenantInfo.realm,
-                "tls_endpoint": "",
-                "mtls_endpoint": ""
-            };
-
-            // Send directly to cluster endpoint with the known cluster
-            const clusterResponse = await fetch('/zayavki/cluster', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    processedVars: processedVars,
-                    selectedCluster: clustersMap, // Use the properly formatted clusters map
-                    pushToDb: false
-                })
-            });
-
-            if (!clusterResponse.ok) {
-                const errorText = await clusterResponse.text();
-                throw new Error(errorText);
-            }
-
-            const submitResult = await clusterResponse.text();
-            displayCombinedResult(tenantInfo, submitResult);
-            return;
-        }
-
-        displayCombinedResult(tenantInfo, text);
+        const submitResult = await endpointResponse.text();
+        displayCombinedResult(tenantInfo, submitResult);
 
     } catch (error) {
-        console.error('Error:', error);
         displayResult(`Ошибка: ${error.message}`);
         lastCheckedTenantInfo = null;
     }
@@ -771,7 +718,7 @@ async function handleTenantModSubmit(tenantInfo) {
         const submitData = new FormData();
         submitData.append('segment', tenantInfo.net_seg);
         submitData.append('env', tenantInfo.env);
-        submitData.append('tenant', tenant); // Use the tenant from the form or fallback to stored
+        submitData.append('tenant_override', tenant);
         submitData.append('ris_number', tenantInfo.ris_id);
         submitData.append('ris_name', tenantInfo.ris_code);
         submitData.append('resp_group', tenantInfo.owner_group);
@@ -799,6 +746,10 @@ async function handleTenantModSubmit(tenantInfo) {
         const clustersMap = {
             "Кластер": tenantInfo.cls_name,
             "Реалм": tenantInfo.realm,
+            "ЦОД": "",
+            "Выдача": "",
+            "Среда": "",
+            "ЗБ": "",
             "tls_endpoint": "",
             "mtls_endpoint": ""
         };
@@ -824,7 +775,6 @@ async function handleTenantModSubmit(tenantInfo) {
         displayResult(result);
 
     } catch (error) {
-        console.error('Error:', error);
         displayResult(`Ошибка: ${error.message}`);
     }
 }
