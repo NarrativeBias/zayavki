@@ -23,7 +23,7 @@ func BucketCreation(variables map[string][]string, clusters map[string]string) s
 					displayName)
 				rows.WriteString(bucketcreate)
 			} else {
-				bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %sG --size %s",
+				bucketcreate := fmt.Sprintf("~/scripts/rgw-create-bucket.sh --config %s --tenant %s --bucket %s --size %sG",
 					clusters["Реалм"],
 					variables["tenant"][0],
 					variables["bucketnames"][i],

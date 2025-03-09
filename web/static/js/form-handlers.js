@@ -656,11 +656,7 @@ async function handleTenantModCheck(formData) {
         if (sdInput?.value) processedVars.request_id_sd = [sdInput.value];
         if (srtInput?.value) processedVars.request_id_srt = [srtInput.value];
         if (usersInput?.value) processedVars.users = usersInput.value.split('\n').filter(Boolean);
-        if (bucketsInput?.value) {
-            const bucketLines = bucketsInput.value.split('\n').filter(Boolean);
-            processedVars.bucketnames = bucketLines.map(line => line.split('|')[0].trim());
-            processedVars.bucketquotas = bucketLines.map(line => line.split('|')[1]?.trim() || '');
-        }
+        if (bucketsInput?.value) processedVars.buckets = [bucketsInput.value];
         if (emailInput?.value) processedVars.email = [emailInput.value];
 
         // Send to cluster endpoint
@@ -714,6 +710,33 @@ async function handleTenantModSubmit(tenantInfo) {
         const tenantInput = activeTab.querySelector('#tenant');
         const tenant = tenantInput ? tenantInput.value : tenantInfo.tenant;
         
+        // Get cluster info first
+        const clusterResponse = await fetch('/zayavki/cluster-info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                segment: tenantInfo.net_seg,
+                env: tenantInfo.env,
+                cluster: tenantInfo.cls_name
+            })
+        });
+
+        const clusterInfo = await clusterResponse.json();
+
+        // Create complete clusters map with all info
+        const clustersMap = {
+            "Кластер": tenantInfo.cls_name,
+            "Реалм": tenantInfo.realm,
+            "ЦОД": clusterInfo.ЦОД,
+            "Выдача": clusterInfo.Выдача,
+            "Среда": clusterInfo.Среда,
+            "ЗБ": clusterInfo.ЗБ,
+            "tls_endpoint": clusterInfo.tls_endpoint,
+            "mtls_endpoint": clusterInfo.mtls_endpoint
+        };
+
         // Prepare submit data using tenant info
         const submitData = new FormData();
         submitData.append('segment', tenantInfo.net_seg);
@@ -741,18 +764,6 @@ async function handleTenantModSubmit(tenantInfo) {
 
         // Add push_to_db parameter
         submitData.append('push_to_db', 'true');
-
-        // Create the clusters map
-        const clustersMap = {
-            "Кластер": tenantInfo.cls_name,
-            "Реалм": tenantInfo.realm,
-            "ЦОД": "",
-            "Выдача": "",
-            "Среда": "",
-            "ЗБ": "",
-            "tls_endpoint": "",
-            "mtls_endpoint": ""
-        };
 
         // Send to cluster endpoint
         const response = await fetch('/zayavki/cluster', {

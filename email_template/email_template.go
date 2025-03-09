@@ -6,7 +6,7 @@ import (
 	"text/template"
 )
 
-func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[string]string) (string, error) {
+func PopulateEmailTemplate(variables map[string][]string, clusters map[string]string) (string, error) {
 	// Helper function to safely get the first element of a slice or return a default value
 	getFirst := func(slice []string, defaultValue string) string {
 		if len(slice) > 0 {
@@ -15,32 +15,34 @@ func PopulateEmailTemplate(variables map[string][]string, chosenCluster map[stri
 		return defaultValue
 	}
 
+	// Get tenant from either tenant or tenant_override
+	tenant := getFirst(variables["tenant_override"], getFirst(variables["tenant"], "N/A"))
+
 	data := map[string]interface{}{
 		"email":          getFirst(variables["email"], "N/A"),
 		"request_id_sd":  getFirst(variables["request_id_sd"], "N/A"),
 		"request_id_srt": getFirst(variables["request_id_srt"], "N/A"),
 		"segment":        getFirst(variables["segment"], "N/A"),
 		"env":            getFirst(variables["env"], "N/A"),
-		"tenant":         getFirst(variables["tenant"], "N/A"),
+		"tenant":         tenant,
 		"users":          variables["users"],
 		"bucketnames":    variables["bucketnames"],
 		"bucketquotas":   variables["bucketquotas"],
-		"tls_endpoint":   chosenCluster["tls_endpoint"],
-		"mtls_endpoint":  chosenCluster["mtls_endpoint"],
+		"tls_endpoint":   clusters["tls_endpoint"],
+		"mtls_endpoint":  clusters["mtls_endpoint"],
 	}
 
-	tmpl, err := template.New("email_template").Parse(emailTemplate)
+	tmpl, err := template.New("email").Parse(emailTemplate)
 	if err != nil {
-		return "", fmt.Errorf("error parsing email template: %v", err)
+		return "", fmt.Errorf("error parsing template: %v", err)
 	}
 
-	var populatedTemplate bytes.Buffer
-	err = tmpl.Execute(&populatedTemplate, data)
-	if err != nil {
-		return "", fmt.Errorf("error executing email template: %v", err)
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("error executing template: %v", err)
 	}
 
-	return populatedTemplate.String(), nil
+	return buf.String(), nil
 }
 
 // Keep your existing emailTemplate const
