@@ -179,12 +179,19 @@ function displayResult(text) {
     const resultDiv = document.getElementById('result');
     if (!resultDiv) return;
 
+    console.log('displayResult received:', text);
+    console.log('Newlines in received text:', text.match(/\n/g)?.length || 0);
+
     // Clear previous content
     resultDiv.innerHTML = '';
 
     // Create pre element to preserve formatting
     const pre = document.createElement('pre');
     pre.textContent = text;
+    
+    console.log('pre element content:', pre.textContent);
+    console.log('pre element innerHTML:', pre.innerHTML);
+    
     resultDiv.appendChild(pre);
 }
 

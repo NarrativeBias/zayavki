@@ -64,6 +64,8 @@ function initializeJsonParser() {
                 resultMessage += extractedRequestDetails;
             }
 
+            console.log('Result message before display:', resultMessage);
+            console.log('Result message newlines:', resultMessage.match(/\n/g)?.length || 0);
             displayFormResult(resultMessage);
         } catch (error) {
             displayFormResult(`Ошибка парсинга JSON: ${error.message}`);
