@@ -172,7 +172,8 @@ const TAB_CONFIGS = {
         buttons: [
             { id: 'import-json', label: 'Импорт из JSON', className: 'import-json-button' },
             { id: 'check-form', label: 'Проверить', className: 'primary-button' },
-            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' }
+            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
+            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['segment', 'env', 'request_id_sd', 'request_id_srt', 'ris_number', 'ris_name', 'resp_group', 'owner', 'requester', 'email_for_credentials']
     },
