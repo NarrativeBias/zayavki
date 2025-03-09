@@ -1,4 +1,5 @@
 let selectedCluster = null;
+let lastCheckedTenantInfo = null;
 
 function initializeFormSubmissionHandler() {
     const form = document.getElementById('mainForm');
@@ -509,23 +510,28 @@ function handleSearch(e) {
 
 async function handleFormSubmit(pushToDb = false) {
     const form = document.getElementById('mainForm');
-    if (!form) {
-        console.error('Form element not found');
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!form || !activeTab) return;
+    
+    // Special handling for tenant-mod tab
+    if (activeTab.id === 'tenant-mod') {
+        if (!pushToDb) {
+            // Check button pressed
+            await handleTenantModCheck(new FormData(form));
+        } else {
+            // Submit to DB button pressed
+            if (!lastCheckedTenantInfo) {
+                displayResult('Ошибка: Сначала нужно проверить тенант');
+                return;
+            }
+            await handleTenantModSubmit(lastCheckedTenantInfo);
+        }
         return;
     }
 
     try {
-        // Get the active tab
-        const activeTab = document.querySelector('.tab-pane.active');
-        if (!activeTab) {
-            console.error('No active tab found');
-            return;
-        }
-
-        // Create FormData only from the active tab's fields
+        // Create new FormData only from the active tab's fields
         const formData = new FormData();
-        
-        // Add fields from the active tab
         const inputs = activeTab.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
             if (input.id && input.value) {
@@ -600,6 +606,226 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     } catch (error) {
         console.error('Error:', error);
         displayResult(`Error: ${error.message}`);
+    }
+}
+
+async function handleTenantModCheck(formData) {
+    try {
+        const activeTab = document.querySelector('.tab-pane.active');
+        const tenantInput = activeTab.querySelector('#tenant');
+        const tenant = tenantInput ? tenantInput.value : '';
+
+        console.log('Check - Tenant from form:', tenant);
+
+        if (!tenant) {
+            displayResult('Ошибка: Имя тенанта не указано');
+            return;
+        }
+
+        // First, get tenant info
+        const infoResponse = await fetch('/zayavki/tenant-info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tenant: tenant })
+        });
+
+        const infoData = await infoResponse.text();
+        if (!infoResponse.ok) {
+            throw new Error(infoData);
+        }
+
+        // Parse the tenant info
+        const tenantInfo = JSON.parse(infoData);
+        tenantInfo.tenant = tenant;
+        console.log('Check - TenantInfo after adding tenant:', tenantInfo);
+
+        // Store the tenant info for later use
+        lastCheckedTenantInfo = tenantInfo;
+
+        // Prepare submit data using tenant info
+        const submitData = new FormData();
+        submitData.append('segment', tenantInfo.net_seg);
+        submitData.append('env', tenantInfo.env);
+        submitData.append('tenant', tenant);
+        console.log('Check - Submit data tenant:', tenant);
+
+        // Get SD and SRT numbers from the form
+        const sdInput = activeTab.querySelector('#request_id_sd');
+        const srtInput = activeTab.querySelector('#request_id_srt');
+        
+        if (sdInput && sdInput.value) {
+            submitData.append('request_id_sd', sdInput.value);
+        }
+        if (srtInput && srtInput.value) {
+            submitData.append('request_id_srt', srtInput.value);
+        }
+
+        // Add users and buckets from the form
+        const usersInput = activeTab.querySelector('#users');
+        const bucketsInput = activeTab.querySelector('#buckets');
+        const emailInput = activeTab.querySelector('#email_for_credentials');
+
+        if (usersInput) submitData.append('users', usersInput.value);
+        if (bucketsInput) submitData.append('buckets', bucketsInput.value);
+        if (emailInput) submitData.append('email_for_credentials', emailInput.value);
+
+        // Log the full processedVars before sending to cluster endpoint
+        const processedVars = {};
+        for (let [key, value] of submitData.entries()) {
+            processedVars[key] = [value];
+        }
+        console.log('Check - ProcessedVars before cluster request:', processedVars);
+
+        // Send submit request
+        const submitResponse = await fetch('/zayavki/submit', {
+            method: 'POST',
+            body: submitData
+        });
+
+        if (!submitResponse.ok) {
+            const errorText = await submitResponse.text();
+            throw new Error(errorText);
+        }
+
+        const text = await submitResponse.text();
+        
+        // Handle cluster selection case
+        if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            // Create cluster info object from tenant info
+            const clusterInfo = {
+                cls_name: tenantInfo.cls_name,
+                net_seg: tenantInfo.net_seg,
+                env: tenantInfo.env,
+                realm: tenantInfo.realm,
+                tls_endpoint: '',
+                mtls_endpoint: ''
+            };
+
+            // Create the clusters map in the format expected by rgw_commands
+            const clustersMap = {
+                "Кластер": tenantInfo.cls_name,
+                "Реалм": tenantInfo.realm,
+                "tls_endpoint": "",
+                "mtls_endpoint": ""
+            };
+
+            // Send directly to cluster endpoint with the known cluster
+            const clusterResponse = await fetch('/zayavki/cluster', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    processedVars: processedVars,
+                    selectedCluster: clustersMap, // Use the properly formatted clusters map
+                    pushToDb: false
+                })
+            });
+
+            if (!clusterResponse.ok) {
+                const errorText = await clusterResponse.text();
+                throw new Error(errorText);
+            }
+
+            const submitResult = await clusterResponse.text();
+            displayCombinedResult(tenantInfo, submitResult);
+            return;
+        }
+
+        displayCombinedResult(tenantInfo, text);
+
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`Ошибка: ${error.message}`);
+        lastCheckedTenantInfo = null;
+    }
+}
+
+// Helper function to display combined result
+function displayCombinedResult(tenantInfo, submitResult) {
+    const result = `Информация о тенанте ${tenantInfo.tenant}:
+Кластер: ${tenantInfo.cls_name}
+Сегмент: ${tenantInfo.net_seg}
+Среда: ${tenantInfo.env}
+Реалм: ${tenantInfo.realm}
+РИС код: ${tenantInfo.ris_code}
+РИС номер: ${tenantInfo.ris_id}
+Группа владельцев: ${tenantInfo.owner_group}
+Владелец: ${tenantInfo.owner_person}
+
+Результат проверки:
+${submitResult}`;
+
+    displayResult(result);
+}
+
+async function handleTenantModSubmit(tenantInfo) {
+    try {
+        const activeTab = document.querySelector('.tab-pane.active');
+        const tenantInput = activeTab.querySelector('#tenant');
+        const tenant = tenantInput ? tenantInput.value : tenantInfo.tenant;
+        
+        // Prepare submit data using tenant info
+        const submitData = new FormData();
+        submitData.append('segment', tenantInfo.net_seg);
+        submitData.append('env', tenantInfo.env);
+        submitData.append('tenant', tenant); // Use the tenant from the form or fallback to stored
+        submitData.append('ris_number', tenantInfo.ris_id);
+        submitData.append('ris_name', tenantInfo.ris_code);
+        submitData.append('resp_group', tenantInfo.owner_group);
+        submitData.append('owner', tenantInfo.owner_person);
+        submitData.append('cluster', tenantInfo.cls_name);
+        submitData.append('realm', tenantInfo.realm);
+
+        // Get form fields
+        const sdInput = activeTab.querySelector('#request_id_sd');
+        const srtInput = activeTab.querySelector('#request_id_srt');
+        const usersInput = activeTab.querySelector('#users');
+        const bucketsInput = activeTab.querySelector('#buckets');
+        const emailInput = activeTab.querySelector('#email_for_credentials');
+
+        if (sdInput) submitData.append('request_id_sd', sdInput.value);
+        if (srtInput) submitData.append('request_id_srt', srtInput.value);
+        if (usersInput) submitData.append('users', usersInput.value);
+        if (bucketsInput) submitData.append('buckets', bucketsInput.value);
+        if (emailInput) submitData.append('email_for_credentials', emailInput.value);
+
+        // Add push_to_db parameter
+        submitData.append('push_to_db', 'true');
+
+        // Create the clusters map
+        const clustersMap = {
+            "Кластер": tenantInfo.cls_name,
+            "Реалм": tenantInfo.realm,
+            "tls_endpoint": "",
+            "mtls_endpoint": ""
+        };
+
+        // Send to cluster endpoint
+        const response = await fetch('/zayavki/cluster', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
+                selectedCluster: clustersMap,
+                pushToDb: true
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        const result = await response.text();
+        displayResult(result);
+
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`Ошибка: ${error.message}`);
     }
 }
 

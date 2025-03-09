@@ -39,6 +39,9 @@ func BucketCreation(variables map[string][]string, clusters map[string]string) s
 }
 
 func UserCreation(variables map[string][]string, clusters map[string]string) string {
+	fmt.Printf("UserCreation - Input variables: %+v\n", variables)
+	fmt.Printf("UserCreation - Tenant value: %s\n", variables["tenant"][0])
+
 	// Iterate over the usernames to generate terminal commands for "radogw-admin user create"
 	var rows bytes.Buffer
 	for i, user := range variables["users"] {

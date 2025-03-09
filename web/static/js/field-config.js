@@ -178,9 +178,50 @@ const TAB_CONFIGS = {
         required_fields: ['segment', 'env', 'request_id_sd', 'request_id_srt', 'ris_number', 'ris_name', 'resp_group', 'owner', 'requester', 'email_for_credentials']
     },
     'tenant-mod': {
-        fields: ['segment', 'env', 'ris_number', 'ris_name', 'tenant', 'buckets', 'users'],
-        buttons: ['submit', 'push_db', 'clear_all'],
-        required_fields: ['segment', 'env', 'ris_number', 'ris_name', 'tenant']
+        fields: [
+            { id: 'tenant', label: 'Имя тенанта', type: 'text', required: true },
+            {
+                id: 'request_id_sd',
+                label: 'Номер обращения SD',
+                type: 'text',
+                required: true,
+                placeholder: 'SD-XXXXXXX'
+            },
+            {
+                id: 'request_id_srt',
+                label: 'Номер задания SRT',
+                type: 'text',
+                required: true,
+                placeholder: 'SRT-XXXXXXX'
+            },
+            {
+                id: 'email_for_credentials',
+                label: 'Email для отправки данных УЗ',
+                type: 'text',
+                required: false,
+                placeholder: 'example@vtb.ru'
+            },
+            {
+                id: 'users',
+                label: 'Дополнительные пользователи (по одному на строку)',
+                type: 'textarea',
+                required: false,
+                placeholder: 'if_cosd_user1\nif_cosd_user2'
+            },
+            {
+                id: 'buckets',
+                label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
+                type: 'textarea',
+                required: false,
+                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200'
+            }
+        ],
+        buttons: [
+            { id: 'check-form', label: 'Проверить', className: 'primary-button' },
+            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
+            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
+        ],
+        required_fields: ['tenant', 'request_id_sd', 'request_id_srt']
     },
     'user-bucket-del': {
         fields: ['segment', 'env', 'tenant', 'bucket', 'user'],

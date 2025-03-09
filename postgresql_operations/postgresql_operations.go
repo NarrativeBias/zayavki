@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
@@ -69,9 +70,25 @@ func getStringValue(ns sql.NullString) string {
 	return ns.String
 }
 
+type TenantInfo struct {
+	ClsName      string `json:"cls_name"`
+	NetSeg       string `json:"net_seg"`
+	Env          string `json:"env"`
+	Realm        string `json:"realm"`
+	RisCode      string `json:"ris_code"`
+	RisId        string `json:"ris_id"`
+	OwnerGroup   string `json:"owner_group"`
+	OwnerPerson  string `json:"owner_person"`
+	SrtNum       string `json:"srt_num"`
+	TlsEndpoint  string `json:"tls_endpoint"`
+	MtlsEndpoint string `json:"mtls_endpoint"`
+	Tenant       string `json:"tenant"`
+}
+
 var (
 	db     *sql.DB
 	config DBConfig
+	DB     *sql.DB
 )
 
 func InitDB(configPath string) error {
@@ -103,6 +120,7 @@ func InitDB(configPath string) error {
 		return fmt.Errorf("failed to ping database: %v", err)
 	}
 
+	DB = db // Assign to the public DB variable
 	return nil
 }
 
@@ -340,6 +358,55 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		strings.Join(insertedBuckets, ", "))
 
 	return result, nil
+}
+
+func GetTenantInfo(tenant string) (*TenantInfo, error) {
+	query := fmt.Sprintf(`
+        SELECT DISTINCT cls_name, net_seg, env, realm, ris_code, ris_id, owner_group, owner_person, srt_num
+        FROM %s.%s
+        WHERE tenant = $1 AND s3_user = $1
+        LIMIT 1`, config.Schema, config.Table)
+
+	var result TenantInfo
+	err := db.QueryRow(query, tenant).Scan(
+		&result.ClsName, &result.NetSeg, &result.Env, &result.Realm,
+		&result.RisCode, &result.RisId, &result.OwnerGroup, &result.OwnerPerson,
+		&result.SrtNum,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("tenant not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("database error: %v", err)
+	}
+
+	fmt.Printf("Looking up cluster info for segment: %s, env: %s\n", result.NetSeg, result.Env)
+	// Get matching clusters
+	clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", result.NetSeg, result.Env)
+	if err != nil {
+		return nil, fmt.Errorf("error finding clusters: %v", err)
+	}
+
+	fmt.Printf("Found %d matching clusters\n", len(clusters))
+	for i, c := range clusters {
+		fmt.Printf("Cluster %d: %+v\n", i+1, c)
+	}
+
+	// Find the cluster that matches our cls_name
+	for _, cluster := range clusters {
+		fmt.Printf("Comparing cluster %s with %s\n", cluster.Кластер, result.ClsName)
+		if cluster.Кластер == result.ClsName {
+			result.TlsEndpoint = cluster.TLSEndpoint
+			result.MtlsEndpoint = cluster.MTLSEndpoint
+			break
+		}
+	}
+
+	// Add tenant to the result
+	result.Tenant = tenant
+
+	return &result, nil
 }
 
 // CloseDB closes the database connection
