@@ -355,3 +355,8 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
+
+func handleError(w http.ResponseWriter, err error) {
+	log.Printf("Error processing data: %v", err)
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}

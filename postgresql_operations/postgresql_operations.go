@@ -300,7 +300,9 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 				clusters["Реалм"], variables["tenant"][0], username, "-", "-",
 				variables["request_id_sd"][0], variables["request_id_srt"][0],
 				done_date, variables["ris_name"][0], variables["ris_number"][0],
-				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], variables["email"][0], "-",
+				variables["resp_group"][0],
+				fmt.Sprintf("%s; %s", variables["owner"][0], variables["zam_owner"][0]),
+				variables["requester"][0], variables["email"][0], "-",
 			)
 			if err != nil {
 				return "", fmt.Errorf("failed to insert row for user %s: %v", username, err)
@@ -316,7 +318,9 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 				clusters["Реалм"], variables["tenant"][0], "-", bucket, variables["bucketquotas"][i],
 				variables["request_id_sd"][0], variables["request_id_srt"][0],
 				done_date, variables["ris_name"][0], variables["ris_number"][0],
-				variables["resp_group"][0], variables["owner"][0], variables["requester"][0], "-", "-",
+				variables["resp_group"][0],
+				fmt.Sprintf("%s; %s", variables["owner"][0], variables["zam_owner"][0]),
+				variables["requester"][0], "-", "-",
 			)
 			if err != nil {
 				return "", fmt.Errorf("failed to insert row for bucket %s: %v", bucket, err)

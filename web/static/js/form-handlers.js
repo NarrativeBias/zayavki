@@ -548,7 +548,7 @@ async function handleFormSubmit(pushToDb = false) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            throw new Error(errorText);
         }
 
         const text = await response.text();
@@ -590,7 +590,8 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(errorText);
         }
 
         const text = await response.text();
