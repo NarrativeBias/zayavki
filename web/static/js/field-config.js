@@ -35,7 +35,7 @@ const ALL_BUTTONS = {
 const TAB_CONFIGS = {
     'search': {
         fields: [
-            { id: 'segment', label: 'Сегмент', type: 'text' },
+            { id: 'segment', label: 'Зона безопасности', type: 'text' },
             { 
                 id: 'env', 
                 label: 'Среда', 

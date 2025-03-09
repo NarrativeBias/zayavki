@@ -332,6 +332,35 @@ function initializeModal() {
     });
 }
 
+function switchTab(tabName) {
+    // Save current tab's values before switching
+    const currentTab = document.querySelector('.tab-pane.active');
+    if (currentTab) {
+        saveFieldValues();
+    }
+
+    // Update active tab button
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+        if (button.dataset.tab === tabName) {
+            button.classList.add('active');
+        }
+    });
+
+    // Update active tab content
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    tabPanes.forEach(pane => {
+        pane.classList.remove('active');
+        if (pane.id === tabName) {
+            pane.classList.add('active');
+        }
+    });
+
+    // Restore values for the new tab
+    restoreFieldValues(tabName);
+}
+
 function initializeForm() {
     const form = document.getElementById('mainForm');
     if (form) {
