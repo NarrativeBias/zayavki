@@ -180,6 +180,18 @@ function createButton(buttonConfig) {
         case 'clearButton':
             button.addEventListener('click', clearAllFields);
             break;
+        case 'import-json':
+            button.addEventListener('click', () => {
+                const modal = document.getElementById('jsonImportModal');
+                if (modal) modal.style.display = 'block';
+            });
+            break;
+        case 'check-form':
+            button.addEventListener('click', (e) => handleFormSubmit(e, false));
+            break;
+        case 'submit-form':
+            button.addEventListener('click', (e) => handleFormSubmit(e, true));
+            break;
     }
     
     return button;
@@ -252,11 +264,11 @@ function handleSearch(e) {
     })
     .then(response => response.json())
     .then(data => {
-        displayResults(data.results);
+        displaySearchResults(data.results);
     })
     .catch(error => {
         console.error('Error:', error);
-        document.getElementById('result').textContent = 'Error performing search: ' + error.message;
+        displayFormResult('Error performing search: ' + error.message);
     });
 }
 
@@ -289,3 +301,25 @@ function initializeModal() {
         };
     });
 }
+
+function initializeForm() {
+    const form = document.getElementById('mainForm');
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    }
+
+    // Initialize tabs
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+
+    // Initialize with the first tab (search)
+    switchTab('search');
+}
+
+// Call initialization when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeForm);

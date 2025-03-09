@@ -63,3 +63,66 @@ function updateClusterDetails(cluster) {
         <div class="cluster-row"><span class="label">Реалм:</span><span class="value">${cluster.Реалм}</span></div>
     `;
 }
+
+function showClusterModal(clusters, formData, pushToDb = false) {
+    const modal = document.getElementById('clusterModal');
+    const select = document.getElementById('cluster-select');
+    const closeButton = modal.querySelector('.close-button');
+    const confirmButton = document.getElementById('confirm-cluster');
+
+    // Clear existing options
+    select.innerHTML = '';
+
+    // Add options for each cluster
+    clusters.forEach(cluster => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify(cluster);
+        option.textContent = `${cluster['Кластер']} (${cluster['ЦОД']})`;
+        select.appendChild(option);
+    });
+
+    // Show cluster details for first option
+    updateClusterDetails(JSON.parse(select.value));
+
+    // Update details when selection changes
+    select.addEventListener('change', () => {
+        updateClusterDetails(JSON.parse(select.value));
+    });
+
+    // Show the modal
+    modal.style.display = 'block';
+
+    // Handle close button
+    closeButton.onclick = () => {
+        modal.style.display = 'none';
+    };
+
+    // Handle clicking outside modal
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    // Handle confirm button
+    confirmButton.onclick = () => {
+        const selectedCluster = JSON.parse(select.value);
+        handleClusterSelection(selectedCluster, formData, pushToDb);
+        modal.style.display = 'none';
+    };
+}
+
+function updateClusterDetails(cluster) {
+    const details = document.getElementById('cluster-details');
+    const rows = details.getElementsByClassName('cluster-row');
+    
+    for (const row of rows) {
+        const label = row.querySelector('.label').textContent.replace(':', '');
+        const value = row.querySelector('.value');
+        value.textContent = cluster[label] || '-';
+    }
+}
+
+// Export functions for use in other files
+window.showClusterModal = showClusterModal;
+window.updateClusterDetails = updateClusterDetails;

@@ -163,10 +163,10 @@ const TAB_CONFIGS = {
             },
             {
                 id: 'buckets',
-                label: 'Бакеты с указанием квоты (формат: имя_бакета квота)',
+                label: 'Бакеты с указанием квоты (формат: имя-бакета | квота)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if_cosd_bucket1 100G\nif_cosd_bucket2 200G'
+                placeholder: 'if-cosd-bucket1 100G\nif-cosd-bucket2 200G'
             }
         ],
         buttons: [

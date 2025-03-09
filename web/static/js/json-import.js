@@ -1,42 +1,31 @@
-function initializeJsonImport() {
-    const importButton = document.getElementById('importJsonButton');
+function initializeJsonParser() {
     const modal = document.getElementById('jsonImportModal');
-    const modalContent = modal.querySelector('.modal-content');
+    if (!modal) {
+        console.error('JSON import modal not found');
+        return;
+    }
+
     const closeButton = modal.querySelector('.close-button');
     const confirmButton = document.getElementById('confirmJsonImport');
     const srtTextarea = document.getElementById('srt_json');
     const paramsTextarea = document.getElementById('params_json');
 
-    if (!importButton || !modal) {
-        console.error('Import button or modal not found');
+    if (!confirmButton || !srtTextarea || !paramsTextarea) {
+        console.error('Required modal elements not found');
         return;
     }
 
-    // Initialize modal display style
-    modal.style.display = 'none';
-
-    importButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        modal.style.display = 'block';
-        srtTextarea.focus();
-    });
-
-    closeButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        modal.style.display = 'none';
-    });
+    // Close button handler
+    if (closeButton) {
+        closeButton.onclick = () => modal.style.display = 'none';
+    }
 
     // Handle modal backdrop click
-    modal.addEventListener('mousedown', (e) => {
-        if (e.target === modal) {
+    window.onclick = (event) => {
+        if (event.target === modal) {
             modal.style.display = 'none';
         }
-    });
-
-    // Prevent event bubbling from modal content
-    modalContent.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-    });
+    };
 
     // Add keyboard support
     document.addEventListener('keydown', (event) => {
@@ -46,8 +35,7 @@ function initializeJsonImport() {
     });
 
     // Handle JSON parsing and form filling
-    confirmButton.addEventListener('click', (e) => {
-        e.preventDefault();
+    confirmButton.addEventListener('click', () => {
         const srtJson = srtTextarea.value.trim();
         const paramsJson = paramsTextarea.value.trim();
 
@@ -78,10 +66,10 @@ function initializeJsonImport() {
                 resultMessage += extractedRequestDetails;
             }
 
-            displayResult(resultMessage);
+            displayFormResult(resultMessage);
         } catch (error) {
             console.error('Error parsing JSON:', error);
-            displayResult(`Ошибка парсинга JSON: ${error.message}`);
+            displayFormResult(`Ошибка парсинга JSON: ${error.message}`);
         }
     });
 }
@@ -94,36 +82,45 @@ function parseSrtJson(data) {
         });
     }
 
+    // Set basic fields
     setFieldValue('request_id_srt', data.number);
     setFieldValue('request_id_sd', customFields.appealNumber);
     setFieldValue('requester', customFields.applicant);
     
-    // Parse buckets and users from requestDetails
+    // Parse requestDetails for buckets and users
     if (data.requestDetails) {
-        // Parse buckets section
-        const bucketsMatch = data.requestDetails.match(/Список бакетов\s+Имя бакета \| Объём бакет, ГБ\s+([\s\S]+?)(?=\n\s*\n|\n*Список|$)/);
+        console.log('Parsing requestDetails:', data.requestDetails);
+        
+        // Parse buckets section - fixed regex and parsing
+        const bucketsMatch = data.requestDetails.match(/Список бакетов\s*\nИмя бакета \| Объём бакет, ГБ\s*([\s\S]+?)(?=\n\s*\n|\n*Список|$)/);
         if (bucketsMatch) {
+            console.log('Found buckets section:', bucketsMatch[1]);
             const bucketLines = bucketsMatch[1].trim().split('\n');
             const bucketsList = bucketLines
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя бакета'))
                 .map(line => {
-                    // Convert "name | size" to "name sizeG"
                     const [name, size] = line.split('|').map(s => s.trim());
+                    console.log('Processing bucket line:', line, '→', `${name} ${size}G`);
                     return `${name} ${size}G`;
                 })
                 .join('\n');
+            console.log('Setting buckets to:', bucketsList);
             setFieldValue('buckets', bucketsList);
+        } else {
+            console.log('No buckets section found in requestDetails');
         }
 
-        // Parse users section
-        const usersMatch = data.requestDetails.match(/Список дополнительных учетных записей\s+Имя дополнительной учетной записи\s+([\s\S]+?)(?=\n\s*\n|$)/);
+        // Parse users section - updated regex
+        const usersMatch = data.requestDetails.match(/Список дополнительных учетных записей[\s\S]*?Имя дополнительной учетной записи\s*([\s\S]+?)(?=\n\s*\n|$)/i);
         if (usersMatch) {
+            console.log('Found users section:', usersMatch[1]);
             const userLines = usersMatch[1].trim().split('\n');
             const usersList = userLines
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя дополнительной'))
                 .join('\n');
+            console.log('Processed users:', usersList);
             setFieldValue('users', usersList);
         }
     }
@@ -137,74 +134,76 @@ function parseParamsJson(data) {
         return;
     }
 
-    let ownerEmails = [];
+    // Switch to new-tenant tab first
+    const newTenantButton = document.querySelector('.tab-button[data-tab="new-tenant"]');
+    if (newTenantButton) {
+        newTenantButton.click();
+    }
 
     data.forEach(item => {
-        // Extract email for credentials
-        if (item.label === 'Электронная почта с поддержкой шифрования для отправки учетных данных') {
-            setFieldValue('email_for_credentials', item.value);
-        }
-        
-        // Extract segment (any label containing "Зона безопасности")
-        if (item.label.includes('Зона безопасности')) {
-            setFieldValue('segment', item.value);
-        }
-
-        // Extract resp_group
-        if (item.label === 'Рабочая группа сопровождения ИС: название') {
-            setFieldValue('resp_group', item.value);
-        }
-
-        // Extract and map environment
-        if (item.label === 'Среда') {
-            const envValue = item.value.toUpperCase();
-            let mappedEnv = '';
-            
-            if (envValue.includes('HF') || envValue.includes('ХОТФИКС')) {
-                mappedEnv = 'HOTFIX';
-            } else if (envValue.includes('PP') || envValue.includes('ПРЕПРОД')) {
-                mappedEnv = 'PREPROD';
-            } else if (envValue.includes('ИФТ')) {
-                mappedEnv = 'IFT';
-            } else if (envValue.includes('PROD') || envValue.includes('ПРОД')) {
-                mappedEnv = 'PROD';
-            }
-            
-            if (mappedEnv) {
-                setFieldValue('env', mappedEnv);
-            }
-        }
-
-        // Collect owner emails
-        if (item.label === 'Основной владелец бакета: email' || 
-            item.label === 'Замещающий владелец бакета: email') {
-            ownerEmails.push(item.value);
-        }
-
-        // Extract RIS number and name
-        if (item.label === 'Номер РИС и идентификационный код') {
-            const [risNumber, risName] = item.value.split('-').map(s => s.trim());
-            if (risNumber) {
-                setFieldValue('ris_number', risNumber);
-            }
-            if (risName) {
-                setFieldValue('ris_name', risName);
-            }
+        console.log('Processing item:', item.label, item.value);
+        switch (item.label) {
+            case 'Электронная почта с поддержкой шифрования для отправки учетных данных':
+                setFieldValue('email_for_credentials', item.value);
+                break;
+            case 'Зона безопасности (выделенный кластер)':
+                setFieldValue('segment', item.value);
+                break;
+            case 'Рабочая группа сопровождения ИС: название':
+                setFieldValue('resp_group', item.value);
+                break;
+            case 'Основной владелец бакета: email':
+                setFieldValue('owner', item.value);
+                break;
+            case 'Замещающий владелец бакета: email':
+                setFieldValue('zam_owner', item.value);
+                break;
+            case 'Среда':
+                const envValue = item.value.toUpperCase();
+                let mappedEnv = '';
+                
+                if (envValue.includes('ХОТФИКС') || envValue.includes('HF')) {
+                    mappedEnv = 'HOTFIX';
+                } else if (envValue.includes('ПРЕПРОД') || envValue.includes('PP')) {
+                    mappedEnv = 'PREPROD';
+                } else if (envValue.includes('ИФТ')) {
+                    mappedEnv = 'IFT';
+                } else if (envValue.includes('ПРОД') || envValue.includes('PROD')) {
+                    mappedEnv = 'PROD';
+                }
+                
+                if (mappedEnv) {
+                    setFieldValue('env', mappedEnv);
+                }
+                break;
+            case 'Номер РИС и идентификационный код':
+                const [risNumber, risName] = item.value.split('-').map(s => s.trim());
+                if (risNumber) setFieldValue('ris_number', risNumber);
+                if (risName) setFieldValue('ris_name', risName);
+                break;
         }
     });
-
-    // Set owner field with collected emails
-    if (ownerEmails.length > 0) {
-        setFieldValue('owner', ownerEmails.join('; '));
-    }
 }
 
 function setFieldValue(fieldId, value) {
-    const input = document.getElementById(fieldId);
+    // First try to find the input in the active tab
+    let input = document.querySelector('.tab-pane.active').querySelector(`#${fieldId}`);
+    
+    // If not found in active tab, try to find it in new-tenant tab
+    if (!input) {
+        const newTenantTab = document.getElementById('new-tenant');
+        if (newTenantTab) {
+            input = newTenantTab.querySelector(`#${fieldId}`);
+        }
+    }
+
     if (input && value) {
+        console.log(`Setting ${fieldId} to ${value}`);
         input.value = value;
         if (input.tagName === 'SELECT') {
             input.dispatchEvent(new Event('change'));
         }
+    } else {
+        console.warn(`Field ${fieldId} not found or value is empty`);
     }
 } 

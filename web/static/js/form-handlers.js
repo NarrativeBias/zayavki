@@ -347,9 +347,7 @@ function initializeFormSubmission() {
     initializeJsonParser();
 }
 
-window.displayResults = function(results) {
-    const resultDiv = document.getElementById('result');
-    
+function createResultsTable(results) {
     // Create table container
     const tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
@@ -416,43 +414,30 @@ window.displayResults = function(results) {
 
     table.appendChild(tbody);
     tableContainer.appendChild(table);
-    
-    // Clear previous results and add new table
-    resultDiv.innerHTML = '';
-    resultDiv.appendChild(tableContainer);
-};
+    return tableContainer;
+}
 
-function handleFormSubmit(event, pushToDb = false) {
-    event.preventDefault();
-    
-    const activeTab = document.querySelector('.tab-button.active').dataset.tab;
-    const form = document.getElementById('mainForm');
-    const formData = new FormData(form);
-    
-    // Add create_tenant flag for new-tenant tab
-    if (activeTab === 'new-tenant') {
-        formData.append('create_tenant', 'true');
+// For form submission responses
+function displayFormResult(data) {
+    const resultDiv = document.getElementById('result');
+    if (resultDiv) {
+        resultDiv.textContent = data;
     }
-    
-    formData.append('push_to_db', pushToDb.toString());
+}
 
-    fetch('/zayavki/submit', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.text())
-    .then(result => {
-        if (result.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            const clustersData = JSON.parse(result.substring('CLUSTER_SELECTION_REQUIRED:'.length));
-            showClusterModal(clustersData, formData, pushToDb);
-        } else {
-            document.getElementById('result').textContent = result;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('result').textContent = `Error: ${error.message}`;
-    });
+// For search results that need table formatting
+function displaySearchResults(results) {
+    const resultDiv = document.getElementById('result');
+    if (!resultDiv) return;
+
+    if (!results || results.length === 0) {
+        resultDiv.innerHTML = '<div class="empty-message">No results found</div>';
+        return;
+    }
+
+    const table = createResultsTable(results);
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(table);
 }
 
 function initializeFieldValidation() {
@@ -490,9 +475,9 @@ function initializeFieldValidation() {
         });
     }
 
-    // Email validation for owner and deputy owner
+    // Email validation for all email fields
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const emailFields = ['owner', 'zam_owner'];
+    const emailFields = ['owner', 'zam_owner', 'email_for_credentials'];
     
     emailFields.forEach(fieldId => {
         const input = document.getElementById(fieldId);
@@ -527,3 +512,98 @@ function clearValidationMessage(validationDiv) {
     validationDiv.textContent = '';
     validationDiv.className = 'validation-message';
 }
+
+function handleSearch(e) {
+    e.preventDefault();
+    const formData = new FormData(document.getElementById('mainForm'));
+    const searchData = {
+        segment: formData.get('segment'),
+        env: formData.get('env'),
+        ris_number: formData.get('ris_number'),
+        ris_name: formData.get('ris_name')?.toLowerCase(),
+        tenant: formData.get('tenant'),
+        bucket: formData.get('bucket'),
+        user: formData.get('user'),
+        cluster: formData.get('cluster')
+    };
+    
+    fetch('/zayavki/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        displaySearchResults(data.results);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        displayFormResult('Error performing search: ' + error.message);
+    });
+}
+
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const pushToDb = form.querySelector('button[type="submit"]').dataset.pushToDb === 'true';
+
+    try {
+        const response = await fetch('/zayavki/submit', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const text = await response.text();
+        
+        // Check if cluster selection is required
+        if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clusters = JSON.parse(text.substring('CLUSTER_SELECTION_REQUIRED:'.length));
+            showClusterModal(clusters, formData, pushToDb);
+            return;
+        }
+
+        // Display the result
+        displayResult(text);
+
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`Error: ${error.message}`);
+    }
+}
+
+async function handleClusterSelection(selectedCluster, formData, pushToDb) {
+    try {
+        const response = await fetch('/zayavki/cluster', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                processedVars: Object.fromEntries(formData),
+                selectedCluster: selectedCluster,
+                pushToDb: pushToDb
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const text = await response.text();
+        displayResult(text);
+
+    } catch (error) {
+        console.error('Error:', error);
+        displayResult(`Error: ${error.message}`);
+    }
+}
+
+// Export functions for use in other files
+window.handleFormSubmit = handleFormSubmit;
+window.handleClusterSelection = handleClusterSelection;
