@@ -1,7 +1,6 @@
 function initializeJsonParser() {
     const modal = document.getElementById('jsonImportModal');
     if (!modal) {
-        console.error('JSON import modal not found');
         return;
     }
 
@@ -11,7 +10,6 @@ function initializeJsonParser() {
     const paramsTextarea = document.getElementById('params_json');
 
     if (!confirmButton || !srtTextarea || !paramsTextarea) {
-        console.error('Required modal elements not found');
         return;
     }
 
@@ -35,7 +33,7 @@ function initializeJsonParser() {
     });
 
     // Handle JSON parsing and form filling
-    confirmButton.addEventListener('click', () => {
+    confirmButton.onclick = () => {
         const srtJson = srtTextarea.value.trim();
         const paramsJson = paramsTextarea.value.trim();
 
@@ -68,10 +66,9 @@ function initializeJsonParser() {
 
             displayFormResult(resultMessage);
         } catch (error) {
-            console.error('Error parsing JSON:', error);
             displayFormResult(`Ошибка парсинга JSON: ${error.message}`);
         }
-    });
+    };
 }
 
 function parseSrtJson(data) {
@@ -89,38 +86,29 @@ function parseSrtJson(data) {
     
     // Parse requestDetails for buckets and users
     if (data.requestDetails) {
-        console.log('Parsing requestDetails:', data.requestDetails);
-        
         // Parse buckets section - fixed regex and parsing
         const bucketsMatch = data.requestDetails.match(/Список бакетов\s*\nИмя бакета \| Объём бакет, ГБ\s*([\s\S]+?)(?=\n\s*\n|\n*Список|$)/);
         if (bucketsMatch) {
-            console.log('Found buckets section:', bucketsMatch[1]);
             const bucketLines = bucketsMatch[1].trim().split('\n');
             const bucketsList = bucketLines
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя бакета'))
                 .map(line => {
                     const [name, size] = line.split('|').map(s => s.trim());
-                    console.log('Processing bucket line:', line, '→', `${name} ${size}G`);
                     return `${name} ${size}G`;
                 })
                 .join('\n');
-            console.log('Setting buckets to:', bucketsList);
             setFieldValue('buckets', bucketsList);
-        } else {
-            console.log('No buckets section found in requestDetails');
         }
 
         // Parse users section - updated regex
         const usersMatch = data.requestDetails.match(/Список дополнительных учетных записей[\s\S]*?Имя дополнительной учетной записи\s*([\s\S]+?)(?=\n\s*\n|$)/i);
         if (usersMatch) {
-            console.log('Found users section:', usersMatch[1]);
             const userLines = usersMatch[1].trim().split('\n');
             const usersList = userLines
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя дополнительной'))
                 .join('\n');
-            console.log('Processed users:', usersList);
             setFieldValue('users', usersList);
         }
     }
@@ -130,7 +118,6 @@ function parseSrtJson(data) {
 
 function parseParamsJson(data) {
     if (!Array.isArray(data)) {
-        console.error('Expected array of parameters');
         return;
     }
 
@@ -141,7 +128,6 @@ function parseParamsJson(data) {
     }
 
     data.forEach(item => {
-        console.log('Processing item:', item.label, item.value);
         switch (item.label) {
             case 'Электронная почта с поддержкой шифрования для отправки учетных данных':
                 setFieldValue('email_for_credentials', item.value);
@@ -198,12 +184,9 @@ function setFieldValue(fieldId, value) {
     }
 
     if (input && value) {
-        console.log(`Setting ${fieldId} to ${value}`);
         input.value = value;
         if (input.tagName === 'SELECT') {
             input.dispatchEvent(new Event('change'));
         }
-    } else {
-        console.warn(`Field ${fieldId} not found or value is empty`);
     }
 } 
