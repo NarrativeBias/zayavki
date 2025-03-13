@@ -475,76 +475,63 @@ function initializeForm() {
 document.addEventListener('DOMContentLoaded', initializeForm);
 
 function displayCheckResults(data) {
-    let html = '<div class="table-container">';
+    const container = document.createElement('div');
+    container.className = 'table-container';
     
-    // Display tenant info
-    html += '<h3>Информация о тенанте</h3>';
-    html += `<table class="data-table">
-        <tr>
-            <th>Тенант</th>
-            <th>Кластер</th>
-            <th>Среда</th>
-            <th>Зона безопасности</th>
-        </tr>
-        <tr>
-            <td>${data.tenant.name || '-'}</td>
-            <td>${data.tenant.cluster || '-'}</td>
-            <td>${data.tenant.env || '-'}</td>
-            <td>${data.tenant.segment || '-'}</td>
-        </tr>
-    </table>`;
+    // Tenant info section
+    const tenantSection = document.createElement('div');
+    tenantSection.innerHTML = '<h3>Информация о тенанте</h3>';
+    tenantSection.appendChild(createTable(
+        ['Тенант', 'Кластер', 'Среда', 'Зона безопасности'],
+        [[
+            data.tenant.name,
+            data.tenant.cluster,
+            data.tenant.env,
+            data.tenant.segment
+        ]]
+    ));
+    container.appendChild(tenantSection);
 
-    // Display users info if any were requested
+    // Users section
     if (data.users && data.users.length > 0) {
-        html += '<h3>Пользователи</h3>';
-        html += `<table class="data-table">
-            <tr>
-                <th>Пользователь</th>
-                <th>Статус</th>
-            </tr>`;
-        data.users.forEach(user => {
-            html += `<tr>
-                <td>${user.name}</td>
-                <td>${user.status}</td>
-            </tr>`;
-        });
-        html += '</table>';
+        const usersSection = document.createElement('div');
+        usersSection.innerHTML = '<h3>Пользователи</h3>';
+        usersSection.appendChild(createTable(
+            ['Пользователь', 'Статус'],
+            data.users.map(user => [user.name, user.status])
+        ));
+        container.appendChild(usersSection);
     }
 
-    // Display buckets info if any were requested
+    // Buckets section
     if (data.buckets && data.buckets.length > 0) {
-        html += '<h3>Бакеты</h3>';
-        html += `<table class="data-table">
-            <tr>
-                <th>Бакет</th>
-                <th>Размер</th>
-                <th>Статус</th>
-            </tr>`;
-        data.buckets.forEach(bucket => {
-            html += `<tr>
-                <td>${bucket.name}</td>
-                <td>${bucket.size || '-'}</td>
-                <td>${bucket.status}</td>
-            </tr>`;
-        });
-        html += '</table>';
+        const bucketsSection = document.createElement('div');
+        bucketsSection.innerHTML = '<h3>Бакеты</h3>';
+        bucketsSection.appendChild(createTable(
+            ['Бакет', 'Размер', 'Статус'],
+            data.buckets.map(bucket => [bucket.name, bucket.size, bucket.status])
+        ));
+        container.appendChild(bucketsSection);
     }
 
-    // Only show deletion commands if there are active resources to delete
-    const hasActivesToDelete = (data.users && data.users.some(u => u.status === 'Активный')) ||
-                             (data.buckets && data.buckets.some(b => b.status === 'Активный'));
+    // Deletion commands section
+    const hasActivesToDelete = (data.users && data.users.some(u => u.status === 'Активен')) ||
+                             (data.buckets && data.buckets.some(b => b.status === 'Активен'));
 
-    if (hasActivesToDelete) {
-        html += '<h3>Команды для удаления ресурсов</h3>';
-        html += '<pre class="command-block">';
-        if (data.deletion_commands) {
-            html += data.deletion_commands;
-        }
-        html += '</pre>';
+    if (hasActivesToDelete && data.deletion_commands) {
+        const commandsSection = document.createElement('div');
+        commandsSection.innerHTML = '<h3>Команды для удаления ресурсов</h3>';
+        const pre = document.createElement('pre');
+        pre.className = 'command-block';
+        pre.textContent = data.deletion_commands;
+        commandsSection.appendChild(pre);
+        container.appendChild(commandsSection);
     }
 
-    html += '</div>';
-    document.getElementById('result').innerHTML = html;
+    // Replace content
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(container);
 }
 
 function initializeUserBucketDel() {
