@@ -81,14 +81,14 @@ function parseSrtJson(data) {
         });
     }
 
-    // Set basic fields
+    // Set basic fields - ensure we're setting all required fields
     setFieldValue('request_id_srt', data.number);
     setFieldValue('request_id_sd', customFields.appealNumber);
     setFieldValue('requester', customFields.applicant);
     
     // Parse requestDetails for buckets and users
     if (data.requestDetails) {
-        // Parse buckets section - updated regex and parsing
+        // Parse buckets section
         const bucketsMatch = data.requestDetails.match(/Список бакетов\s*\nИмя бакета \| Объём бакет, ГБ\s*([\s\S]+?)(?=\n\s*\n|\n*Список|$)/);
         if (bucketsMatch) {
             const bucketLines = bucketsMatch[1].trim().split('\n');
@@ -97,14 +97,13 @@ function parseSrtJson(data) {
                 .filter(line => line && !line.includes('Имя бакета'))
                 .map(line => {
                     const [name, size] = line.split('|').map(s => s.trim());
-                    // Don't add 'G' suffix, just return the formatted string
                     return `${name} | ${size}`;
                 })
                 .join('\n');
             setFieldValue('buckets', bucketsList);
         }
 
-        // Parse users section - no changes needed here
+        // Parse users section
         const usersMatch = data.requestDetails.match(/Список дополнительных учетных записей[\s\S]*?Имя дополнительной учетной записи\s*([\s\S]+?)(?=\n\s*\n|$)/i);
         if (usersMatch) {
             const userLines = usersMatch[1].trim().split('\n');
@@ -179,21 +178,47 @@ function parseParamsJson(data) {
 }
 
 function setFieldValue(fieldId, value) {
-    // First try to find the input in the active tab
-    let input = document.querySelector('.tab-pane.active').querySelector(`#${fieldId}`);
-    
-    // If not found in active tab, try to find it in new-tenant tab
-    if (!input) {
-        const newTenantTab = document.getElementById('new-tenant');
-        if (newTenantTab) {
-            input = newTenantTab.querySelector(`#${fieldId}`);
-        }
+    if (!value) return;
+
+    // Switch to new-tenant tab first
+    const newTenantButton = document.querySelector('.tab-button[data-tab="new-tenant"]');
+    if (newTenantButton) {
+        newTenantButton.click();
     }
 
-    if (input && value) {
-        input.value = value;
-        if (input.tagName === 'SELECT') {
-            input.dispatchEvent(new Event('change'));
-        }
+    // Find all instances of the field across tabs
+    const inputs = document.querySelectorAll(`#${fieldId}`);
+    if (inputs.length === 0) {
+        console.warn(`Field ${fieldId} not found`);
+        return;
     }
+
+    // Update all instances of the field
+    inputs.forEach(input => {
+        input.value = value;
+        
+        // Save to field values for the appropriate tab
+        const tabPane = input.closest('.tab-pane');
+        if (tabPane && tabPane.id) {
+            if (!fieldValues[tabPane.id]) {
+                fieldValues[tabPane.id] = {};
+            }
+            
+            // For shared fields, update in all tabs
+            if (getSharedFields().includes(fieldId)) {
+                Object.keys(fieldValues).forEach(tab => {
+                    fieldValues[tab][fieldId] = value;
+                });
+            } else {
+                fieldValues[tabPane.id][fieldId] = value;
+            }
+        }
+
+        // Trigger change event
+        const event = new Event('change', {
+            bubbles: true,
+            cancelable: true,
+        });
+        input.dispatchEvent(event);
+    });
 } 

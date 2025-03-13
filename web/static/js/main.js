@@ -18,7 +18,7 @@ const fieldValues = {
     'bucket-mod': {}
 };
 
-// Remove the hardcoded SHARED_FIELDS array and add a function to find shared fields
+// Update the getSharedFields function to properly handle field sharing
 function getSharedFields() {
     const allFields = new Set();
     const fieldCounts = {};
@@ -39,6 +39,44 @@ function getSharedFields() {
     return Array.from(allFields).filter(fieldId => fieldCounts[fieldId] > 1);
 }
 
+// Update clearAllFields to handle field synchronization properly
+function clearAllFields() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) return;
+
+    const inputs = activeTab.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.id) {
+            input.value = '';
+            
+            // For shared fields, clear in all tabs
+            if (getSharedFields().includes(input.id)) {
+                Object.keys(fieldValues).forEach(tab => {
+                    fieldValues[tab][input.id] = '';
+                });
+                
+                // Clear value in all tab instances
+                document.querySelectorAll(`#${input.id}`).forEach(field => {
+                    field.value = '';
+                });
+            } else {
+                // For non-shared fields, just clear in current tab
+                fieldValues[activeTab.id][input.id] = '';
+            }
+
+            // Trigger change event
+            const event = new Event('change', {
+                bubbles: true,
+                cancelable: true,
+            });
+            input.dispatchEvent(event);
+        }
+    });
+    
+    document.getElementById('result').textContent = '';
+}
+
+// Update saveFieldValues to handle shared fields properly
 function saveFieldValues() {
     const activeTab = document.querySelector('.tab-pane.active');
     if (!activeTab) return;
@@ -48,18 +86,24 @@ function saveFieldValues() {
         fieldValues[tabId] = {};
     }
 
-    // Get all input elements in the active tab
     const inputs = activeTab.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
         if (input.id && !NO_MEMORY_FIELDS.includes(input.id)) {
+            const value = input.value;
+            
             // For shared fields, update value in all tabs
             if (getSharedFields().includes(input.id)) {
                 Object.keys(fieldValues).forEach(tab => {
-                    fieldValues[tab][input.id] = input.value;
+                    fieldValues[tab][input.id] = value;
+                });
+                
+                // Update value in all tab instances
+                document.querySelectorAll(`#${input.id}`).forEach(field => {
+                    field.value = value;
                 });
             } else {
                 // For non-shared fields, just update in current tab
-                fieldValues[tabId][input.id] = input.value;
+                fieldValues[tabId][input.id] = value;
             }
         }
     });
@@ -309,20 +353,6 @@ function handleSearch(e) {
         console.error('Error:', error);
         displayFormResult('Error performing search: ' + error.message);
     });
-}
-
-function clearAllFields() {
-    const activeTab = document.querySelector('.tab-pane.active');
-    if (activeTab) {
-        const inputs = activeTab.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            input.value = '';
-            if (input.id) {
-                fieldValues[activeTab.id][input.id] = '';
-            }
-        });
-    }
-    document.getElementById('result').textContent = '';
 }
 
 function initializeModal() {
