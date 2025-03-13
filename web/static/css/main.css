@@ -46,15 +46,7 @@ body {
 }
 
 .form-container > h1 {
-    padding: 15px 20px;
-    margin: 0;
-    background: linear-gradient(to bottom, #ffffff, #f5f5f5);
-    color: #003333;
-    font-size: 1.15em;
-    font-weight: 500;
-    border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px 8px 0 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: none;
 }
 
 .results-container {
@@ -591,16 +583,17 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 /* Update form container styles */
-.form-container > h1 {
+.form-container .tab-pane h1 {
     padding: 15px 20px;
     margin: 0;
-    background: linear-gradient(to bottom, #ffffff, #f5f5f5);
-    color: #003333;
-    font-size: 1.15em;
+    background: #004d4d;
+    color: white;
+    font-size: 1.2em;
     font-weight: 500;
-    border-bottom: 1px solid #e0e0e0;
     border-radius: 8px 8px 0 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Update container styles */
