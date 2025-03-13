@@ -224,9 +224,33 @@ const TAB_CONFIGS = {
         required_fields: ['tenant', 'request_id_sd', 'request_id_srt']
     },
     'user-bucket-del': {
-        fields: ['segment', 'env', 'tenant', 'bucket', 'user'],
-        buttons: ['submit', 'push_db', 'clear_all'],
-        required_fields: ['segment', 'env', 'tenant']
+        fields: [
+            {
+                id: 'tenant',
+                label: 'Имя тенанта',
+                type: 'text',
+                required: true,
+                placeholder: 'Введите имя тенанта'
+            },
+            {
+                id: 'user',
+                label: 'Пользователь',
+                type: 'text',
+                placeholder: 'Имя пользователя для удаления'
+            },
+            {
+                id: 'bucket',
+                label: 'Бакет',
+                type: 'text',
+                placeholder: 'Имя бакета для удаления'
+            }
+        ],
+        buttons: [
+            { id: 'check-form', label: 'Проверить', className: 'primary-button' },
+            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
+            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
+        ],
+        required_fields: ['tenant']
     },
     'bucket-mod': {
         fields: ['segment', 'env', 'tenant', 'bucket'],

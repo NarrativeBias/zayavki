@@ -128,70 +128,46 @@ input[type="text"], input[type="email"], select, textarea {
 
 .button-container {
     width: 100%;
-    max-width: 280px;
-    margin: 15px auto 0;
+    max-width: 360px;
+    margin: 20px auto 0;  /* Increased top margin */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;  /* Consistent gap between buttons */
 }
 
-/* Base styles for all form buttons */
-.button-container button,
-.search-button,
-.clear-search-button,
-.confirm-button,
-.import-json-button {
+/* Style for all tab buttons */
+.button-container .primary-button,
+.button-container .danger-button,
+.button-container .clear-search-button,
+.button-container .search-button {
     width: 100%;
-    max-width: 400px;
     padding: 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
     font-size: 1em;
-    text-align: center;
-    transition: all 0.3s ease;
+    margin: 0;  /* Remove default margins */
 }
 
-/* Individual button styles */
-.search-button {
-    background-color: #FFA500 !important; /* Orange */
-    color: white;
+/* Button ordering for all tabs */
+.button-container .primary-button {
+    order: 1;
 }
 
-.search-button:hover {
-    background-color: #FF8C00 !important; /* Darker orange */
-    opacity: 0.9;
-    transform: translateY(-2px);
+.button-container .danger-button {
+    order: 2;
 }
 
-.search-button:active {
-    background-color: #FF7000 !important; /* Even darker orange */
-    transform: translateY(1px);
+.button-container .clear-search-button {
+    order: 3;
 }
 
-.clear-search-button {
-    background-color: #008CBA;
-    color: white;
+/* Remove the tab-specific button styles since they're now global */
+#user-bucket-del .button-container {
+    /* Remove duplicate styles */
 }
 
-.confirm-button,
-.import-json-button {
-    background-color: #4CAF50;
-    color: white;
-}
-
-/* General hover effects for other buttons */
-.button-container button:hover:not(.search-button),
-.clear-search-button:hover,
-.confirm-button:hover,
-.import-json-button:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-}
-
-/* General active state for other buttons */
-.button-container button:active:not(.search-button),
-.clear-search-button:active,
-.confirm-button:active,
-.import-json-button:active {
-    transform: translateY(1px);
+#user-bucket-del .primary-button,
+#user-bucket-del .danger-button,
+#user-bucket-del .clear-search-button {
+    /* Remove duplicate styles */
 }
 
 .checkbox-group {
@@ -978,4 +954,41 @@ textarea {
     width: auto;
     min-width: 120px;
     padding: 10px 24px;
+}
+
+/* User bucket delete tab specific styles */
+#user-bucket-del .form-field {
+    margin-bottom: 15px;
+}
+
+#user-bucket-del .button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#user-bucket-del .primary-button,
+#user-bucket-del .danger-button,
+#user-bucket-del .clear-search-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+}
+
+#user-bucket-del .danger-button {
+    order: 2; /* Place the danger button in the middle */
+}
+
+#user-bucket-del .clear-search-button {
+    order: 3; /* Place the clear button last */
+}
+
+/* Add warning text for delete operations */
+#user-bucket-del .warning-text {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin: 10px 0;
+    text-align: center;
+    font-weight: 500;
 }
