@@ -172,10 +172,28 @@ function displayFormResult(data) {
     }
 }
 
+function displayCombinedResult(tenantInfo, submitResult) {
+    const result = `Информация о тенанте ${tenantInfo.tenant}:
+Кластер: ${tenantInfo.cls_name}
+Сегмент: ${tenantInfo.net_seg}
+Среда: ${tenantInfo.env}
+Реалм: ${tenantInfo.realm}
+РИС код: ${tenantInfo.ris_code}
+РИС номер: ${tenantInfo.ris_id}
+Группа владельцев: ${tenantInfo.owner_group}
+Владелец: ${tenantInfo.owner_person}
+
+Результат проверки:
+${submitResult}`;
+
+    displayResult(result);
+}
+
 // Export functions
 window.displayResult = displayResult;
 window.displayTenantInfo = displayTenantInfo;
 window.displayCheckResults = displayCheckResults;
 window.displayDeactivationResults = displayDeactivationResults;
 window.displaySearchResults = displaySearchResults;
-window.displayFormResult = displayFormResult; 
+window.displayFormResult = displayFormResult;
+window.displayCombinedResult = displayCombinedResult; 

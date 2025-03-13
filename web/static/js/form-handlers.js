@@ -382,24 +382,6 @@ async function handleTenantModCheck(formData) {
     }
 }
 
-// Helper function to display combined result
-function displayCombinedResult(tenantInfo, submitResult) {
-    const result = `Информация о тенанте ${tenantInfo.tenant}:
-Кластер: ${tenantInfo.cls_name}
-Сегмент: ${tenantInfo.net_seg}
-Среда: ${tenantInfo.env}
-Реалм: ${tenantInfo.realm}
-РИС код: ${tenantInfo.ris_code}
-РИС номер: ${tenantInfo.ris_id}
-Группа владельцев: ${tenantInfo.owner_group}
-Владелец: ${tenantInfo.owner_person}
-
-Результат проверки:
-${submitResult}`;
-
-    displayResult(result);
-}
-
 async function handleTenantModSubmit(e) {
     console.log('handleTenantModSubmit called:', {
         event: e,
