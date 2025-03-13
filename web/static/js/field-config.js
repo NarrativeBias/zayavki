@@ -278,7 +278,6 @@ const TAB_CONFIGS = {
 const NON_SHARED_FIELDS = [
     'request_id_sd',    // SD number
     'request_id_srt',   // SRT number
-    'tenant',           // Tenant name
     'tenant_override',  // Tenant override name
     'users',           // Users list
     'buckets',         // Buckets list
