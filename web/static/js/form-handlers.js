@@ -706,89 +706,68 @@ ${submitResult}`;
     displayResult(result);
 }
 
-async function handleTenantModSubmit(tenantInfo) {
-    try {
-        const activeTab = document.querySelector('.tab-pane.active');
-        const tenantInput = activeTab.querySelector('#tenant');
-        const tenant = tenantInput ? tenantInput.value : tenantInfo.tenant;
-        
-        // Get cluster info first
-        const clusterResponse = await fetch('/zayavki/cluster-info', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                segment: tenantInfo.net_seg,
-                env: tenantInfo.env,
-                cluster: tenantInfo.cls_name
-            })
-        });
+async function handleTenantModSubmit(e) {
+    console.log('handleTenantModSubmit called:', {
+        event: e,
+        submitter: e.submitter,
+        defaultPrevented: e.defaultPrevented
+    });
 
-        const clusterInfo = await clusterResponse.json();
+    e.preventDefault();
+    const clickedButton = e.submitter;
+    console.log('Clicked button:', {
+        button: clickedButton,
+        id: clickedButton?.id,
+        classList: clickedButton?.classList?.toString()
+    });
 
-        // Create complete clusters map with all info
-        const clustersMap = {
-            "Кластер": tenantInfo.cls_name,
-            "Реалм": tenantInfo.realm,
-            "ЦОД": clusterInfo.ЦОД,
-            "Выдача": clusterInfo.Выдача,
-            "Среда": clusterInfo.Среда,
-            "ЗБ": clusterInfo.ЗБ,
-            "tls_endpoint": clusterInfo.tls_endpoint,
-            "mtls_endpoint": clusterInfo.mtls_endpoint
-        };
+    if (!clickedButton) return;
 
-        // Prepare submit data using tenant info
-        const submitData = new FormData();
-        submitData.append('segment', tenantInfo.net_seg);
-        submitData.append('env', tenantInfo.env);
-        submitData.append('tenant_override', tenant);
-        submitData.append('ris_number', tenantInfo.ris_id);
-        submitData.append('ris_name', tenantInfo.ris_code);
-        submitData.append('resp_group', tenantInfo.owner_group);
-        submitData.append('owner', tenantInfo.owner_person);
-        submitData.append('cluster', tenantInfo.cls_name);
-        submitData.append('realm', tenantInfo.realm);
+    const tabPane = document.querySelector('#tenant-mod');
+    const tenantInput = tabPane.querySelector('#tenant');
+    const tenant = tenantInput ? tenantInput.value.trim() : '';
 
-        // Get form fields
-        const sdInput = activeTab.querySelector('#request_id_sd');
-        const srtInput = activeTab.querySelector('#request_id_srt');
-        const usersInput = activeTab.querySelector('#users');
-        const bucketsInput = activeTab.querySelector('#buckets');
-        const emailInput = activeTab.querySelector('#email_for_credentials');
+    console.log('Form data:', {
+        tabPane,
+        tenantInput,
+        tenant
+    });
 
-        if (sdInput) submitData.append('request_id_sd', sdInput.value);
-        if (srtInput) submitData.append('request_id_srt', srtInput.value);
-        if (usersInput) submitData.append('users', usersInput.value);
-        if (bucketsInput) submitData.append('buckets', bucketsInput.value);
-        if (emailInput) submitData.append('email_for_credentials', emailInput.value);
+    if (!tenant) {
+        displayResult('Ошибка: Необходимо указать имя тенанта');
+        return;
+    }
 
-        // Add push_to_db parameter
-        submitData.append('push_to_db', 'true');
+    // If check button was clicked
+    if (clickedButton.id === 'check-tenant') {
+        console.log('Check button clicked, sending request');
+        try {
+            const response = await fetch('/zayavki/tenant-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tenant })
+            });
 
-        // Send to cluster endpoint
-        const response = await fetch('/zayavki/cluster', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
-                selectedCluster: clustersMap,
-                pushToDb: true
-            })
-        });
+            console.log('Got response:', {
+                ok: response.ok,
+                status: response.status
+            });
 
-        if (!response.ok) {
-            throw new Error(await response.text());
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            const data = await response.json();
+            console.log('Response data:', data);
+            displayTenantInfo(data);
+            return;
+        } catch (error) {
+            console.error('Error in tenant check:', error);
+            displayResult(`Ошибка: ${error.message}`);
+            return;
         }
-
-        const result = await response.text();
-        displayResult(result);
-
-    } catch (error) {
-        displayResult(`Ошибка: ${error.message}`);
     }
 }
 
@@ -797,14 +776,21 @@ window.handleFormSubmit = handleFormSubmit;
 window.handleClusterSelection = handleClusterSelection;
 
 function initializeUserBucketDel() {
-    const checkButton = document.querySelector('#user-bucket-del .primary-button');
-    const submitButton = document.querySelector('#user-bucket-del .danger-button');
+    const checkButton = document.querySelector('#user-bucket-del #check-tenant');
+    const submitButton = document.querySelector('#user-bucket-del #submit-form');
     const form = document.getElementById('mainForm');
 
     if (checkButton) {
+        // Ensure it's a button type and not a submit
+        checkButton.setAttribute('type', 'button');
+        checkButton.setAttribute('role', 'button');
+        
         checkButton.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            // Prevent form submission
+            e.target.form?.setAttribute('onsubmit', 'return false;');
 
             // Get the form data from the specific tab
             const tabPane = document.querySelector('#user-bucket-del');
@@ -849,6 +835,10 @@ function initializeUserBucketDel() {
     }
 
     if (submitButton) {
+        // Same for submit button
+        submitButton.setAttribute('type', 'button');
+        submitButton.setAttribute('role', 'button');
+        
         submitButton.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -871,11 +861,6 @@ function initializeUserBucketDel() {
 
             if (users.length === 0 && buckets.length === 0) {
                 displayResult('Ошибка: Необходимо указать пользователей или бакеты для деактивации');
-                return;
-            }
-
-            // Ask for confirmation
-            if (!confirm('Вы уверены, что хотите деактивировать указанные ресурсы?')) {
                 return;
             }
 
@@ -961,6 +946,16 @@ function displayCheckResults(data) {
         html += '</table>';
     }
 
+    // Display deletion commands if there are resources to delete
+    if ((data.users && data.users.length > 0) || (data.buckets && data.buckets.length > 0)) {
+        html += '<h3>Команды для удаления ресурсов</h3>';
+        html += '<pre class="command-block">';
+        if (data.deletion_commands) {
+            html += data.deletion_commands;
+        }
+        html += '</pre>';
+    }
+
     html += '</div>';
     document.getElementById('result').innerHTML = html;
 }
@@ -996,8 +991,115 @@ function displayDeactivationResults(data) {
     document.getElementById('result').innerHTML = html;
 }
 
+function displayTenantInfo(data) {
+    let html = '<div class="table-container">';
+    html += '<h3>Информация о тенанте</h3>';
+    html += `<table class="data-table">
+        <tr>
+            <th>Тенант</th>
+            <th>Кластер</th>
+            <th>Среда</th>
+            <th>Зона безопасности</th>
+            <th>РИС код</th>
+            <th>РИС номер</th>
+            <th>Группа владельцев</th>
+            <th>Владелец</th>
+        </tr>
+        <tr>
+            <td>${data.tenant || '-'}</td>
+            <td>${data.cls_name || '-'}</td>
+            <td>${data.env || '-'}</td>
+            <td>${data.net_seg || '-'}</td>
+            <td>${data.ris_code || '-'}</td>
+            <td>${data.ris_id || '-'}</td>
+            <td>${data.owner_group || '-'}</td>
+            <td>${data.owner_person || '-'}</td>
+        </tr>
+    </table>`;
+    html += '</div>';
+    document.getElementById('result').innerHTML = html;
+}
+
 // Make sure this initialization is being called
 document.addEventListener('DOMContentLoaded', function() {
     // ... existing initialization code ...
     initializeUserBucketDel();
 });
+
+window.handleUserBucketDelSubmit = async function(e) {
+    e.preventDefault();
+    
+    const clickedButton = e.submitter;
+    if (!clickedButton) return;
+
+    const tabPane = document.querySelector('#user-bucket-del');
+    const tenantInput = tabPane.querySelector('#tenant');
+    const usersInput = tabPane.querySelector('#users');
+    const bucketsInput = tabPane.querySelector('#buckets');
+
+    const tenant = tenantInput ? tenantInput.value.trim() : '';
+    const users = usersInput && usersInput.value ? 
+        usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
+    const buckets = bucketsInput && bucketsInput.value ? 
+        bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
+
+    if (!tenant) {
+        displayResult('Ошибка: Необходимо указать имя тенанта');
+        return;
+    }
+
+    try {
+        if (clickedButton.classList.contains('primary-button')) {
+            // Check button clicked
+            const response = await fetch('/zayavki/check-tenant-resources', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tenant,
+                    users,
+                    buckets
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            const data = await response.json();
+            displayCheckResults(data);
+        } else if (clickedButton.classList.contains('danger-button')) {
+            // Submit button clicked
+            if (users.length === 0 && buckets.length === 0) {
+                displayResult('Ошибка: Необходимо указать пользователей или бакеты для деактивации');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/deactivate-resources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tenant,
+                        users,
+                        buckets
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                displayDeactivationResults(data);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        }
+    } catch (error) {
+        displayResult(`Ошибка: ${error.message}`);
+    }
+};

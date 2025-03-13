@@ -468,6 +468,7 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 			"cluster": results[0].ClsName,
 			"env":     results[0].Env,
 			"segment": results[0].NetSeg,
+			"realm":   results[0].Realm,
 		},
 		"users":   make([]map[string]interface{}, 0),
 		"buckets": make([]map[string]interface{}, 0),
@@ -507,6 +508,10 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 			"status": getBucketStatusFromResult(bucketInfo),
 		})
 	}
+
+	// Add deletion commands
+	deletionCommands := rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
+	result["deletion_commands"] = deletionCommands
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)

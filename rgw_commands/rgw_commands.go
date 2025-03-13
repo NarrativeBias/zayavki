@@ -66,3 +66,27 @@ func ResultCheck(variables map[string][]string, clusters map[string]string) stri
 	userListCommand := fmt.Sprintf("sudo radosgw-admin user list --rgw-realm %s | grep %s; sudo radosgw-admin bucket list --rgw-realm %s | grep %s;\n", clusters["Реалм"], variables["tenant"][0], clusters["Реалм"], variables["tenant"][0])
 	return userListCommand
 }
+
+func GenerateDeletionCommands(tenant string, users []string, buckets []string, realm string) string {
+	var commands bytes.Buffer
+
+	// Generate user deletion commands
+	for _, user := range users {
+		if user != "" && user != tenant { // Skip empty users and tenant user
+			cmd := fmt.Sprintf("sudo radosgw-admin user rm --rgw-realm %s --tenant %s --uid %s\n",
+				realm, tenant, user)
+			commands.WriteString(cmd)
+		}
+	}
+
+	// Generate bucket deletion commands
+	for _, bucket := range buckets {
+		if bucket != "" {
+			cmd := fmt.Sprintf("sudo radosgw-admin bucket rm --rgw-realm %s --bucket \"%s/%s\"\n",
+				realm, tenant, bucket)
+			commands.WriteString(cmd)
+		}
+	}
+
+	return commands.String()
+}

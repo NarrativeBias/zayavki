@@ -217,11 +217,16 @@ const TAB_CONFIGS = {
             }
         ],
         buttons: [
-            { id: 'check-form', label: 'Проверить', className: 'primary-button' },
+            { 
+                id: 'check-tenant',
+                label: 'Проверить тенант',
+                className: 'primary-button',
+                type: 'button'
+            },
             { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
             { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
         ],
-        required_fields: ['tenant', 'request_id_sd', 'request_id_srt']
+        required_fields: ['tenant', 'request_id_sd', 'request_id_srt'],
     },
     'user-bucket-del': {
         fields: [
@@ -249,25 +254,22 @@ const TAB_CONFIGS = {
         ],
         buttons: [
             { 
-                id: 'check-form',
+                id: 'check-tenant',
                 label: 'Проверить',
                 className: 'primary-button',
-                type: 'button',
-                preventSubmit: true
+                type: 'button'
             },
             { 
                 id: 'submit-form',
                 label: 'Отправить в БД',
                 className: 'danger-button',
-                type: 'button',
-                preventSubmit: true
+                type: 'button'
             },
             { 
                 id: 'clearButton',
                 label: 'Очистить',
                 className: 'clear-search-button',
-                type: 'button',
-                preventSubmit: true
+                type: 'button'
             }
         ],
         required_fields: ['tenant']
