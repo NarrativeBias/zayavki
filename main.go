@@ -476,18 +476,18 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 
 	// Check users if any provided
 	for _, user := range request.Users {
-		// Check if user exists in results
-		exists := false
+		// Check if user exists and get active status
+		var userInfo *postgresql_operations.CheckResult
 		for _, entry := range results {
 			if entry.S3User.Valid && entry.S3User.String == user {
-				exists = true
+				userInfo = &entry
 				break
 			}
 		}
 		result["users"] = append(result["users"].([]map[string]interface{}), map[string]interface{}{
 			"name":   user,
-			"exists": exists,
-			"status": getStatusText(exists),
+			"exists": userInfo != nil,
+			"status": getUserStatusFromResult(userInfo),
 		})
 	}
 
@@ -521,7 +521,7 @@ func getStatusText(exists bool) string {
 	if exists {
 		return "Активный"
 	}
-	return "Не найденный"
+	return "Не найден"
 }
 
 func getBucketSizeFromResult(info *postgresql_operations.CheckResult) string {
@@ -533,7 +533,17 @@ func getBucketSizeFromResult(info *postgresql_operations.CheckResult) string {
 
 func getBucketStatusFromResult(info *postgresql_operations.CheckResult) string {
 	if info == nil {
-		return "Не найденный"
+		return "Не найден"
+	}
+	if info.Active {
+		return "Активный"
+	}
+	return "Неактивный"
+}
+
+func getUserStatusFromResult(info *postgresql_operations.CheckResult) string {
+	if info == nil {
+		return "Не найден"
 	}
 	if info.Active {
 		return "Активный"

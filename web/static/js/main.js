@@ -626,3 +626,190 @@ function initializeForm() {
 
 // Call initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeForm);
+
+function displayCheckResults(data) {
+    let html = '<div class="table-container">';
+    
+    // Display tenant info
+    html += '<h3>Информация о тенанте</h3>';
+    html += `<table class="data-table">
+        <tr>
+            <th>Тенант</th>
+            <th>Кластер</th>
+            <th>Среда</th>
+            <th>Зона безопасности</th>
+        </tr>
+        <tr>
+            <td>${data.tenant.name || '-'}</td>
+            <td>${data.tenant.cluster || '-'}</td>
+            <td>${data.tenant.env || '-'}</td>
+            <td>${data.tenant.segment || '-'}</td>
+        </tr>
+    </table>`;
+
+    // Display users info if any were requested
+    if (data.users && data.users.length > 0) {
+        html += '<h3>Пользователи</h3>';
+        html += `<table class="data-table">
+            <tr>
+                <th>Пользователь</th>
+                <th>Статус</th>
+            </tr>`;
+        data.users.forEach(user => {
+            html += `<tr>
+                <td>${user.name}</td>
+                <td>${user.status}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    }
+
+    // Display buckets info if any were requested
+    if (data.buckets && data.buckets.length > 0) {
+        html += '<h3>Бакеты</h3>';
+        html += `<table class="data-table">
+            <tr>
+                <th>Бакет</th>
+                <th>Размер</th>
+                <th>Статус</th>
+            </tr>`;
+        data.buckets.forEach(bucket => {
+            html += `<tr>
+                <td>${bucket.name}</td>
+                <td>${bucket.size || '-'}</td>
+                <td>${bucket.status}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    }
+
+    // Only show deletion commands if there are active resources to delete
+    const hasActivesToDelete = (data.users && data.users.some(u => u.status === 'Активный')) ||
+                             (data.buckets && data.buckets.some(b => b.status === 'Активный'));
+
+    if (hasActivesToDelete) {
+        html += '<h3>Команды для удаления ресурсов</h3>';
+        html += '<pre class="command-block">';
+        if (data.deletion_commands) {
+            html += data.deletion_commands;
+        }
+        html += '</pre>';
+    }
+
+    html += '</div>';
+    document.getElementById('result').innerHTML = html;
+}
+
+function initializeUserBucketDel() {
+    const checkButton = document.querySelector('#user-bucket-del #check-tenant');
+    const submitButton = document.querySelector('#user-bucket-del #submit-form');
+    const form = document.getElementById('mainForm');
+
+    if (checkButton) {
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabPane = document.querySelector('#user-bucket-del');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const usersInput = tabPane.querySelector('#users');
+            const bucketsInput = tabPane.querySelector('#buckets');
+
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+            const users = usersInput && usersInput.value ? 
+                usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
+            const buckets = bucketsInput && bucketsInput.value ? 
+                bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/check-tenant-resources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tenant,
+                        users,
+                        buckets
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                displayCheckResults(data);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    if (submitButton) {
+        submitButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const tabPane = document.querySelector('#user-bucket-del');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const usersInput = tabPane.querySelector('#users');
+            const bucketsInput = tabPane.querySelector('#buckets');
+
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+            const users = usersInput && usersInput.value ? 
+                usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
+            const buckets = bucketsInput && bucketsInput.value ? 
+                bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            if (users.length === 0 && buckets.length === 0) {
+                displayResult('Ошибка: Необходимо указать пользователей или бакеты для деактивации');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/deactivate-resources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tenant,
+                        users,
+                        buckets
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                displayDeactivationResults(data);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    // Prevent form submission for this tab
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (activeTab && activeTab.id === 'user-bucket-del') {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+}
