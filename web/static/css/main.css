@@ -225,105 +225,150 @@ input[type="text"], input[type="email"], select, textarea {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0,0,0,0.5);
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 0;  /* Remove padding since we have it in header/body/footer */
-    border: 1px solid #888;
-    width: 80%;
+    background-color: #fff;
+    margin: 5vh auto;
+    width: 90%;
     max-width: 600px;
-    border-radius: 5px;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #ddd;
-    position: relative;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #004d4d;
+    color: white;
+    border-radius: 8px 8px 0 0;
 }
 
 .modal-header h2 {
     margin: 0;
-    padding-right: 30px;
+    color: white;
+    font-size: 1.2em;
+    font-weight: 500;
 }
 
 .modal-body {
-    padding: 20px;
-    position: relative;
-    z-index: 10000;
+    padding: 25px;
 }
 
 .modal-footer {
     padding: 15px 20px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #eee;
     text-align: right;
+    background: #f8f9fa;
+    border-radius: 0 0 8px 8px;
 }
 
 .close-button {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
+    color: white;
+    opacity: 0.8;
+    font-size: 1.5em;
+    font-weight: 700;
     cursor: pointer;
-    line-height: 1;
-    padding: 0;
     background: none;
     border: none;
+    padding: 0;
+    line-height: 1;
 }
 
-.close-button:hover,
-.close-button:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
+.close-button:hover {
+    opacity: 1;
 }
 
 #cluster-select {
     width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     margin-bottom: 20px;
-    padding: 8px;
+    font-size: 1em;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    appearance: none; /* Remove default arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 35px; /* Make room for the arrow */
+}
+
+#cluster-select:hover {
+    border-color: #004d4d;
+}
+
+#cluster-select:focus {
+    outline: none;
+    border-color: #004d4d;
+    box-shadow: 0 0 0 2px rgba(0, 77, 77, 0.1);
+}
+
+/* Style the options */
+#cluster-select option {
+    padding: 12px;
+    font-size: 1em;
+    background-color: #fff;
+    color: #333;
 }
 
 #cluster-details {
-    margin-bottom: 20px;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 20px;
 }
 
 .cluster-row {
     display: flex;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    font-size: 1em;
+}
+
+.cluster-row:last-child {
+    margin-bottom: 0;
 }
 
 .cluster-row .label {
     flex: 0 0 100px;
-    font-weight: bold;
+    font-weight: 600;
+    color: #004d4d;
 }
 
 .cluster-row .value {
     flex: 1;
+    color: #333;
 }
 
 #confirm-cluster {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 15px;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    float: right;
-    margin-top: 10px;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    float: none;
+    margin: 0;
 }
 
 #confirm-cluster:hover {
     background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+#confirm-cluster:active {
+    transform: translateY(1px);
 }
 
 .modal-content::after {
@@ -703,11 +748,11 @@ input[type="text"], input[type="email"], select, textarea {
 
 .json-input-group textarea {
     width: 100%;
-    min-height: 100px;
-    padding: 8px;
+    min-height: 120px;
+    padding: 10px;
     margin: 0;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 15px;
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
@@ -859,4 +904,78 @@ textarea {
 .primary-button:active {
     background-color: #3d8b40 !important; /* Even darker green */
     transform: translateY(1px);
+}
+
+/* Update JSON import modal specific styles */
+#jsonImportModal .modal-content {
+    max-width: 900px;
+    margin: 5vh auto;
+}
+
+#jsonImportModal .modal-body {
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.json-input-group {
+    margin: 0 0 20px 0;
+    padding: 20px;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.json-input-group:last-child {
+    margin-bottom: 0;
+}
+
+.json-input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #004d4d;
+    font-size: 1em;
+}
+
+.json-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.json-input-group textarea {
+    width: 100%;
+    min-height: 150px;
+    max-width: none;
+    padding: 12px;
+    margin: 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    background-color: #fff;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.json-input-group textarea:focus {
+    outline: none;
+    border-color: #004d4d;
+    box-shadow: 0 0 0 2px rgba(0, 77, 77, 0.1);
+}
+
+#jsonImportModal .modal-footer {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+}
+
+#confirmJsonImport {
+    width: auto;
+    min-width: 120px;
+    padding: 10px 24px;
 }
