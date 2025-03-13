@@ -1,5 +1,8 @@
 console.log('Loading main.js...');
 
+// Add near the top of the file, after other global function declarations
+window.handleFormSubmit = handleFormSubmit;
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing...');
     initializeTabs();
@@ -199,7 +202,7 @@ function getTabTitle(tabId) {
         'new-tenant': 'Создание нового тенанта',
         'tenant-mod': 'Создание пользователя/бакета в существующем тенанте',
         'user-bucket-del': 'Удаление пользователя/бакета из существующего тенанта',
-        'bucket-mod': 'Изменение квоты бакета'
+        'bucket-mod': 'Изменение квоты бакета (WIP)'
     };
     return titles[tabId] || '';
 }
@@ -253,28 +256,37 @@ function createFormField(fieldConfig, required = false) {
 
 function createButton(buttonConfig) {
     const button = document.createElement('button');
-    button.type = 'button';
     button.id = buttonConfig.id;
-    
-    // Use button class from config or fall back to default styles
     button.className = buttonConfig.className || 'button-container button';
-    
     button.textContent = buttonConfig.label;
     
     // Add event listeners based on button id
     switch (buttonConfig.id) {
         case 'searchButton':
+            button.type = 'button';
             button.addEventListener('click', handleSearch);
             break;
         case 'clearButton':
+            button.type = 'button';
             button.addEventListener('click', clearAllFields);
             break;
         case 'check-form':
+            button.type = 'button';
             button.addEventListener('click', () => handleFormSubmit(false));
             break;
         case 'submit-form':
-            button.addEventListener('click', () => handleFormSubmit(true));
+            button.type = 'button';
+            button.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleFormSubmit(true);
+            };
             break;
+        case 'import-json':
+            button.type = 'button';
+            break;
+        default:
+            button.type = 'button';
     }
     
     return button;
@@ -429,199 +441,34 @@ function initializeFieldSync() {
 function initializeForm() {
     let form = document.getElementById('mainForm');
     if (form) {
-        // Prevent default form submission behavior
+        // Remove default form action and prevent default submission
         form.action = 'javascript:void(0);';
         form.method = 'post';
-        form.onsubmit = (e) => {
-            const activeTab = document.querySelector('.tab-pane.active');
-            if (!activeTab) return false;
-            
-            // Only prevent submission for user-bucket-del tab
-            if (activeTab.id === 'user-bucket-del') {
-                return false;
-            }
-            return true;
-        };
-
+        
+        // Main form submission handler
         form.addEventListener('submit', (e) => {
-            console.log('Form submit event:', {
-                type: e.type,
-                submitter: e.submitter,
-                defaultPrevented: e.defaultPrevented
-            });
-
-            e.preventDefault();
-            const activeTab = document.querySelector('.tab-pane.active');
-            if (!activeTab) return;
-
-            const tabId = activeTab.id;
-            console.log('Active tab:', {
-                id: tabId,
-                element: activeTab
-            });
-            
-            if (tabId === 'user-bucket-del') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Get the tab configuration
-            const tabConfig = TAB_CONFIGS[tabId];
-            console.log('Tab config:', {
-                config: tabConfig,
-                formHandler: tabConfig?.formHandler
-            });
-            
-            // If tab has a custom form handler, use it
-            if (tabConfig && tabConfig.formHandler) {
-                const handler = window[tabConfig.formHandler];
-                console.log('Found handler:', {
-                    handlerName: tabConfig.formHandler,
-                    handler: handler
-                });
-                if (typeof handler === 'function') {
-                    handler(e);
-                    return;
-                }
-            }
-            
-            handleFormSubmit(e);
+            e.preventDefault(); // Always prevent default form submission
         });
-    }
 
-    // Initialize tabs
-    const tabButtons = document.querySelectorAll('.tab-button');
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabName = button.dataset.tab;
-            switchTab(tabName);
+        // Initialize tabs
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                switchTab(tabName);
+            });
         });
-    });
 
-    // Initialize field synchronization
-    initializeFieldSync();
+        // Initialize field synchronization
+        initializeFieldSync();
 
-    // Initialize user-bucket-del tab handlers
-    initializeUserBucketDel();
-
-    // Initialize tenant-mod tab after tabs are created
-    function initializeTenantMod() {
-        const checkButton = document.querySelector('#tenant-mod #check-tenant');
-        let tenantData = null; // Store tenant data
-
-        if (checkButton) {
-            checkButton.onclick = async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const tabPane = document.querySelector('#tenant-mod');
-                const tenantInput = tabPane.querySelector('#tenant');
-                const tenant = tenantInput ? tenantInput.value.trim() : '';
-
-                if (!tenant) {
-                    displayResult('Ошибка: Необходимо указать имя тенанта');
-                    return;
-                }
-
-                try {
-                    const response = await fetch('/zayavki/tenant-info', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ tenant })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(await response.text());
-                    }
-
-                    tenantData = await response.json(); // Store the tenant data
-                    displayTenantInfo(tenantData);
-                } catch (error) {
-                    displayResult(`Ошибка: ${error.message}`);
-                }
-            };
-        }
-
-        // Handle submit button
-        const submitButton = document.querySelector('#tenant-mod #submit-form');
-        if (submitButton) {
-            submitButton.onclick = async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                if (!tenantData) {
-                    displayResult('Ошибка: Сначала необходимо проверить тенант');
-                    return;
-                }
-
-                // Get form data
-                const tabPane = document.querySelector('#tenant-mod');
-                const sdInput = tabPane.querySelector('#request_id_sd');
-                const srtInput = tabPane.querySelector('#request_id_srt');
-                const usersInput = tabPane.querySelector('#users');
-                const bucketsInput = tabPane.querySelector('#buckets');
-                const emailInput = tabPane.querySelector('#email_for_credentials');
-
-                // Create form data
-                const submitData = new FormData();
-                submitData.append('segment', tenantData.net_seg);
-                submitData.append('env', tenantData.env);
-                submitData.append('tenant_override', tenantData.tenant);
-                submitData.append('ris_number', tenantData.ris_id);
-                submitData.append('ris_name', tenantData.ris_code);
-                submitData.append('resp_group', tenantData.owner_group);
-                submitData.append('owner', tenantData.owner_person);
-                submitData.append('cluster', tenantData.cls_name);
-                submitData.append('realm', tenantData.realm);
-
-                if (sdInput) submitData.append('request_id_sd', sdInput.value);
-                if (srtInput) submitData.append('request_id_srt', srtInput.value);
-                if (usersInput) submitData.append('users', usersInput.value);
-                if (bucketsInput) submitData.append('buckets', bucketsInput.value);
-                if (emailInput) submitData.append('email_for_credentials', emailInput.value);
-
-                try {
-                    const response = await fetch('/zayavki/cluster', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
-                            selectedCluster: {
-                                "Кластер": tenantData.cls_name,
-                                "Реалм": tenantData.realm,
-                                "ЦОД": tenantData.dc,
-                                "Выдача": tenantData.issue,
-                                "Среда": tenantData.env,
-                                "ЗБ": tenantData.net_seg,
-                                "tls_endpoint": tenantData.tls_endpoint,
-                                "mtls_endpoint": tenantData.mtls_endpoint
-                            },
-                            pushToDb: true
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(await response.text());
-                    }
-
-                    const result = await response.text();
-                    displayResult(result);
-                } catch (error) {
-                    displayResult(`Ошибка: ${error.message}`);
-                }
-            };
-        }
+        // Initialize specific tab handlers
+        initializeUserBucketDel();
+        initializeTenantMod();
     }
 
     // Initialize with the first tab (search)
     switchTab('search');
-    
-    // Initialize tenant-mod after tabs are set up
-    initializeTenantMod();
 }
 
 // Call initialization when DOM is loaded
@@ -811,5 +658,163 @@ function initializeUserBucketDel() {
                 return false;
             }
         });
+    }
+}
+
+function initializeTenantMod() {
+    const checkButton = document.querySelector('#tenant-mod #check-tenant');
+    let tenantData = null; // Store tenant data
+
+    if (checkButton) {
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabPane = document.querySelector('#tenant-mod');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/tenant-info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ tenant })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                tenantData = await response.json(); // Store the tenant data
+                displayTenantInfo(tenantData);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    // Handle submit button
+    const submitButton = document.querySelector('#tenant-mod #submit-form');
+    if (submitButton) {
+        submitButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!tenantData) {
+                displayResult('Ошибка: Сначала необходимо проверить тенант');
+                return;
+            }
+
+            // Get form data
+            const tabPane = document.querySelector('#tenant-mod');
+            const sdInput = tabPane.querySelector('#request_id_sd');
+            const srtInput = tabPane.querySelector('#request_id_srt');
+            const usersInput = tabPane.querySelector('#users');
+            const bucketsInput = tabPane.querySelector('#buckets');
+            const emailInput = tabPane.querySelector('#email_for_credentials');
+
+            // Create form data
+            const submitData = new FormData();
+            submitData.append('segment', tenantData.net_seg);
+            submitData.append('env', tenantData.env);
+            submitData.append('tenant_override', tenantData.tenant);
+            submitData.append('ris_number', tenantData.ris_id);
+            submitData.append('ris_name', tenantData.ris_code);
+            submitData.append('resp_group', tenantData.owner_group);
+            submitData.append('owner', tenantData.owner_person);
+            submitData.append('cluster', tenantData.cls_name);
+            submitData.append('realm', tenantData.realm);
+
+            if (sdInput) submitData.append('request_id_sd', sdInput.value);
+            if (srtInput) submitData.append('request_id_srt', srtInput.value);
+            if (usersInput) submitData.append('users', usersInput.value);
+            if (bucketsInput) submitData.append('buckets', bucketsInput.value);
+            if (emailInput) submitData.append('email_for_credentials', emailInput.value);
+
+            try {
+                const response = await fetch('/zayavki/cluster', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
+                        selectedCluster: {
+                            "Кластер": tenantData.cls_name,
+                            "Реалм": tenantData.realm,
+                            "ЦОД": tenantData.dc,
+                            "Выдача": tenantData.issue,
+                            "Среда": tenantData.env,
+                            "ЗБ": tenantData.net_seg,
+                            "tls_endpoint": tenantData.tls_endpoint,
+                            "mtls_endpoint": tenantData.mtls_endpoint
+                        },
+                        pushToDb: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const result = await response.text();
+                displayResult(result);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+}
+
+async function handleFormSubmit(pushToDb = false) {
+    try {
+        const activeTab = document.querySelector('.tab-pane.active');
+        if (!activeTab) return;
+
+        // Get all form data from the active tab
+        const formData = new FormData();
+        const inputs = activeTab.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.id && input.value) {
+                formData.append(input.id, input.value);
+            }
+        });
+
+        // Add create_tenant=true if we're in the new-tenant tab
+        if (activeTab.id === 'new-tenant') {
+            formData.append('create_tenant', 'true');
+        }
+
+        // Add push_to_db parameter
+        formData.append('push_to_db', pushToDb.toString());
+
+        const response = await fetch('/zayavki/submit', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        const text = await response.text();
+        
+        if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clusters = JSON.parse(text.substring('CLUSTER_SELECTION_REQUIRED:'.length));
+            showClusterModal(clusters, formData, pushToDb);
+            return;
+        }
+
+        displayResult(text);
+
+    } catch (error) {
+        displayResult(`Error: ${error.message}`);
     }
 }

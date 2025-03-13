@@ -517,13 +517,6 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func getStatusText(exists bool) string {
-	if exists {
-		return "Активный"
-	}
-	return "Не найден"
-}
-
 func getBucketSizeFromResult(info *postgresql_operations.CheckResult) string {
 	if info == nil || !info.Quota.Valid {
 		return "-"
@@ -536,9 +529,9 @@ func getBucketStatusFromResult(info *postgresql_operations.CheckResult) string {
 		return "Не найден"
 	}
 	if info.Active {
-		return "Активный"
+		return "Активен"
 	}
-	return "Неактивный"
+	return "Не активен"
 }
 
 func getUserStatusFromResult(info *postgresql_operations.CheckResult) string {
@@ -546,9 +539,9 @@ func getUserStatusFromResult(info *postgresql_operations.CheckResult) string {
 		return "Не найден"
 	}
 	if info.Active {
-		return "Активный"
+		return "Активен"
 	}
-	return "Неактивный"
+	return "Не активен"
 }
 
 func handleDeactivateResources(w http.ResponseWriter, r *http.Request) {

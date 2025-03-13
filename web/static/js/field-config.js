@@ -275,9 +275,15 @@ const TAB_CONFIGS = {
         required_fields: ['tenant']
     },
     'bucket-mod': {
-        fields: ['segment', 'env', 'tenant', 'bucket'],
-        buttons: ['submit', 'push_db', 'clear_all'],
-        required_fields: ['segment', 'env', 'tenant', 'bucket']
+        fields: [],
+        buttons: [
+            { 
+                id: 'clearButton',
+                label: 'Очистить',
+                className: 'clear-search-button'
+            }
+        ],
+        required_fields: []
     }
 };
 
