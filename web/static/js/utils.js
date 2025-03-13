@@ -1,10 +1,3 @@
-function displayResult(data) {
-    const resultElement = document.getElementById('result');
-    resultElement.textContent = data;
-    resultElement.style.whiteSpace = 'pre-wrap';  // Preserve line breaks
-    document.getElementById('pushDbButton').disabled = false;
-}
-
 function getEnvCode(env) {
     switch (env) {
         case 'PROD': return 'p0';
@@ -43,6 +36,64 @@ function createTable(headers, rows, className = 'data-table') {
     return table;
 }
 
+function createSection(title, content) {
+    const section = document.createElement('div');
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+    section.appendChild(heading);
+    
+    if (content instanceof Element) {
+        section.appendChild(content);
+    } else if (Array.isArray(content)) {
+        content.forEach(element => section.appendChild(element));
+    }
+    
+    return section;
+}
+
+function collectFormFields(tabPane) {
+    const formData = new FormData();
+    const inputs = tabPane.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.id && input.value) {
+            formData.append(input.id, input.value);
+        }
+    });
+    return formData;
+}
+
+async function fetchJson(url, data) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+        throw new Error(await response.text());
+    }
+
+    return response;
+}
+
+function collectTenantResourcesData(tabPane) {
+    const tenantInput = tabPane.querySelector('#tenant');
+    const usersInput = tabPane.querySelector('#users');
+    const bucketsInput = tabPane.querySelector('#buckets');
+
+    return {
+        tenant: tenantInput ? tenantInput.value.trim() : '',
+        users: usersInput && usersInput.value ? 
+            usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [],
+        buckets: bucketsInput && bucketsInput.value ? 
+            bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : []
+    };
+}
+
 // Export functions
 window.createTableRow = createTableRow;
 window.createTable = createTable;
+window.createSection = createSection;
+window.collectFormFields = collectFormFields;
+window.fetchJson = fetchJson;
+window.collectTenantResourcesData = collectTenantResourcesData;

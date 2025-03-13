@@ -170,13 +170,6 @@ function showValidationMessage(container, message, type) {
     container.className = 'validation-message ' + type;
 }
 
-function displayResult(text) {
-    const resultDiv = document.getElementById('result');
-    if (!resultDiv) return;
-
-    resultDiv.textContent = text;
-}
-
 function initializeJsonParser() {
     const importButton = document.getElementById('importJsonButton');
     const modal = document.getElementById('jsonImportModal');
@@ -266,101 +259,6 @@ function setFieldValue(fieldId, value) {
 function initializeFormSubmission() {
     initializeFormSubmissionHandler();
     initializeJsonParser();
-}
-
-function createResultsTable(results) {
-    const tableContainer = document.createElement('div');
-    tableContainer.className = 'table-container';
-    
-    const table = document.createElement('table');
-    table.className = 'data-table';
-    
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    const headers = [
-        'Active', 'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 
-        'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
-        'RIS Code', 'RIS ID', 'Owner Group', 'Owner', 'Applicant'
-    ];
-
-    headers.forEach(header => {
-        const th = document.createElement('th');
-        th.textContent = header;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    if (results && results.length > 0) {
-        results.forEach(result => {
-            const row = document.createElement('tr');
-            [
-                result.active ? '✓' : '✗',  // Add active status with checkmark or X
-                result.cluster,
-                result.segment,
-                result.environment,
-                result.realm,
-                result.tenant,
-                result.user,
-                result.bucket,
-                result.quota,
-                result.sd_num,
-                result.srt_num,
-                result.done_date,
-                result.ris_code,
-                result.ris_id,
-                result.owner_group,
-                result.owner,
-                result.applicant
-            ].forEach(text => {
-                const td = document.createElement('td');
-                td.textContent = text || '-';
-                if (text === '✓') {
-                    td.style.color = 'green';
-                } else if (text === '✗') {
-                    td.style.color = 'red';
-                }
-                row.appendChild(td);
-            });
-            tbody.appendChild(row);
-        });
-    } else {
-        const row = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = headers.length;
-        td.textContent = 'No results found';
-        td.className = 'empty-message';
-        row.appendChild(td);
-        tbody.appendChild(row);
-    }
-
-    table.appendChild(tbody);
-    tableContainer.appendChild(table);
-    return tableContainer;
-}
-
-// For form submission responses
-function displayFormResult(data) {
-    const resultDiv = document.getElementById('result');
-    if (resultDiv) {
-        resultDiv.textContent = data;
-    }
-}
-
-// For search results that need table formatting
-function displaySearchResults(results) {
-    const resultDiv = document.getElementById('result');
-    if (!resultDiv) return;
-
-    if (!results || results.length === 0) {
-        resultDiv.textContent = 'No results found';
-        return;
-    }
-
-    const table = createResultsTable(results);
-    resultDiv.textContent = '';
-    resultDiv.appendChild(table);
 }
 
 function initializeFieldValidation() {
@@ -960,64 +858,36 @@ function displayCheckResults(data) {
     document.getElementById('result').innerHTML = html;
 }
 
-function displayDeactivationResults(data) {
-    let html = '<div class="table-container">';
-    html += '<h3>Результаты деактивации</h3>';
-
-    if (data.deactivated_users && data.deactivated_users.length > 0) {
-        html += '<h4>Деактивированные пользователи:</h4>';
-        html += '<ul>';
-        data.deactivated_users.forEach(user => {
-            html += `<li>${user}</li>`;
-        });
-        html += '</ul>';
-    }
-
-    if (data.deactivated_buckets && data.deactivated_buckets.length > 0) {
-        html += '<h4>Деактивированные бакеты:</h4>';
-        html += '<ul>';
-        data.deactivated_buckets.forEach(bucket => {
-            html += `<li>${bucket}</li>`;
-        });
-        html += '</ul>';
-    }
-
-    if ((!data.deactivated_users || data.deactivated_users.length === 0) && 
-        (!data.deactivated_buckets || data.deactivated_buckets.length === 0)) {
-        html += '<p>Не найдено активных ресурсов для деактивации</p>';
-    }
-
-    html += '</div>';
-    document.getElementById('result').innerHTML = html;
-}
-
 function displayTenantInfo(data) {
-    let html = '<div class="table-container">';
-    html += '<h3>Информация о тенанте</h3>';
-    html += `<table class="data-table">
-        <tr>
-            <th>Тенант</th>
-            <th>Кластер</th>
-            <th>Среда</th>
-            <th>Зона безопасности</th>
-            <th>РИС код</th>
-            <th>РИС номер</th>
-            <th>Группа владельцев</th>
-            <th>Владелец</th>
-        </tr>
-        <tr>
-            <td>${data.tenant || '-'}</td>
-            <td>${data.cls_name || '-'}</td>
-            <td>${data.env || '-'}</td>
-            <td>${data.net_seg || '-'}</td>
-            <td>${data.ris_code || '-'}</td>
-            <td>${data.ris_id || '-'}</td>
-            <td>${data.owner_group || '-'}</td>
-            <td>${data.owner_person || '-'}</td>
-        </tr>
-    </table>`;
-    html += '</div>';
-    document.getElementById('result').innerHTML = html;
+    const container = document.createElement('div');
+    container.className = 'table-container';
+    container.innerHTML = `
+        <h3>Информация о тенанте</h3>
+        <table class="data-table">
+            <tr>
+                <th>Тенант</th>
+                <th>Кластер</th>
+                <th>Среда</th>
+                <th>Зона безопасности</th>
+                <th>РИС код</th>
+                <th>РИС номер</th>
+                <th>Группа владельцев</th>
+                <th>Владелец</th>
+            </tr>
+            <tr>
+                <td>${data.tenant || '-'}</td>
+                <td>${data.cls_name || '-'}</td>
+                <td>${data.env || '-'}</td>
+                <td>${data.net_seg || '-'}</td>
+                <td>${data.ris_code || '-'}</td>
+                <td>${data.ris_id || '-'}</td>
+                <td>${data.owner_group || '-'}</td>
+                <td>${data.owner_person || '-'}</td>
+            </tr>
+        </table>
+    `;
+    document.getElementById('result').innerHTML = '';
+    document.getElementById('result').appendChild(container);
 }
 
 // Make sure this initialization is being called

@@ -474,70 +474,9 @@ function initializeForm() {
 // Call initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeForm);
 
-function displayCheckResults(data) {
-    const container = document.createElement('div');
-    container.className = 'table-container';
-    
-    // Tenant info section
-    const tenantSection = document.createElement('div');
-    tenantSection.innerHTML = '<h3>Информация о тенанте</h3>';
-    tenantSection.appendChild(createTable(
-        ['Тенант', 'Кластер', 'Среда', 'Зона безопасности'],
-        [[
-            data.tenant.name,
-            data.tenant.cluster,
-            data.tenant.env,
-            data.tenant.segment
-        ]]
-    ));
-    container.appendChild(tenantSection);
-
-    // Users section
-    if (data.users && data.users.length > 0) {
-        const usersSection = document.createElement('div');
-        usersSection.innerHTML = '<h3>Пользователи</h3>';
-        usersSection.appendChild(createTable(
-            ['Пользователь', 'Статус'],
-            data.users.map(user => [user.name, user.status])
-        ));
-        container.appendChild(usersSection);
-    }
-
-    // Buckets section
-    if (data.buckets && data.buckets.length > 0) {
-        const bucketsSection = document.createElement('div');
-        bucketsSection.innerHTML = '<h3>Бакеты</h3>';
-        bucketsSection.appendChild(createTable(
-            ['Бакет', 'Размер', 'Статус'],
-            data.buckets.map(bucket => [bucket.name, bucket.size, bucket.status])
-        ));
-        container.appendChild(bucketsSection);
-    }
-
-    // Deletion commands section
-    const hasActivesToDelete = (data.users && data.users.some(u => u.status === 'Активен')) ||
-                             (data.buckets && data.buckets.some(b => b.status === 'Активен'));
-
-    if (hasActivesToDelete && data.deletion_commands) {
-        const commandsSection = document.createElement('div');
-        commandsSection.innerHTML = '<h3>Команды для удаления ресурсов</h3>';
-        const pre = document.createElement('pre');
-        pre.className = 'command-block';
-        pre.textContent = data.deletion_commands;
-        commandsSection.appendChild(pre);
-        container.appendChild(commandsSection);
-    }
-
-    // Replace content
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '';
-    resultDiv.appendChild(container);
-}
-
 function initializeUserBucketDel() {
     const checkButton = document.querySelector('#user-bucket-del #check-tenant');
     const submitButton = document.querySelector('#user-bucket-del #submit-form');
-    const form = document.getElementById('mainForm');
 
     if (checkButton) {
         checkButton.onclick = async (e) => {
@@ -545,38 +484,15 @@ function initializeUserBucketDel() {
             e.stopPropagation();
             
             const tabPane = document.querySelector('#user-bucket-del');
-            const tenantInput = tabPane.querySelector('#tenant');
-            const usersInput = tabPane.querySelector('#users');
-            const bucketsInput = tabPane.querySelector('#buckets');
+            const resourceData = collectTenantResourcesData(tabPane);
 
-            const tenant = tenantInput ? tenantInput.value.trim() : '';
-            const users = usersInput && usersInput.value ? 
-                usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
-            const buckets = bucketsInput && bucketsInput.value ? 
-                bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
-
-            if (!tenant) {
+            if (!resourceData.tenant) {
                 displayResult('Ошибка: Необходимо указать имя тенанта');
                 return;
             }
 
             try {
-                const response = await fetch('/zayavki/check-tenant-resources', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        tenant,
-                        users,
-                        buckets
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
+                const response = await fetchJson('/zayavki/check-tenant-resources', resourceData);
                 const data = await response.json();
                 displayCheckResults(data);
             } catch (error) {
@@ -591,60 +507,26 @@ function initializeUserBucketDel() {
             e.stopPropagation();
 
             const tabPane = document.querySelector('#user-bucket-del');
-            const tenantInput = tabPane.querySelector('#tenant');
-            const usersInput = tabPane.querySelector('#users');
-            const bucketsInput = tabPane.querySelector('#buckets');
+            const resourceData = collectTenantResourcesData(tabPane);
 
-            const tenant = tenantInput ? tenantInput.value.trim() : '';
-            const users = usersInput && usersInput.value ? 
-                usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
-            const buckets = bucketsInput && bucketsInput.value ? 
-                bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
-
-            if (!tenant) {
+            if (!resourceData.tenant) {
                 displayResult('Ошибка: Необходимо указать имя тенанта');
                 return;
             }
 
-            if (users.length === 0 && buckets.length === 0) {
+            if (resourceData.users.length === 0 && resourceData.buckets.length === 0) {
                 displayResult('Ошибка: Необходимо указать пользователей или бакеты для деактивации');
                 return;
             }
 
             try {
-                const response = await fetch('/zayavki/deactivate-resources', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        tenant,
-                        users,
-                        buckets
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
+                const response = await fetchJson('/zayavki/deactivate-resources', resourceData);
                 const data = await response.json();
                 displayDeactivationResults(data);
             } catch (error) {
                 displayResult(`Ошибка: ${error.message}`);
             }
         };
-    }
-
-    // Prevent form submission for this tab
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            const activeTab = document.querySelector('.tab-pane.active');
-            if (activeTab && activeTab.id === 'user-bucket-del') {
-                e.preventDefault();
-                return false;
-            }
-        });
     }
 }
 
@@ -765,21 +647,11 @@ async function handleFormSubmit(pushToDb = false) {
         const activeTab = document.querySelector('.tab-pane.active');
         if (!activeTab) return;
 
-        // Get all form data from the active tab
-        const formData = new FormData();
-        const inputs = activeTab.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            if (input.id && input.value) {
-                formData.append(input.id, input.value);
-            }
-        });
+        const formData = collectFormFields(activeTab);
 
-        // Add create_tenant=true if we're in the new-tenant tab
         if (activeTab.id === 'new-tenant') {
             formData.append('create_tenant', 'true');
         }
-
-        // Add push_to_db parameter
         formData.append('push_to_db', pushToDb.toString());
 
         const response = await fetch('/zayavki/submit', {
@@ -800,7 +672,6 @@ async function handleFormSubmit(pushToDb = false) {
         }
 
         displayResult(text);
-
     } catch (error) {
         displayResult(`Error: ${error.message}`);
     }
