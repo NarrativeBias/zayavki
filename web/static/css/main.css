@@ -1015,18 +1015,18 @@ textarea {
 
 /* Update check button styling */
 #user-bucket-del .primary-button {
-    background-color: #FFA500 !important; /* Orange like search button */
+    background-color: #4CAF50 !important; /* Green */
     color: white;
     order: 1;
 }
 
 #user-bucket-del .primary-button:hover {
-    background-color: #FF8C00 !important; /* Darker orange */
+    background-color: #45a049 !important; /* Darker green */
     opacity: 0.9;
     transform: translateY(-2px);
 }
 
 #user-bucket-del .primary-button:active {
-    background-color: #FF7000 !important; /* Even darker orange */
+    background-color: #3d8b40 !important; /* Even darker green */
     transform: translateY(1px);
 }
