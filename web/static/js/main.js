@@ -507,6 +507,7 @@ function initializeForm() {
     // Initialize tenant-mod tab after tabs are created
     function initializeTenantMod() {
         const checkButton = document.querySelector('#tenant-mod #check-tenant');
+        let tenantData = null; // Store tenant data
 
         if (checkButton) {
             checkButton.onclick = async (e) => {
@@ -535,8 +536,8 @@ function initializeForm() {
                         throw new Error(await response.text());
                     }
 
-                    const data = await response.json();
-                    displayTenantInfo(data);
+                    tenantData = await response.json(); // Store the tenant data
+                    displayTenantInfo(tenantData);
                 } catch (error) {
                     displayResult(`Ошибка: ${error.message}`);
                 }
@@ -550,6 +551,11 @@ function initializeForm() {
                 e.preventDefault();
                 e.stopPropagation();
 
+                if (!tenantData) {
+                    displayResult('Ошибка: Сначала необходимо проверить тенант');
+                    return;
+                }
+
                 // Get form data
                 const tabPane = document.querySelector('#tenant-mod');
                 const sdInput = tabPane.querySelector('#request_id_sd');
@@ -560,15 +566,15 @@ function initializeForm() {
 
                 // Create form data
                 const submitData = new FormData();
-                submitData.append('segment', data.net_seg);
-                submitData.append('env', data.env);
-                submitData.append('tenant_override', data.tenant);
-                submitData.append('ris_number', data.ris_id);
-                submitData.append('ris_name', data.ris_code);
-                submitData.append('resp_group', data.owner_group);
-                submitData.append('owner', data.owner_person);
-                submitData.append('cluster', data.cls_name);
-                submitData.append('realm', data.realm);
+                submitData.append('segment', tenantData.net_seg);
+                submitData.append('env', tenantData.env);
+                submitData.append('tenant_override', tenantData.tenant);
+                submitData.append('ris_number', tenantData.ris_id);
+                submitData.append('ris_name', tenantData.ris_code);
+                submitData.append('resp_group', tenantData.owner_group);
+                submitData.append('owner', tenantData.owner_person);
+                submitData.append('cluster', tenantData.cls_name);
+                submitData.append('realm', tenantData.realm);
 
                 if (sdInput) submitData.append('request_id_sd', sdInput.value);
                 if (srtInput) submitData.append('request_id_srt', srtInput.value);
@@ -585,14 +591,14 @@ function initializeForm() {
                         body: JSON.stringify({
                             processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
                             selectedCluster: {
-                                "Кластер": data.cls_name,
-                                "Реалм": data.realm,
-                                "ЦОД": data.dc,
-                                "Выдача": data.issue,
-                                "Среда": data.env,
-                                "ЗБ": data.net_seg,
-                                "tls_endpoint": data.tls_endpoint,
-                                "mtls_endpoint": data.mtls_endpoint
+                                "Кластер": tenantData.cls_name,
+                                "Реалм": tenantData.realm,
+                                "ЦОД": tenantData.dc,
+                                "Выдача": tenantData.issue,
+                                "Среда": tenantData.env,
+                                "ЗБ": tenantData.net_seg,
+                                "tls_endpoint": tenantData.tls_endpoint,
+                                "mtls_endpoint": tenantData.mtls_endpoint
                             },
                             pushToDb: true
                         })
