@@ -31,19 +31,23 @@ body {
 }
 
 .form-container {
-    flex: 0 0 320px;
+    flex: 0 0 400px;
     min-width: 320px;
-    max-width: 320px;
-    background-color: rgba(255, 255, 255, 0.9);
+    max-width: 400px;
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow-y: auto;
-    max-height: 90%;
-    padding: 15px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    max-height: calc(100vh - 140px);
 }
 
 .results-container {
     flex: 1;
+    min-width: 500px;
     display: flex;
     flex-direction: column;
     background-color: rgba(0, 77, 77, 0.8);
@@ -51,8 +55,6 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     overflow: auto;
-    min-width: 700px;
-    width: calc(100% - 340px);
 }
 
 .results-container h2 {
@@ -102,6 +104,11 @@ label {
     width: 100%;
     max-width: 280px;
     margin: 0 auto;
+    margin-bottom: 7px;
+}
+
+.form-field:last-child {
+    margin-bottom: 0;
 }
 
 input[type="text"], input[type="email"], select, textarea {
@@ -118,7 +125,7 @@ input[type="text"], input[type="email"], select, textarea {
 .button-container {
     width: 100%;
     max-width: 280px;
-    margin: 20px auto 0;
+    margin: 15px auto 0;
 }
 
 /* Base styles for all form buttons */
@@ -381,24 +388,29 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 @media (max-width: 1200px) {
-    .container {
-        padding: 0 20px;
+    .page-container {
+        min-width: unset;
+        padding: 0 10px;
     }
 
-    .form-container,
-    .results-container {
-        width: 100%;
-        max-width: none;
+    .content-container {
+        flex-direction: column;
+        height: auto;
+        min-height: unset;
     }
 
     .form-container {
         flex: none;
         width: 100%;
+        max-width: 600px;
+        min-width: unset;
+        margin: 0 auto;
     }
 
     .results-container {
-        flex: none;
-        max-height: 50vh;
+        min-width: unset;
+        width: 100%;
+        max-height: 60vh;
     }
 }
 
@@ -503,6 +515,7 @@ input[type="text"], input[type="email"], select, textarea {
 /* Tab styles - simplified */
 .tab-pane {
     display: none;
+    height: fit-content;
 }
 
 .tab-pane.active {
@@ -514,8 +527,11 @@ input[type="text"], input[type="email"], select, textarea {
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 1900px;
+    min-width: 900px;
+    max-width: 100%;
     gap: 20px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 .tabs-container {
@@ -526,7 +542,8 @@ input[type="text"], input[type="email"], select, textarea {
 .content-container {
     display: flex;
     gap: 20px;
-    height: calc(100vh - 120px); /* Adjust based on tabs height */
+    height: calc(100vh - 120px);
+    min-height: 400px;
 }
 
 /* Update tabs styles */
@@ -562,23 +579,13 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 /* Update form container styles */
-.form-container {
-    flex: 0 0 400px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow-y: auto;
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
 .form-container > h1 {
     padding: 20px;
     margin: 0;
     background: #fff;
     border-radius: 8px 8px 0 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    flex: 0 0 auto;
 }
 
 /* Update container styles */
@@ -760,12 +767,15 @@ input[type="text"], input[type="email"], select, textarea {
     max-width: 280px;
     margin: 0 auto;
     padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
 }
 
 .form-fields {
     display: flex;
     flex-direction: column;
     gap: 7px;
+    width: 100%;
 }
 
 /* Add this with the other button styles */
