@@ -795,3 +795,141 @@ async function handleTenantModSubmit(tenantInfo) {
 // Export functions for use in other files
 window.handleFormSubmit = handleFormSubmit;
 window.handleClusterSelection = handleClusterSelection;
+
+function initializeUserBucketDel() {
+    const checkButton = document.querySelector('#user-bucket-del .primary-button');
+    if (checkButton) {
+        // Add click handler
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Check button clicked');
+
+            // Get the form data from the specific tab
+            const tabPane = document.querySelector('#user-bucket-del');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const usersInput = tabPane.querySelector('#users');
+            const bucketsInput = tabPane.querySelector('#buckets');
+
+            console.log('Form elements:', { tenantInput, usersInput, bucketsInput }); // Debug log
+
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+            const users = usersInput && usersInput.value ? 
+                usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
+            const buckets = bucketsInput && bucketsInput.value ? 
+                bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
+
+            console.log('Values:', { tenant, users, buckets }); // Debug log
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/check-tenant-resources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tenant,
+                        users,
+                        buckets
+                    })
+                });
+
+                console.log('Response:', response);
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                console.log('Data:', data);
+                displayCheckResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+
+        // Prevent form submission
+        const form = checkButton.closest('form');
+        if (form) {
+            form.onsubmit = (e) => {
+                const activeTab = document.querySelector('.tab-pane.active');
+                if (activeTab && activeTab.id === 'user-bucket-del') {
+                    e.preventDefault();
+                    return false;
+                }
+            };
+        }
+    }
+}
+
+function displayCheckResults(data) {
+    let html = '<div class="table-container">';
+    
+    // Display tenant info
+    html += '<h3>Информация о тенанте</h3>';
+    html += `<table class="data-table">
+        <tr>
+            <th>Тенант</th>
+            <th>Кластер</th>
+            <th>Среда</th>
+            <th>Зона безопасности</th>
+        </tr>
+        <tr>
+            <td>${data.tenant.name || '-'}</td>
+            <td>${data.tenant.cluster || '-'}</td>
+            <td>${data.tenant.env || '-'}</td>
+            <td>${data.tenant.segment || '-'}</td>
+        </tr>
+    </table>`;
+
+    // Display users info if any were requested
+    if (data.users && data.users.length > 0) {
+        html += '<h3>Пользователи</h3>';
+        html += `<table class="data-table">
+            <tr>
+                <th>Пользователь</th>
+                <th>Статус</th>
+            </tr>`;
+        data.users.forEach(user => {
+            html += `<tr>
+                <td>${user.name}</td>
+                <td>${user.status}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    }
+
+    // Display buckets info if any were requested
+    if (data.buckets && data.buckets.length > 0) {
+        html += '<h3>Бакеты</h3>';
+        html += `<table class="data-table">
+            <tr>
+                <th>Бакет</th>
+                <th>Размер</th>
+                <th>Статус</th>
+            </tr>`;
+        data.buckets.forEach(bucket => {
+            html += `<tr>
+                <td>${bucket.name}</td>
+                <td>${bucket.size || '-'}</td>
+                <td>${bucket.status}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    }
+
+    html += '</div>';
+    document.getElementById('result').innerHTML = html;
+}
+
+// Make sure this initialization is being called
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing initialization code ...
+    initializeUserBucketDel();
+});

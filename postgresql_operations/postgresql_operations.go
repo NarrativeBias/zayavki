@@ -360,3 +360,49 @@ func CloseDB() error {
 	}
 	return nil
 }
+
+func CheckUserExists(tenant, user string) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database connection not initialized")
+	}
+
+	var exists bool
+	query := fmt.Sprintf(`
+		SELECT EXISTS(
+			SELECT 1 FROM %s.%s 
+			WHERE tenant = $1 AND s3_user = $2 AND active = true
+		)`, config.Schema, config.Table)
+
+	err := db.QueryRow(query, tenant, user).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("error checking user existence: %v", err)
+	}
+	return exists, nil
+}
+
+func GetBucketInfo(tenant, bucket string) (*BucketInfo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection not initialized")
+	}
+
+	var info BucketInfo
+	query := fmt.Sprintf(`
+		SELECT bucket, quota 
+		FROM %s.%s 
+		WHERE tenant = $1 AND bucket = $2 AND active = true
+		LIMIT 1`, config.Schema, config.Table)
+
+	err := db.QueryRow(query, tenant, bucket).Scan(&info.Name, &info.Size)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error getting bucket info: %v", err)
+	}
+	return &info, nil
+}
+
+type BucketInfo struct {
+	Name string
+	Size string
+}

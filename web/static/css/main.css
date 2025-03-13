@@ -159,16 +159,6 @@ input[type="text"], input[type="email"], select, textarea {
     order: 3;
 }
 
-/* Remove the tab-specific button styles since they're now global */
-#user-bucket-del .button-container {
-    /* Remove duplicate styles */
-}
-
-#user-bucket-del .primary-button,
-#user-bucket-del .danger-button,
-#user-bucket-del .clear-search-button {
-    /* Remove duplicate styles */
-}
 
 .checkbox-group {
     display: flex;
@@ -1021,4 +1011,22 @@ textarea {
     margin-top: 4px;
     margin-bottom: 8px;
     font-style: italic;
+}
+
+/* Update check button styling */
+#user-bucket-del .primary-button {
+    background-color: #FFA500 !important; /* Orange like search button */
+    color: white;
+    order: 1;
+}
+
+#user-bucket-del .primary-button:hover {
+    background-color: #FF8C00 !important; /* Darker orange */
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+#user-bucket-del .primary-button:active {
+    background-color: #FF7000 !important; /* Even darker orange */
+    transform: translateY(1px);
 }

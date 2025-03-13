@@ -3,7 +3,7 @@ console.log('Loading main.js...');
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing...');
     initializeTabs();
-    initializeFormSubmission();
+    initializeForm();
     initializeModal();
     initializeJsonParser();
     initializeFieldValidation();
@@ -399,7 +399,25 @@ function initializeFieldSync() {
 function initializeForm() {
     const form = document.getElementById('mainForm');
     if (form) {
-        form.addEventListener('submit', handleFormSubmit);
+        // Remove the generic form submission handler
+        form.removeEventListener('submit', handleFormSubmit);
+        
+        // Add a new handler that checks the active tab
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) return;
+
+            const tabId = activeTab.id;
+            
+            // Don't handle form submission for user-bucket-del tab
+            if (tabId === 'user-bucket-del') {
+                return;
+            }
+            
+            // Handle other tabs' form submissions
+            handleFormSubmit(e);
+        });
     }
 
     // Initialize tabs
@@ -413,6 +431,9 @@ function initializeForm() {
 
     // Initialize field synchronization
     initializeFieldSync();
+
+    // Initialize user-bucket-del tab handlers
+    initializeUserBucketDel();
 
     // Initialize with the first tab (search)
     switchTab('search');

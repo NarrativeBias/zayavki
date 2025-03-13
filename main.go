@@ -47,6 +47,7 @@ func main() {
 	mux.HandleFunc("/zayavki/check", stripPrefix(handleCheck))
 	mux.HandleFunc("/zayavki/tenant-info", stripPrefix(handleTenantInfo))
 	mux.HandleFunc("/zayavki/cluster-info", stripPrefix(handleClusterInfo))
+	mux.HandleFunc("/zayavki/check-tenant-resources", stripPrefix(handleCheckTenantResources))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -424,4 +425,112 @@ func handleClusterInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Cluster not found", http.StatusNotFound)
+}
+
+func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Tenant  string   `json:"tenant"`
+		Users   []string `json:"users"`
+		Buckets []string `json:"buckets"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Check if tenant is provided
+	if request.Tenant == "" {
+		http.Error(w, "Tenant name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get all entries for this tenant
+	results, err := postgresql_operations.CheckDBForExistingEntries(
+		"", "", "", "", request.Tenant, "", "", "",
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error checking database: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// If no results found
+	if len(results) == 0 {
+		http.Error(w, "Tenant not found", http.StatusNotFound)
+		return
+	}
+
+	// Get tenant info from first result
+	result := map[string]interface{}{
+		"tenant": map[string]string{
+			"name":    request.Tenant,
+			"cluster": results[0].ClsName,
+			"env":     results[0].Env,
+			"segment": results[0].NetSeg,
+		},
+		"users":   make([]map[string]interface{}, 0),
+		"buckets": make([]map[string]interface{}, 0),
+	}
+
+	// Check users if any provided
+	for _, user := range request.Users {
+		// Check if user exists in results
+		exists := false
+		for _, entry := range results {
+			if entry.S3User.Valid && entry.S3User.String == user {
+				exists = true
+				break
+			}
+		}
+		result["users"] = append(result["users"].([]map[string]interface{}), map[string]interface{}{
+			"name":   user,
+			"exists": exists,
+			"status": getStatusText(exists),
+		})
+	}
+
+	// Check buckets if any provided
+	for _, bucket := range request.Buckets {
+		// Check if bucket exists in results
+		var bucketInfo *postgresql_operations.CheckResult
+		for _, entry := range results {
+			if entry.Bucket.Valid && entry.Bucket.String == bucket {
+				bucketInfo = &entry
+				break
+			}
+		}
+		result["buckets"] = append(result["buckets"].([]map[string]interface{}), map[string]interface{}{
+			"name":   bucket,
+			"exists": bucketInfo != nil,
+			"size":   getBucketSizeFromResult(bucketInfo),
+			"status": getBucketStatusFromResult(bucketInfo),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func getStatusText(exists bool) string {
+	if exists {
+		return "Активный"
+	}
+	return "Не найденный"
+}
+
+func getBucketSizeFromResult(info *postgresql_operations.CheckResult) string {
+	if info == nil || !info.Quota.Valid {
+		return "-"
+	}
+	return info.Quota.String
+}
+
+func getBucketStatusFromResult(info *postgresql_operations.CheckResult) string {
+	if info == nil {
+		return "Не найденный"
+	}
+	if info.Active {
+		return "Активный"
+	}
+	return "Неактивный"
 }
