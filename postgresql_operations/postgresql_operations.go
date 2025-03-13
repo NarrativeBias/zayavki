@@ -41,6 +41,7 @@ type CheckResult struct {
 	Applicant   string         `json:"applicant"`
 	Email       sql.NullString `json:"-"` // Using custom JSON marshaling
 	CsppComment sql.NullString `json:"-"` // Using custom JSON marshaling
+	Active      bool           `json:"active"`
 }
 
 func (cr CheckResult) MarshalJSON() ([]byte, error) {
@@ -146,64 +147,26 @@ func CheckDBForExistingEntries(segment, env, risNumber, risName, tenant, bucket,
 	}
 
 	query := fmt.Sprintf(`
-        SELECT 
-            cls_name, net_seg, env, realm, tenant, s3_user, bucket, quota,
-            sd_num, srt_num, done_date, ris_code, ris_id, owner_group,
-            owner_person, applicant, email, cspp_comment
+        SELECT DISTINCT 
+            cls_name, net_seg, env, realm, tenant, 
+            s3_user, bucket, quota, sd_num, srt_num, 
+            done_date, ris_code, ris_id, owner_group, 
+            owner_person, applicant, email, cspp_comment,
+            active
         FROM %s.%s
-        WHERE 1=1
-    `, config.Schema, config.Table)
+        WHERE ($1 = '' OR net_seg = $1)
+        AND ($2 = '' OR env = $2)
+        AND ($3 = '' OR ris_id = $3)
+        AND ($4 = '' OR ris_code = $4)
+        AND ($5 = '' OR tenant = $5)
+        AND ($6 = '' OR bucket = $6)
+        AND ($7 = '' OR s3_user = $7)
+        AND ($8 = '' OR cls_name = $8)
+        ORDER BY done_date DESC`, config.Schema, config.Table)
 
-	args := make([]interface{}, 0)
-	paramCount := 1
-
-	// Build dynamic query based on provided parameters
-	if segment != "" {
-		query += fmt.Sprintf(" AND net_seg = $%d", paramCount)
-		args = append(args, segment)
-		paramCount++
-	}
-	if env != "" {
-		query += fmt.Sprintf(" AND env = $%d", paramCount)
-		args = append(args, env)
-		paramCount++
-	}
-	if risNumber != "" {
-		query += fmt.Sprintf(" AND ris_id = $%d", paramCount)
-		args = append(args, risNumber)
-		paramCount++
-	}
-	if risName != "" {
-		query += fmt.Sprintf(" AND ris_code = $%d", paramCount)
-		args = append(args, risName)
-		paramCount++
-	}
-	if tenant != "" {
-		query += fmt.Sprintf(" AND tenant = $%d", paramCount)
-		args = append(args, tenant)
-		paramCount++
-	}
-	if bucket != "" {
-		query += fmt.Sprintf(" AND bucket = $%d", paramCount)
-		args = append(args, bucket)
-		paramCount++
-	}
-	if user != "" {
-		query += fmt.Sprintf(" AND s3_user = $%d", paramCount)
-		args = append(args, user)
-		paramCount++
-	}
-	if clusterName != "" {
-		query += fmt.Sprintf(" AND cls_name = $%d", paramCount)
-		args = append(args, clusterName)
-	}
-
-	// Add ordering for consistent results
-	query += " ORDER BY done_date DESC, cls_name, tenant"
-
-	rows, err := db.Query(query, args...)
+	rows, err := db.Query(query, segment, env, risNumber, risName, tenant, bucket, user, clusterName)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database: %v", err)
+		return nil, fmt.Errorf("error executing query: %v", err)
 	}
 	defer rows.Close()
 
@@ -211,34 +174,20 @@ func CheckDBForExistingEntries(segment, env, risNumber, risName, tenant, bucket,
 	for rows.Next() {
 		var result CheckResult
 		err := rows.Scan(
-			&result.ClsName,
-			&result.NetSeg,
-			&result.Env,
-			&result.Realm,
-			&result.Tenant,
-			&result.S3User,
-			&result.Bucket,
-			&result.Quota,
-			&result.SdNum,
-			&result.SrtNum,
-			&result.DoneDate,
-			&result.RisCode,
-			&result.RisId,
-			&result.OwnerGroup,
-			&result.OwnerPerson,
-			&result.Applicant,
-			&result.Email,
-			&result.CsppComment,
+			&result.ClsName, &result.NetSeg, &result.Env, &result.Realm,
+			&result.Tenant, &result.S3User, &result.Bucket, &result.Quota,
+			&result.SdNum, &result.SrtNum, &result.DoneDate, &result.RisCode,
+			&result.RisId, &result.OwnerGroup, &result.OwnerPerson,
+			&result.Applicant, &result.Email, &result.CsppComment, &result.Active,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row: %v", err)
 		}
-
 		results = append(results, result)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %v", err)
+		return nil, fmt.Errorf("error iterating rows: %v", err)
 	}
 
 	return results, nil

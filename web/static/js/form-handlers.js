@@ -269,19 +269,16 @@ function initializeFormSubmission() {
 }
 
 function createResultsTable(results) {
-    // Create table container
     const tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
     
-    // Create table
     const table = document.createElement('table');
     table.className = 'data-table';
     
-    // Create table header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     const headers = [
-        'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 
+        'Active', 'Cluster', 'Segment', 'Environment', 'Realm', 'Tenant', 
         'User', 'Bucket', 'Quota', 'SD', 'SRT', 'Date',
         'RIS Code', 'RIS ID', 'Owner Group', 'Owner', 'Applicant'
     ];
@@ -294,12 +291,12 @@ function createResultsTable(results) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
-    // Create table body
     const tbody = document.createElement('tbody');
     if (results && results.length > 0) {
         results.forEach(result => {
             const row = document.createElement('tr');
             [
+                result.active ? '✓' : '✗',  // Add active status with checkmark or X
                 result.cluster,
                 result.segment,
                 result.environment,
@@ -319,6 +316,11 @@ function createResultsTable(results) {
             ].forEach(text => {
                 const td = document.createElement('td');
                 td.textContent = text || '-';
+                if (text === '✓') {
+                    td.style.color = 'green';
+                } else if (text === '✗') {
+                    td.style.color = 'red';
+                }
                 row.appendChild(td);
             });
             tbody.appendChild(row);
