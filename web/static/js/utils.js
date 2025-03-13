@@ -90,6 +90,62 @@ function collectTenantResourcesData(tabPane) {
     };
 }
 
+function trimFormData(formOrData) {
+    const formData = formOrData instanceof HTMLFormElement ? new FormData(formOrData) : formOrData;
+    const trimmedData = new FormData();
+
+    for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string') {
+            value = value.trim().split('\n').map(line => line.trim()).filter(Boolean).join('\n');
+        }
+        trimmedData.append(key, value);
+    }
+
+    return trimmedData;
+}
+
+function processFormData(formData) {
+    const processedVars = Object.fromEntries(
+        Array.from(formData.entries()).reduce((acc, [key, value]) => {
+            if (!acc.has(key)) acc.set(key, []);
+            acc.get(key).push(value);
+            return acc;
+        }, new Map())
+    );
+
+    const envSelect = document.getElementById('env');
+    if (envSelect && !processedVars.hasOwnProperty('env_code')) {
+        processedVars['env_code'] = [getEnvCode(envSelect.value)];
+    }
+
+    return processedVars;
+}
+
+function setFieldValue(fieldId, value) {
+    const input = document.getElementById(fieldId);
+    if (input && value) {
+        input.value = value;
+        if (input.tagName === 'SELECT') {
+            input.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+// Add these utility functions
+function enableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = false;
+    }
+}
+
+function disableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = true;
+    }
+}
+
 // Export functions
 window.createTableRow = createTableRow;
 window.createTable = createTable;
@@ -97,3 +153,8 @@ window.createSection = createSection;
 window.collectFormFields = collectFormFields;
 window.fetchJson = fetchJson;
 window.collectTenantResourcesData = collectTenantResourcesData;
+window.trimFormData = trimFormData;
+window.processFormData = processFormData;
+window.setFieldValue = setFieldValue;
+window.enableButton = enableButton;
+window.disableButton = disableButton;
