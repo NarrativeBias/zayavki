@@ -48,6 +48,7 @@ func main() {
 	mux.HandleFunc("/zayavki/tenant-info", stripPrefix(handleTenantInfo))
 	mux.HandleFunc("/zayavki/cluster-info", stripPrefix(handleClusterInfo))
 	mux.HandleFunc("/zayavki/check-tenant-resources", stripPrefix(handleCheckTenantResources))
+	mux.HandleFunc("/zayavki/deactivate-resources", stripPrefix(handleDeactivateResources))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -533,4 +534,33 @@ func getBucketStatusFromResult(info *postgresql_operations.CheckResult) string {
 		return "Активный"
 	}
 	return "Неактивный"
+}
+
+func handleDeactivateResources(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Tenant  string   `json:"tenant"`
+		Users   []string `json:"users"`
+		Buckets []string `json:"buckets"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Check if tenant is provided
+	if request.Tenant == "" {
+		http.Error(w, "Tenant name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Deactivate resources in database
+	result, err := postgresql_operations.DeactivateResources(request.Tenant, request.Users, request.Buckets)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error deactivating resources: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }

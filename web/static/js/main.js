@@ -397,11 +397,8 @@ function initializeFieldSync() {
 
 // Update the initialization to include field sync
 function initializeForm() {
-    const form = document.getElementById('mainForm');
+    let form = document.getElementById('mainForm');
     if (form) {
-        // Remove the generic form submission handler
-        form.removeEventListener('submit', handleFormSubmit);
-        
         // Add a new handler that checks the active tab
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -410,9 +407,9 @@ function initializeForm() {
 
             const tabId = activeTab.id;
             
-            // Don't handle form submission for user-bucket-del tab
             if (tabId === 'user-bucket-del') {
-                return;
+                e.preventDefault();
+                return false;
             }
             
             // Handle other tabs' form submissions

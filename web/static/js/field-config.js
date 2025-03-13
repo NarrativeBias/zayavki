@@ -252,17 +252,22 @@ const TAB_CONFIGS = {
                 id: 'check-form',
                 label: 'Проверить',
                 className: 'primary-button',
-                type: 'button'
+                type: 'button',
+                preventSubmit: true
             },
             { 
                 id: 'submit-form',
                 label: 'Отправить в БД',
-                className: 'danger-button'
+                className: 'danger-button',
+                type: 'button',
+                preventSubmit: true
             },
             { 
                 id: 'clearButton',
                 label: 'Очистить',
-                className: 'clear-search-button'
+                className: 'clear-search-button',
+                type: 'button',
+                preventSubmit: true
             }
         ],
         required_fields: ['tenant']

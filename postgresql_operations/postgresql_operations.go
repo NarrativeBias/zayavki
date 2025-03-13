@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
@@ -405,4 +406,77 @@ func GetBucketInfo(tenant, bucket string) (*BucketInfo, error) {
 type BucketInfo struct {
 	Name string
 	Size string
+}
+
+func DeactivateResources(tenant string, users []string, buckets []string) (map[string]interface{}, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection not initialized")
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	result := map[string]interface{}{
+		"deactivated_users":   []string{},
+		"deactivated_buckets": []string{},
+	}
+
+	// Deactivate users
+	if len(users) > 0 {
+		query := fmt.Sprintf(`
+			UPDATE %s.%s 
+			SET active = false 
+			WHERE tenant = $1 AND s3_user = ANY($2) AND active = true
+			RETURNING s3_user`, config.Schema, config.Table)
+
+		rows, err := tx.Query(query, tenant, pq.Array(users))
+		if err != nil {
+			return nil, fmt.Errorf("failed to deactivate users: %v", err)
+		}
+		defer rows.Close()
+
+		var deactivatedUsers []string
+		for rows.Next() {
+			var user string
+			if err := rows.Scan(&user); err != nil {
+				return nil, fmt.Errorf("error scanning deactivated user: %v", err)
+			}
+			deactivatedUsers = append(deactivatedUsers, user)
+		}
+		result["deactivated_users"] = deactivatedUsers
+	}
+
+	// Deactivate buckets
+	if len(buckets) > 0 {
+		query := fmt.Sprintf(`
+			UPDATE %s.%s 
+			SET active = false 
+			WHERE tenant = $1 AND bucket = ANY($2) AND active = true
+			RETURNING bucket`, config.Schema, config.Table)
+
+		rows, err := tx.Query(query, tenant, pq.Array(buckets))
+		if err != nil {
+			return nil, fmt.Errorf("failed to deactivate buckets: %v", err)
+		}
+		defer rows.Close()
+
+		var deactivatedBuckets []string
+		for rows.Next() {
+			var bucket string
+			if err := rows.Scan(&bucket); err != nil {
+				return nil, fmt.Errorf("error scanning deactivated bucket: %v", err)
+			}
+			deactivatedBuckets = append(deactivatedBuckets, bucket)
+		}
+		result["deactivated_buckets"] = deactivatedBuckets
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return result, nil
 }
