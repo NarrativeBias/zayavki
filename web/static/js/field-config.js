@@ -35,7 +35,7 @@ const ALL_BUTTONS = {
 const TAB_CONFIGS = {
     'search': {
         fields: [
-            { id: 'segment', label: 'Зона безопасности', type: 'text' },
+            { id: 'segment', label: 'Зона безопасности', type: 'text', placeholder: 'INET-DEVTEST-SYNT' },
             { 
                 id: 'env', 
                 label: 'Среда', 
@@ -48,8 +48,8 @@ const TAB_CONFIGS = {
                     { value: 'HOTFIX', label: 'HOTFIX' }
                 ]
             },
-            { id: 'ris_number', label: 'РИС номер', type: 'text' },
-            { id: 'ris_name', label: 'РИС имя', type: 'text' },
+            { id: 'ris_number', label: 'РИС номер', type: 'text', placeholder: '1763' },
+            { id: 'ris_name', label: 'РИС имя', type: 'text', placeholder: 'cosd' },
             { id: 'cluster', label: 'Кластер', type: 'text' },
             { id: 'tenant', label: 'Тенант', type: 'text' },
             { id: 'bucket', label: 'Бакет', type: 'text' },
@@ -179,7 +179,7 @@ const TAB_CONFIGS = {
     },
     'tenant-mod': {
         fields: [
-            { id: 'tenant', label: 'Имя тенанта', type: 'text', required: true },
+            { id: 'tenant', label: 'Имя тенанта', type: 'text', required: true, placeholder: 'Введите имя тенанта' },
             {
                 id: 'request_id_sd',
                 label: 'Номер обращения SD',
@@ -233,16 +233,18 @@ const TAB_CONFIGS = {
                 placeholder: 'Введите имя тенанта'
             },
             {
-                id: 'user',
-                label: 'Пользователь',
-                type: 'text',
-                placeholder: 'Имя пользователя для удаления'
+                id: 'users',
+                label: 'Пользователи (один в строке)',
+                type: 'textarea',
+                placeholder: 'if_cosd_user1\nif_cosd_user2',
+                required: false
             },
             {
-                id: 'bucket',
-                label: 'Бакет',
-                type: 'text',
-                placeholder: 'Имя бакета для удаления'
+                id: 'buckets',
+                label: 'Бакеты (один в строке)',
+                type: 'textarea',
+                placeholder: 'if-cosd-bucket1\nif-cosd-bucket2',
+                required: false
             }
         ],
         buttons: [
