@@ -382,71 +382,210 @@ async function handleTenantModCheck(formData) {
     }
 }
 
-async function handleTenantModSubmit(e) {
-    console.log('handleTenantModSubmit called:', {
-        event: e,
-        submitter: e.submitter,
-        defaultPrevented: e.defaultPrevented
-    });
+function initializeForm() {
+    let form = document.getElementById('mainForm');
+    if (form) {
+        // Remove default form action and prevent default submission
+        form.action = 'javascript:void(0);';
+        form.method = 'post';
+        
+        // Main form submission handler
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+        });
 
-    e.preventDefault();
-    const clickedButton = e.submitter;
-    console.log('Clicked button:', {
-        button: clickedButton,
-        id: clickedButton?.id,
-        classList: clickedButton?.classList?.toString()
-    });
+        // Initialize tabs
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                switchTab(tabName);
+            });
+        });
 
-    if (!clickedButton) return;
+        // Initialize field synchronization
+        initializeFieldSync();
 
-    const tabPane = document.querySelector('#tenant-mod');
-    const tenantInput = tabPane.querySelector('#tenant');
-    const tenant = tenantInput ? tenantInput.value.trim() : '';
-
-    console.log('Form data:', {
-        tabPane,
-        tenantInput,
-        tenant
-    });
-
-    if (!tenant) {
-        displayResult('Ошибка: Необходимо указать имя тенанта');
-        return;
+        // Initialize specific tab handlers
+        initializeUserBucketDel();
+        initializeTenantMod();
     }
 
-    // If check button was clicked
-    if (clickedButton.id === 'check-tenant') {
-        console.log('Check button clicked, sending request');
-        try {
-            const response = await fetch('/zayavki/tenant-info', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ tenant })
-            });
+    // Initialize with the first tab (search)
+    switchTab('search');
+}
 
-            console.log('Got response:', {
-                ok: response.ok,
-                status: response.status
-            });
+function initializeUserBucketDel() {
+    const checkButton = document.querySelector('#user-bucket-del #check-tenant');
+    const submitButton = document.querySelector('#user-bucket-del #submit-form');
 
-            if (!response.ok) {
-                throw new Error(await response.text());
+    if (checkButton) {
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabPane = document.querySelector('#user-bucket-del');
+            const resourceData = collectTenantResourcesData(tabPane);
+
+            if (!resourceData.tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
             }
 
-            const data = await response.json();
-            console.log('Response data:', data);
-            displayTenantInfo(data);
-            return;
-        } catch (error) {
-            console.error('Error in tenant check:', error);
-            displayResult(`Ошибка: ${error.message}`);
-            return;
-        }
+            try {
+                const response = await fetchJson('/zayavki/check-tenant-resources', resourceData);
+                const data = await response.json();
+                displayCheckResults(data);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    if (submitButton) {
+        submitButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const tabPane = document.querySelector('#user-bucket-del');
+            const resourceData = collectTenantResourcesData(tabPane);
+
+            if (!resourceData.tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            if (resourceData.users.length === 0 && resourceData.buckets.length === 0) {
+                displayResult('Ошибка: Необходимо указать пользователей или бакеты для деактивации');
+                return;
+            }
+
+            try {
+                const response = await fetchJson('/zayavki/deactivate-resources', resourceData);
+                const data = await response.json();
+                displayDeactivationResults(data);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+}
+
+function initializeTenantMod() {
+    const checkButton = document.querySelector('#tenant-mod #check-tenant');
+    const submitButton = document.querySelector('#tenant-mod #submit-form');
+    let tenantData = null; // Store tenant data
+
+    if (checkButton) {
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabPane = document.querySelector('#tenant-mod');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            try {
+                const response = await fetch('/zayavki/tenant-info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ tenant })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                tenantData = await response.json();
+                displayTenantInfo(tenantData);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    // Handle submit button
+    if (submitButton) {
+        submitButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!tenantData) {
+                displayResult('Ошибка: Сначала необходимо проверить тенант');
+                return;
+            }
+
+            // Get form data
+            const tabPane = document.querySelector('#tenant-mod');
+            const sdInput = tabPane.querySelector('#request_id_sd');
+            const srtInput = tabPane.querySelector('#request_id_srt');
+            const usersInput = tabPane.querySelector('#users');
+            const bucketsInput = tabPane.querySelector('#buckets');
+            const emailInput = tabPane.querySelector('#email_for_credentials');
+
+            // Create form data
+            const submitData = new FormData();
+            submitData.append('segment', tenantData.net_seg);
+            submitData.append('env', tenantData.env);
+            submitData.append('tenant_override', tenantData.tenant);
+            submitData.append('ris_number', tenantData.ris_id);
+            submitData.append('ris_name', tenantData.ris_code);
+            submitData.append('resp_group', tenantData.owner_group);
+            submitData.append('owner', tenantData.owner_person);
+            submitData.append('cluster', tenantData.cls_name);
+            submitData.append('realm', tenantData.realm);
+
+            if (sdInput) submitData.append('request_id_sd', sdInput.value);
+            if (srtInput) submitData.append('request_id_srt', srtInput.value);
+            if (usersInput) submitData.append('users', usersInput.value);
+            if (bucketsInput) submitData.append('buckets', bucketsInput.value);
+            if (emailInput) submitData.append('email_for_credentials', emailInput.value);
+
+            try {
+                const response = await fetch('/zayavki/cluster', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
+                        selectedCluster: {
+                            "Кластер": tenantData.cls_name,
+                            "Реалм": tenantData.realm,
+                            "ЦОД": tenantData.dc,
+                            "Выдача": tenantData.issue,
+                            "Среда": tenantData.env,
+                            "ЗБ": tenantData.net_seg,
+                            "tls_endpoint": tenantData.tls_endpoint,
+                            "mtls_endpoint": tenantData.mtls_endpoint
+                        },
+                        pushToDb: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const result = await response.text();
+                displayResult(result);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
     }
 }
 
 // Export functions for use in other files
 window.handleFormSubmit = handleFormSubmit;
 window.handleClusterSelection = handleClusterSelection;
+window.initializeForm = initializeForm;
+window.initializeUserBucketDel = initializeUserBucketDel;
+window.initializeTenantMod = initializeTenantMod;

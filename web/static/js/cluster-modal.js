@@ -123,6 +123,23 @@ function updateClusterDetails(cluster) {
     }
 }
 
+function initializeModal() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        const closeButton = modal.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.onclick = () => modal.style.display = 'none';
+        }
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    });
+}
+
 // Export functions for use in other files
 window.showClusterModal = showClusterModal;
 window.updateClusterDetails = updateClusterDetails;
+window.initializeModal = initializeModal;

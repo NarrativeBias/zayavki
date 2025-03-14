@@ -56,8 +56,8 @@ const TAB_CONFIGS = {
             { id: 'user', label: 'Пользователь', type: 'text' }
         ],
         buttons: [
-            { id: 'searchButton', label: 'Поиск', className: 'search-button' },
-            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
+            { id: 'search', label: 'Поиск' },
+            { id: 'clear', label: 'Очистить' }
         ],
         required_fields: ['segment', 'env']
     },
@@ -217,13 +217,8 @@ const TAB_CONFIGS = {
             }
         ],
         buttons: [
-            { 
-                id: 'check-tenant',
-                label: 'Проверить тенант',
-                className: 'primary-button',
-                type: 'button'
-            },
-            { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
+            { id: 'check-tenant', label: 'Проверить тенант' },
+            { id: 'submit-form', label: 'Отправить' },
             { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['tenant', 'request_id_sd', 'request_id_srt'],
@@ -253,24 +248,9 @@ const TAB_CONFIGS = {
             }
         ],
         buttons: [
-            { 
-                id: 'check-tenant',
-                label: 'Проверить',
-                className: 'primary-button',
-                type: 'button'
-            },
-            { 
-                id: 'submit-form',
-                label: 'Отправить в БД',
-                className: 'danger-button',
-                type: 'button'
-            },
-            { 
-                id: 'clearButton',
-                label: 'Очистить',
-                className: 'clear-search-button',
-                type: 'button'
-            }
+            { id: 'check-tenant', label: 'Проверить тенант' },
+            { id: 'submit-form', label: 'Удалить' },
+            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button', type: 'button' }
         ],
         required_fields: ['tenant']
     },

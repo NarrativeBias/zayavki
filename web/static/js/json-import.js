@@ -1,3 +1,8 @@
+function showJsonImportModal() {
+    const modal = document.getElementById('jsonImportModal');
+    if (modal) modal.style.display = 'block';
+}
+
 function initializeJsonParser() {
     const modal = document.getElementById('jsonImportModal');
     if (!modal) return;
@@ -221,4 +226,8 @@ function setFieldValue(fieldId, value) {
         });
         input.dispatchEvent(event);
     });
-} 
+}
+
+// Export functions at the end of the file
+window.initializeJsonParser = initializeJsonParser;
+window.showJsonImportModal = showJsonImportModal; 
