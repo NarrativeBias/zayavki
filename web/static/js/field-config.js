@@ -249,7 +249,7 @@ const TAB_CONFIGS = {
         ],
         buttons: [
             { id: 'check-tenant', label: 'Проверить тенант' },
-            { id: 'submit-form', label: 'Удалить' },
+            { id: 'submit-form', label: 'Отметить ресурс как удаленный' },
             { id: 'clear', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['tenant']

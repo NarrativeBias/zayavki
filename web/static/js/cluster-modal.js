@@ -141,10 +141,3 @@ function initializeModal() {
 window.showClusterModal = showClusterModal;
 window.updateClusterDetails = updateClusterDetails;
 window.initializeModal = initializeModal;
-
-// Verify export
-console.log('Cluster modal functions exported:', {
-    showClusterModal: !!window.showClusterModal,
-    updateClusterDetails: !!window.updateClusterDetails,
-    initializeModal: !!window.initializeModal
-});

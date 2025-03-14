@@ -125,11 +125,8 @@ async function submitForm(form, pushToDb = false) {
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
-        console.log('submitFormWithCluster called with:', { cluster, formData, pushToDb });
         const processedVars = {};
-        console.log('Processing form data object...');
         for (let [key, value] of Object.entries(formData)) {
-            console.log('Processing field:', { key, value });
             if (value && !['push_to_db', 'create_tenant'].includes(key)) {
                 processedVars[key] = [value];
             }
@@ -139,14 +136,11 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
             processedVars.env_code = [getEnvCode(processedVars.env[0])];
         }
 
-        console.log('Processed vars:', processedVars);
         const requestBody = {
             processedVars,
             selectedCluster: cluster,
             pushToDb
         };
-
-        console.log('Submitting to cluster with data:', requestBody);
 
         const response = await fetch('/zayavki/cluster', {
             method: 'POST',
