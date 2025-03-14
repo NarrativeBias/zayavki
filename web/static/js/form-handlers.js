@@ -69,17 +69,13 @@ async function submitForm(form, pushToDb = false) {
             if (!activeTab) {
                 throw new Error('No active tab found');
             }
-            formData = new FormData();
-            activeTab.querySelectorAll('input, select, textarea').forEach(input => {
-                if (input.id && input.value.trim()) {
-                    formData.append(input.id, input.value.trim());
-                }
-            });
+            formData = new FormData(form);
         } else {
             throw new Error('Invalid form data provided');
         }
         
         formData.append('push_to_db', pushToDb.toString());
+        formData.append('create_tenant', 'true');
         console.log('Form data:', Object.fromEntries(formData.entries()));
 
         const response = await fetch('/zayavki/submit', {
@@ -100,12 +96,7 @@ async function submitForm(form, pushToDb = false) {
                     throw new Error('Clusters data is not an array');
                 }
                 console.log('Calling handleClusterSelection with', clusters.length, 'clusters');
-                // Convert FormData to object before passing
-                const formDataObj = {};
-                for (let [key, value] of formData.entries()) {
-                    formDataObj[key] = value;
-                }
-                await handleClusterSelection(clusters, submitFormWithCluster, { formData: formDataObj, pushToDb });
+                await handleClusterSelection(clusters, submitFormWithCluster, { formData, pushToDb });
             } catch (error) {
                 console.error('Error parsing clusters:', error);
                 throw new Error('Failed to parse cluster data');
@@ -123,9 +114,8 @@ async function submitForm(form, pushToDb = false) {
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
-        // formData is now a plain object
         const processedVars = {};
-        for (let [key, value] of Object.entries(formData)) {
+        for (let [key, value] of formData.entries()) {
             processedVars[key] = [value];
         }
 
