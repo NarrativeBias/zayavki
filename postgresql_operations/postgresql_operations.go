@@ -480,3 +480,47 @@ func DeactivateResources(tenant string, users []string, buckets []string) (map[s
 
 	return result, nil
 }
+
+func UpdateBucketQuotas(tenant string, buckets []struct {
+	Name string `json:"name"`
+	Size string `json:"size"`
+}) (map[string]interface{}, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection not initialized")
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	result := map[string]interface{}{
+		"updated_buckets": []map[string]string{},
+		"errors":          []string{},
+	}
+
+	for _, bucket := range buckets {
+		_, err := tx.Exec(fmt.Sprintf(
+			"UPDATE %s.%s SET quota = $1 WHERE tenant = $2 AND bucket = $3 AND active = true",
+			config.Schema, config.Table,
+		), bucket.Size, tenant, bucket.Name)
+
+		if err != nil {
+			result["errors"] = append(result["errors"].([]string),
+				fmt.Sprintf("Failed to update %s: %v", bucket.Name, err))
+			continue
+		}
+
+		result["updated_buckets"] = append(
+			result["updated_buckets"].([]map[string]string),
+			map[string]string{"name": bucket.Name, "size": bucket.Size},
+		)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return result, nil
+}

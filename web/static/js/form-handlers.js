@@ -489,6 +489,7 @@ function initializeForm() {
         // Initialize specific tab handlers
         initializeUserBucketDel();
         initializeTenantMod();
+        initializeBucketMod();
     }
 
     // Initialize with the first tab (search)
@@ -656,6 +657,94 @@ function initializeTenantMod() {
 
                 const result = await response.text();
                 displayResult(result);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+}
+
+function initializeBucketMod() {
+    const checkButton = document.querySelector('#bucket-mod #check-tenant');
+    const submitButton = document.querySelector('#bucket-mod #submit-form');
+
+    if (checkButton) {
+        checkButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const tabPane = document.querySelector('#bucket-mod');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const bucketsInput = tabPane.querySelector('#buckets');
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+            const buckets = bucketsInput ? bucketsInput.value.trim().split('\n')
+                .filter(Boolean)
+                .map(line => line.trim()) : [];
+
+            if (!tenant) {
+                displayResult('Ошибка: Необходимо указать имя тенанта');
+                return;
+            }
+
+            try {
+                // First get tenant info
+                const tenantResponse = await fetch('/zayavki/tenant-info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant })
+                });
+                
+                if (!tenantResponse.ok) throw new Error(await tenantResponse.text());
+                const tenantData = await tenantResponse.json();
+
+                // Then check resources
+                const resourceResponse = await fetchJson('/zayavki/check-tenant-resources', {
+                    tenant,
+                    buckets,
+                    mode: "quota"
+                });
+                
+                const resourceData = await resourceResponse.json();
+
+                // Use existing display function
+                displayCheckResults(resourceData);
+            } catch (error) {
+                displayResult(`Ошибка: ${error.message}`);
+            }
+        };
+    }
+
+    if (submitButton) {
+        submitButton.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const tabPane = document.querySelector('#bucket-mod');
+            const tenantInput = tabPane.querySelector('#tenant');
+            const bucketsInput = tabPane.querySelector('#buckets');
+            const tenant = tenantInput ? tenantInput.value.trim() : '';
+            const bucketsText = bucketsInput ? bucketsInput.value.trim() : '';
+
+            if (!tenant || !bucketsText) {
+                displayResult('Ошибка: Необходимо указать тенант и бакеты');
+                return;
+            }
+
+            try {
+                const bucketUpdates = bucketsText.split('\n')
+                    .filter(Boolean)
+                    .map(line => {
+                        const [name, size] = line.split('|').map(s => s.trim());
+                        return { name, size };
+                    });
+
+                const response = await fetchJson('/zayavki/update-bucket-quotas', {
+                    tenant,
+                    buckets: bucketUpdates
+                });
+
+                const result = await response.json();
+                displayBucketModUpdateResults(result);
             } catch (error) {
                 displayResult(`Ошибка: ${error.message}`);
             }

@@ -255,15 +255,28 @@ const TAB_CONFIGS = {
         required_fields: ['tenant']
     },
     'bucket-mod': {
-        fields: [],
-        buttons: [
-            { 
-                id: 'clearButton',
-                label: 'Очистить',
-                className: 'clear-search-button'
+        fields: [
+            {
+                id: 'tenant',
+                label: 'Имя тенанта',
+                type: 'text',
+                required: true,
+                placeholder: 'Введите имя тенанта'
+            },
+            {
+                id: 'buckets',
+                label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
+                type: 'textarea',
+                required: true,
+                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200'
             }
         ],
-        required_fields: []
+        buttons: [
+            { id: 'check-tenant', label: 'Проверить', className: 'primary-button' },
+            { id: 'submit-form', label: 'Обновить квоты', className: 'danger-button' },
+            { id: 'clear', label: 'Очистить', className: 'clear-search-button' }
+        ],
+        required_fields: ['tenant', 'buckets']
     }
 };
 

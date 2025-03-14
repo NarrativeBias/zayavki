@@ -3,6 +3,7 @@ package rgw_commands
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 func BucketCreation(variables map[string][]string, clusters map[string]string) string {
@@ -88,5 +89,24 @@ func GenerateDeletionCommands(tenant string, users []string, buckets []string, r
 		}
 	}
 
+	return commands.String()
+}
+
+func GenerateQuotaCommands(tenant string, buckets []string, realm string) string {
+	var commands bytes.Buffer
+	for _, bucket := range buckets {
+		if bucket != "" {
+			parts := strings.Split(bucket, "|")
+			name := strings.TrimSpace(parts[0])
+			size := "0"
+			if len(parts) > 1 {
+				size = strings.TrimSpace(parts[1])
+			}
+
+			cmd := fmt.Sprintf("sudo radosgw-admin quota set --rgw-realm %s --quota-scope bucket --bucket \"%s/%s\" --max-size %sG\n",
+				realm, tenant, name, size)
+			commands.WriteString(cmd)
+		}
+	}
 	return commands.String()
 }

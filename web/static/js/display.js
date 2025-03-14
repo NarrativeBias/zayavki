@@ -74,15 +74,15 @@ function displayCheckResults(data) {
         ));
     }
 
-    // Deletion commands section
-    const hasActivesToDelete = (data.users && data.users.some(u => u.status === 'Активен')) ||
-                             (data.buckets && data.buckets.some(b => b.status === 'Активен'));
-
-    if (hasActivesToDelete && data.deletion_commands) {
+    // Commands section - show either deletion or quota commands
+    if (data.commands || data.deletion_commands) {
         const pre = document.createElement('pre');
         pre.className = 'command-block';
-        pre.textContent = data.deletion_commands;
-        container.appendChild(createSection('Команды для удаления ресурсов', pre));
+        pre.textContent = data.commands || data.deletion_commands;
+        container.appendChild(createSection(
+            data.commands ? 'Команды для изменения квоты' : 'Команды для удаления ресурсов',
+            pre
+        ));
     }
 
     const resultDiv = document.getElementById('result');

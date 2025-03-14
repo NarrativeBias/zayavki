@@ -49,6 +49,7 @@ func main() {
 	mux.HandleFunc("/zayavki/cluster-info", stripPrefix(handleClusterInfo))
 	mux.HandleFunc("/zayavki/check-tenant-resources", stripPrefix(handleCheckTenantResources))
 	mux.HandleFunc("/zayavki/deactivate-resources", stripPrefix(handleDeactivateResources))
+	mux.HandleFunc("/zayavki/update-bucket-quotas", stripPrefix(handleUpdateBucketQuotas))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -433,6 +434,7 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		Tenant  string   `json:"tenant"`
 		Users   []string `json:"users"`
 		Buckets []string `json:"buckets"`
+		Mode    string   `json:"mode"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -493,25 +495,32 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 
 	// Check buckets if any provided
 	for _, bucket := range request.Buckets {
+		bucketName := strings.Split(bucket, "|")[0]
+		bucketName = strings.TrimSpace(bucketName)
 		// Check if bucket exists in results
 		var bucketInfo *postgresql_operations.CheckResult
 		for _, entry := range results {
-			if entry.Bucket.Valid && entry.Bucket.String == bucket {
+			if entry.Bucket.Valid && entry.Bucket.String == bucketName {
 				bucketInfo = &entry
 				break
 			}
 		}
 		result["buckets"] = append(result["buckets"].([]map[string]interface{}), map[string]interface{}{
-			"name":   bucket,
+			"name":   bucketName,
 			"exists": bucketInfo != nil,
 			"size":   getBucketSizeFromResult(bucketInfo),
 			"status": getBucketStatusFromResult(bucketInfo),
 		})
 	}
 
-	// Add deletion commands
-	deletionCommands := rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
-	result["deletion_commands"] = deletionCommands
+	// Add commands based on mode
+	if request.Mode == "quota" {
+		commands := rgw_commands.GenerateQuotaCommands(request.Tenant, request.Buckets, results[0].Realm)
+		result["commands"] = commands
+	} else {
+		commands := rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
+		result["deletion_commands"] = commands
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
@@ -566,6 +575,31 @@ func handleDeactivateResources(w http.ResponseWriter, r *http.Request) {
 	result, err := postgresql_operations.DeactivateResources(request.Tenant, request.Users, request.Buckets)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error deactivating resources: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func handleUpdateBucketQuotas(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Tenant  string `json:"tenant"`
+		Buckets []struct {
+			Name string `json:"name"`
+			Size string `json:"size"`
+		} `json:"buckets"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Update bucket quotas in the database
+	result, err := postgresql_operations.UpdateBucketQuotas(request.Tenant, request.Buckets)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
