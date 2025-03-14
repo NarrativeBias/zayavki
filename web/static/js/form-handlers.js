@@ -36,12 +36,17 @@ async function handleFetchResponse(response) {
 }
 
 async function handleClusterSelection(clusters, operation, data) {
+    console.log('handleClusterSelection called with clusters:', clusters);
+    console.log('handleClusterSelection data:', data);
     if (clusters.length === 1) {
         selectedCluster = clusters[0];
         return operation(selectedCluster, data);
     } else if (clusters.length > 1) {
+        console.log('Multiple clusters found, should show modal');
         return new Promise((resolve) => {
+            console.log('Setting up modal callback');
             showClusterSelectionModal(clusters, (chosenCluster) => {
+                console.log('Modal callback executed with cluster:', chosenCluster);
                 selectedCluster = chosenCluster;
                 resolve(operation(selectedCluster, data));
             });
@@ -55,53 +60,123 @@ async function handleClusterSelection(clusters, operation, data) {
 
 async function submitForm(form, pushToDb = false) {
     try {
-        const trimmedFormData = trimFormData(form);
-        trimmedFormData.append('push_to_db', pushToDb.toString());
+        console.log('Submitting form with pushToDb:', pushToDb);
+        let formData;
+        if (form instanceof FormData) {
+            formData = form;
+        } else if (form instanceof HTMLFormElement) {
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) {
+                throw new Error('No active tab found');
+            }
+            formData = new FormData();
+            activeTab.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.id && input.value.trim()) {
+                    formData.append(input.id, input.value.trim());
+                }
+            });
+        } else {
+            throw new Error('Invalid form data provided');
+        }
+        
+        formData.append('push_to_db', pushToDb.toString());
+        console.log('Form data:', Object.fromEntries(formData.entries()));
 
-        const response = await fetch('/zayavki/submit', { method: 'POST', body: trimmedFormData });
+        const response = await fetch('/zayavki/submit', {
+            method: 'POST',
+            body: formData
+        });
+
         const data = await handleFetchResponse(response);
+        console.log('Response data:', data);
 
         if (typeof data === 'string' && data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
             const clusterData = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
-            const clusters = JSON.parse(clusterData);
-            await handleClusterSelection(clusters, submitFormWithCluster, { formData: trimmedFormData, pushToDb });
+            console.log('Raw cluster data:', clusterData);
+            try {
+                const clusters = JSON.parse(clusterData);
+                console.log('Parsed clusters:', clusters);
+                if (!Array.isArray(clusters)) {
+                    throw new Error('Clusters data is not an array');
+                }
+                console.log('Calling handleClusterSelection with', clusters.length, 'clusters');
+                // Convert FormData to object before passing
+                const formDataObj = {};
+                for (let [key, value] of formData.entries()) {
+                    formDataObj[key] = value;
+                }
+                await handleClusterSelection(clusters, submitFormWithCluster, { formData: formDataObj, pushToDb });
+            } catch (error) {
+                console.error('Error parsing clusters:', error);
+                throw new Error('Failed to parse cluster data');
+            }
         } else {
             displayResult(data);
             if (!pushToDb) enablePushToDbButton();
             selectedCluster = null;
         }
     } catch (error) {
+        console.error('Error in submitForm:', error);
         displayResult(`Error: ${error.message}`);
     }
 }
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
-        const processedVars = processFormData(formData);
-        const requestBody = { processedVars, selectedCluster: cluster, pushToDb };
+        // formData is now a plain object
+        const processedVars = {};
+        for (let [key, value] of Object.entries(formData)) {
+            processedVars[key] = [value];
+        }
+
+        const requestBody = {
+            processedVars,
+            selectedCluster: cluster,
+            pushToDb
+        };
+
+        console.log('Submitting to cluster with data:', requestBody);
 
         const response = await fetch('/zayavki/cluster', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(requestBody)
         });
-        const data = await handleFetchResponse(response);
 
+        const data = await handleFetchResponse(response);
         displayResult(data);
         if (!pushToDb) enablePushToDbButton();
     } catch (error) {
+        console.error('Error in submitFormWithCluster:', error);
         displayResult(`Error: ${error.message}`);
-    } finally {
-        if (pushToDb) {
-            disablePushToDbButton();
-            selectedCluster = null;
-        }
     }
 }
 
 function handleError(error) {
     displayResult(`An error occurred: ${error.message}`);
     disablePushToDbButton();
+}
+
+function disableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = true;
+    }
+}
+
+function enableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = false;
+    }
+}
+
+function disablePushToDbButton() {
+    disableButton('pushDbButton');
+}
+
+function enablePushToDbButton() {
+    enableButton('pushDbButton');
 }
 
 function clearAllFields() {
@@ -589,3 +664,6 @@ window.handleClusterSelection = handleClusterSelection;
 window.initializeForm = initializeForm;
 window.initializeUserBucketDel = initializeUserBucketDel;
 window.initializeTenantMod = initializeTenantMod;
+window.clearAllFields = clearAllFields;
+window.disablePushToDbButton = disablePushToDbButton;
+window.enablePushToDbButton = enablePushToDbButton;

@@ -1,13 +1,20 @@
 function showClusterSelectionModal(clusters, callback) {
     console.log('showClusterSelectionModal called with clusters:', clusters);
-    const modal = document.getElementById('clusterModal');
+    const modal = document.getElementById('clusterSelectionModal');
+    if (!modal) {
+        console.error('Modal element not found! Looking for element with id "clusterSelectionModal"');
+        console.log('Available modals:', document.querySelectorAll('.modal'));
+        return;
+    }
     const select = document.getElementById('cluster-select');
     const details = document.getElementById('cluster-details');
 
-    if (!modal || !select || !details) {
-        console.error('Required elements not found');
+    if (!select || !details) {
+        console.error('Required elements not found:', { select, details });
         return;
     }
+
+    console.log('All required elements found, setting up modal');
 
     // Clear previous options
     select.innerHTML = '';
@@ -20,6 +27,8 @@ function showClusterSelectionModal(clusters, callback) {
         select.appendChild(option);
     });
 
+    console.log('Options added to select');
+
     // Show initial cluster details
     updateClusterDetails(clusters[0]);
 
@@ -31,12 +40,15 @@ function showClusterSelectionModal(clusters, callback) {
 
     // Show the modal
     modal.style.display = 'block';
+    console.log('Modal displayed');
 
     // Update confirm button click handler
     document.getElementById('confirm-cluster').onclick = function() {
+        console.log('Confirm cluster clicked');
         const selectedOption = select.options[select.selectedIndex];
         if (selectedOption && selectedOption.dataset.cluster) {
             const selectedCluster = JSON.parse(selectedOption.dataset.cluster);
+            console.log('Selected cluster:', selectedCluster);
             modal.style.display = 'none';
             if (callback) {
                 callback(selectedCluster);
@@ -140,6 +152,13 @@ function initializeModal() {
 }
 
 // Export functions for use in other files
-window.showClusterModal = showClusterModal;
+window.showClusterSelectionModal = showClusterSelectionModal;
 window.updateClusterDetails = updateClusterDetails;
 window.initializeModal = initializeModal;
+
+// Verify export
+console.log('Cluster modal functions exported:', {
+    showClusterSelectionModal: !!window.showClusterSelectionModal,
+    updateClusterDetails: !!window.updateClusterDetails,
+    initializeModal: !!window.initializeModal
+});

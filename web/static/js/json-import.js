@@ -1,5 +1,7 @@
 function showJsonImportModal() {
+    console.log('Showing JSON import modal');
     const modal = document.getElementById('jsonImportModal');
+    console.log('Modal element:', modal);
     if (modal) modal.style.display = 'block';
 }
 

@@ -170,10 +170,10 @@ const TAB_CONFIGS = {
             }
         ],
         buttons: [
-            { id: 'import-json', label: 'Импорт из JSON', className: 'import-json-button' },
-            { id: 'check-form', label: 'Проверить', className: 'primary-button' },
+            { id: 'importJsonButton', label: 'Импорт из JSON', className: 'import-json-button' },
+            { id: 'check-tenant', label: 'Проверить', className: 'primary-button' },
             { id: 'submit-form', label: 'Отправить в БД', className: 'danger-button' },
-            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
+            { id: 'clear', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['segment', 'env', 'request_id_sd', 'request_id_srt', 'ris_number', 'ris_name', 'resp_group', 'owner', 'requester', 'email_for_credentials']
     },
@@ -219,7 +219,7 @@ const TAB_CONFIGS = {
         buttons: [
             { id: 'check-tenant', label: 'Проверить тенант' },
             { id: 'submit-form', label: 'Отправить' },
-            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button' }
+            { id: 'clear', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['tenant', 'request_id_sd', 'request_id_srt'],
     },
@@ -250,7 +250,7 @@ const TAB_CONFIGS = {
         buttons: [
             { id: 'check-tenant', label: 'Проверить тенант' },
             { id: 'submit-form', label: 'Удалить' },
-            { id: 'clearButton', label: 'Очистить', className: 'clear-search-button', type: 'button' }
+            { id: 'clear', label: 'Очистить', className: 'clear-search-button' }
         ],
         required_fields: ['tenant']
     },

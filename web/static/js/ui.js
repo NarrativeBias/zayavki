@@ -51,8 +51,8 @@ function createButton(buttonConfig) {
     button.textContent = buttonConfig.label;
     button.type = 'button';
 
-    // Get parent tab ID once
-    const tabId = button.closest('.tab-pane')?.id;
+    // Use the passed tabId instead of trying to find it
+    const { tabId } = buttonConfig;
 
     // Add click handlers based on button type/id
     switch (button.id) {
@@ -103,9 +103,7 @@ function createButton(buttonConfig) {
             } else if (tabId === 'new-tenant') {
                 button.onclick = async (e) => {
                     e.preventDefault();
-                    const form = document.querySelector('#new-tenant');
-                    const formData = new FormData(form);
-                    await submitForm(formData, false);
+                    await submitForm(document.getElementById('mainForm'), false);
                 };
             }
             break;
@@ -142,9 +140,7 @@ function createButton(buttonConfig) {
             } else if (tabId === 'new-tenant') {
                 button.onclick = async (e) => {
                     e.preventDefault();
-                    const form = document.querySelector('#new-tenant');
-                    const formData = new FormData(form);
-                    await submitForm(formData, true);
+                    await submitForm(document.getElementById('mainForm'), true);
                 };
             }
             break;
@@ -183,6 +179,7 @@ function createTabContent(tabId) {
     // Create container for form fields
     const fieldsContainer = document.createElement('div');
     fieldsContainer.className = 'form-fields-container';
+    // Add the fields container to the tab content first
     tabContent.appendChild(fieldsContainer);
     
     const config = TAB_CONFIGS[tabId];
@@ -206,9 +203,10 @@ function createTabContent(tabId) {
     if (config.buttons) {
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'button-container';
+        // Pass the tabId directly to createButton
         config.buttons.forEach(button => {
             const buttonElement = createButton(
-                typeof button === 'string' ? { id: button, label: button } : button
+                typeof button === 'string' ? { id: button, label: button, tabId } : { ...button, tabId }
             );
             buttonContainer.appendChild(buttonElement);
         });
