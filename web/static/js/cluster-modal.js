@@ -1,83 +1,37 @@
-function showClusterSelectionModal(clusters, callback) {
-    console.log('showClusterSelectionModal called with clusters:', clusters);
-    const modal = document.getElementById('clusterSelectionModal');
-    if (!modal) {
-        console.error('Modal element not found! Looking for element with id "clusterSelectionModal"');
-        console.log('Available modals:', document.querySelectorAll('.modal'));
-        return;
-    }
-    const select = document.getElementById('cluster-select');
-    const details = document.getElementById('cluster-details');
-
-    if (!select || !details) {
-        console.error('Required elements not found:', { select, details });
-        return;
-    }
-
-    console.log('All required elements found, setting up modal');
-
-    // Clear previous options
-    select.innerHTML = '';
-    
-    clusters.forEach((cluster, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `${cluster.ЦОД} - ${cluster.Среда} - ${cluster.ЗБ} - ${cluster.Кластер}`;
-        option.dataset.cluster = JSON.stringify(cluster);
-        select.appendChild(option);
-    });
-
-    console.log('Options added to select');
-
-    // Show initial cluster details
-    updateClusterDetails(clusters[0]);
-
-    // Update details when selection changes
-    select.addEventListener('change', () => {
-        const selectedCluster = JSON.parse(select.options[select.selectedIndex].dataset.cluster);
-        updateClusterDetails(selectedCluster);
-    });
-
-    // Show the modal
-    modal.style.display = 'block';
-    console.log('Modal displayed');
-
-    // Update confirm button click handler
-    document.getElementById('confirm-cluster').onclick = function() {
-        console.log('Confirm cluster clicked');
-        const selectedOption = select.options[select.selectedIndex];
-        if (selectedOption && selectedOption.dataset.cluster) {
-            const selectedCluster = JSON.parse(selectedOption.dataset.cluster);
-            console.log('Selected cluster:', selectedCluster);
-            modal.style.display = 'none';
-            if (callback) {
-                callback(selectedCluster);
-            }
-        } else {
-            console.error('No cluster selected or cluster data missing');
-        }
-    };
-}
-
-function updateClusterDetails(cluster) {
-    console.log('Updating cluster details:', cluster);
-    const details = document.getElementById('cluster-details');
-    if (!details) {
-        console.error('Cluster details element not found');
-        return;
-    }
-    details.innerHTML = `
-        <div class="cluster-row"><span class="label">Выдача:</span><span class="value">${cluster.Выдача}</span></div>
-        <div class="cluster-row"><span class="label">ЦОД:</span><span class="value">${cluster.ЦОД}</span></div>
-        <div class="cluster-row"><span class="label">Среда:</span><span class="value">${cluster.Среда}</span></div>
-        <div class="cluster-row"><span class="label">ЗБ:</span><span class="value">${cluster.ЗБ}</span></div>
-        <div class="cluster-row"><span class="label">Кластер:</span><span class="value">${cluster.Кластер}</span></div>
-        <div class="cluster-row"><span class="label">Реалм:</span><span class="value">${cluster.Реалм}</span></div>
-    `;
-}
-
-function showClusterModal(clusters, formData, pushToDb = false) {
+function showClusterModal(clusters) {
     const modal = document.getElementById('clusterModal');
+
+    // Force modal to be visible
+    if (modal) {
+        modal.style.cssText = `
+            display: block !important;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        `;
+        
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.cssText = `
+                background-color: #fefefe;
+                margin: 15% auto;
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%;
+                max-width: 600px;
+                position: relative;
+                display: block !important;
+            `;
+        }
+    } else {
+        console.error('Modal element not found!');
+        return;
+    }
+
     const select = document.getElementById('cluster-select');
     const closeButton = modal.querySelector('.close-button');
     const confirmButton = document.getElementById('confirm-cluster');
@@ -86,26 +40,39 @@ function showClusterModal(clusters, formData, pushToDb = false) {
     select.innerHTML = '';
 
     // Add options for each cluster
-    clusters.forEach(cluster => {
+    clusters.forEach((cluster, index) => {
         const option = document.createElement('option');
         option.value = JSON.stringify(cluster);
         option.textContent = `${cluster['Кластер']} (${cluster['ЦОД']})`;
         select.appendChild(option);
     });
 
-    // Show cluster details for first option
-    updateClusterDetails(JSON.parse(select.value));
+    try {
+        const firstCluster = JSON.parse(select.value);
+        updateClusterDetails(firstCluster);
+    } catch (error) {
+        console.error('Error parsing first cluster:', error);
+    }
 
     // Update details when selection changes
-    select.addEventListener('change', () => {
-        updateClusterDetails(JSON.parse(select.value));
+    select.addEventListener('change', (event) => {
+        try {
+            const selectedCluster = JSON.parse(event.target.value);
+            updateClusterDetails(selectedCluster);
+        } catch (error) {
+            console.error('Error updating cluster details:', error);
+        }
     });
 
-    // Show the modal
-    modal.style.display = 'block';
+    // Force modal to stay visible
+    setTimeout(() => {
+        if (modal.style.display !== 'block') {
+            modal.style.display = 'block';
+        }
+    }, 100);
 
     // Handle close button
-    closeButton.onclick = () => {
+    closeButton.onclick = (event) => {
         modal.style.display = 'none';
     };
 
@@ -117,21 +84,40 @@ function showClusterModal(clusters, formData, pushToDb = false) {
     };
 
     // Handle confirm button
-    confirmButton.onclick = () => {
-        const selectedCluster = JSON.parse(select.value);
-        handleClusterSelection(selectedCluster, formData, pushToDb);
-        modal.style.display = 'none';
+    confirmButton.onclick = (event) => {
+        try {
+            const selectedCluster = JSON.parse(select.value);
+            // Dispatch custom event
+            const clusterEvent = new CustomEvent('clusterSelected', {
+                detail: selectedCluster
+            });
+            document.dispatchEvent(clusterEvent);
+
+            modal.style.display = 'none';
+        } catch (error) {
+            console.error('Error in confirm button handler:', error);
+        }
     };
 }
 
 function updateClusterDetails(cluster) {
     const details = document.getElementById('cluster-details');
-    const rows = details.getElementsByClassName('cluster-row');
-    
-    for (const row of rows) {
-        const label = row.querySelector('.label').textContent.replace(':', '');
-        const value = row.querySelector('.value');
-        value.textContent = cluster[label] || '-';
+    if (!details) {
+        console.error('Cluster details element not found');
+        return;
+    }
+
+    try {
+        details.innerHTML = `
+            <div class="cluster-row"><span class="label">Выдача:</span><span class="value">${cluster.Выдача}</span></div>
+            <div class="cluster-row"><span class="label">ЦОД:</span><span class="value">${cluster.ЦОД}</span></div>
+            <div class="cluster-row"><span class="label">Среда:</span><span class="value">${cluster.Среда}</span></div>
+            <div class="cluster-row"><span class="label">ЗБ:</span><span class="value">${cluster.ЗБ}</span></div>
+            <div class="cluster-row"><span class="label">Кластер:</span><span class="value">${cluster.Кластер}</span></div>
+            <div class="cluster-row"><span class="label">Реалм:</span><span class="value">${cluster.Реалм}</span></div>
+        `;
+    } catch (error) {
+        console.error('Error updating cluster details:', error);
     }
 }
 
@@ -152,13 +138,13 @@ function initializeModal() {
 }
 
 // Export functions for use in other files
-window.showClusterSelectionModal = showClusterSelectionModal;
+window.showClusterModal = showClusterModal;
 window.updateClusterDetails = updateClusterDetails;
 window.initializeModal = initializeModal;
 
 // Verify export
 console.log('Cluster modal functions exported:', {
-    showClusterSelectionModal: !!window.showClusterSelectionModal,
+    showClusterModal: !!window.showClusterModal,
     updateClusterDetails: !!window.updateClusterDetails,
     initializeModal: !!window.initializeModal
 });

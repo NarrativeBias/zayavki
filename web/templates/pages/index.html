@@ -27,24 +27,42 @@
 
 <!-- Modals -->
 <div id="clusterModal" class="modal">
+    <!-- Debug comment to verify modal is in the page -->
     <div class="modal-content">
         <div class="modal-header">
             <h2>Выберите кластер</h2>
             <span class="close-button">&times;</span>
         </div>
         <div class="modal-body">
-            <select id="cluster-select"></select>
-            <div id="cluster-details">
-                <div class="cluster-row"><span class="label">Выдача:</span><span class="value"></span></div>
-                <div class="cluster-row"><span class="label">ЦОД:</span><span class="value"></span></div>
-                <div class="cluster-row"><span class="label">Среда:</span><span class="value"></span></div>
-                <div class="cluster-row"><span class="label">ЗБ:</span><span class="value"></span></div>
-                <div class="cluster-row"><span class="label">Кластер:</span><span class="value"></span></div>
-                <div class="cluster-row"><span class="label">Реалм:</span><span class="value"></span></div>
+            <select id="cluster-select" class="cluster-select">
+            </select>
+            <div id="cluster-details" class="cluster-details">
+                <div class="cluster-row">
+                    <span class="label">Выдача:</span>
+                    <span class="value"></span>
+                </div>
+                <div class="cluster-row">
+                    <span class="label">ЦОД:</span>
+                    <span class="value"></span>
+                </div>
+                <div class="cluster-row">
+                    <span class="label">Среда:</span>
+                    <span class="value"></span>
+                </div>
+                <div class="cluster-row">
+                    <span class="label">ЗБ:</span>
+                    <span class="value"></span>
+                </div>
+                <div class="cluster-row">
+                    <span class="label">Кластер:</span>
+                    <span class="value"></span>
+                </div>
+                <div class="cluster-row">
+                    <span class="label">Реалм:</span>
+                    <span class="value"></span>
+                </div>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button id="confirm-cluster" class="confirm-button">Подтвердить</button>
+            <button id="confirm-cluster" class="primary-button">Подтвердить выбор</button>
         </div>
     </div>
 </div>

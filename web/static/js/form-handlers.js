@@ -38,18 +38,22 @@ async function handleFetchResponse(response) {
 async function handleClusterSelection(clusters, operation, data) {
     console.log('handleClusterSelection called with clusters:', clusters);
     console.log('handleClusterSelection data:', data);
+    console.log('handleClusterSelection operation:', operation.name);
     if (clusters.length === 1) {
         selectedCluster = clusters[0];
         return operation(selectedCluster, data);
     } else if (clusters.length > 1) {
-        console.log('Multiple clusters found, should show modal');
-        return new Promise((resolve) => {
-            console.log('Setting up modal callback');
-            showClusterSelectionModal(clusters, (chosenCluster) => {
-                console.log('Modal callback executed with cluster:', chosenCluster);
-                selectedCluster = chosenCluster;
+        console.log('Multiple clusters found, showing modal');
+        return new Promise((resolve, reject) => {
+            // Listen for custom event
+            document.addEventListener('clusterSelected', function clusterHandler(e) {
+                console.log('Cluster selected event received:', e.detail);
+                document.removeEventListener('clusterSelected', clusterHandler);
+                selectedCluster = e.detail;
                 resolve(operation(selectedCluster, data));
             });
+
+            showClusterModal(clusters);
         });
     } else {
         displayResult('No matching clusters found');
@@ -60,7 +64,6 @@ async function handleClusterSelection(clusters, operation, data) {
 
 async function submitForm(form, pushToDb = false) {
     try {
-        console.log('Submitting form with pushToDb:', pushToDb);
         let formData;
         if (form instanceof FormData) {
             formData = form;
@@ -69,43 +72,51 @@ async function submitForm(form, pushToDb = false) {
             if (!activeTab) {
                 throw new Error('No active tab found');
             }
-            formData = new FormData(form);
+            formData = new FormData();
+            activeTab.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.id && input.value.trim()) {
+                    formData.append(input.id, input.value.trim());
+                }
+            });
         } else {
+            console.error('Invalid form type:', form);
             throw new Error('Invalid form data provided');
         }
         
         formData.append('push_to_db', pushToDb.toString());
         formData.append('create_tenant', 'true');
-        console.log('Form data:', Object.fromEntries(formData.entries()));
 
         const response = await fetch('/zayavki/submit', {
             method: 'POST',
             body: formData
         });
-
-        const data = await handleFetchResponse(response);
-        console.log('Response data:', data);
-
-        if (typeof data === 'string' && data.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            const clusterData = data.slice('CLUSTER_SELECTION_REQUIRED:'.length);
-            console.log('Raw cluster data:', clusterData);
-            try {
-                const clusters = JSON.parse(clusterData);
-                console.log('Parsed clusters:', clusters);
-                if (!Array.isArray(clusters)) {
-                    throw new Error('Clusters data is not an array');
-                }
-                console.log('Calling handleClusterSelection with', clusters.length, 'clusters');
-                await handleClusterSelection(clusters, submitFormWithCluster, { formData, pushToDb });
-            } catch (error) {
-                console.error('Error parsing clusters:', error);
-                throw new Error('Failed to parse cluster data');
-            }
+        
+        const responseText = await response.text();
+        
+        if (responseText.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
+            const clusterData = responseText.slice('CLUSTER_SELECTION_REQUIRED:'.length);
+            const clusters = JSON.parse(clusterData);
+            
+            const formDataObj = Object.fromEntries(formData.entries());
+            
+            return new Promise((resolve, reject) => {
+                document.addEventListener('clusterSelected', async function handler(e) {
+                    document.removeEventListener('clusterSelected', handler);
+                    try {
+                        const result = await submitFormWithCluster(e.detail, { formData: formDataObj, pushToDb });
+                        resolve(result);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+                
+                showClusterModal(clusters);
+            });
         } else {
-            displayResult(data);
+            displayResult(responseText);
             if (!pushToDb) enablePushToDbButton();
-            selectedCluster = null;
         }
+
     } catch (error) {
         console.error('Error in submitForm:', error);
         displayResult(`Error: ${error.message}`);
@@ -114,11 +125,21 @@ async function submitForm(form, pushToDb = false) {
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
+        console.log('submitFormWithCluster called with:', { cluster, formData, pushToDb });
         const processedVars = {};
-        for (let [key, value] of formData.entries()) {
-            processedVars[key] = [value];
+        console.log('Processing form data object...');
+        for (let [key, value] of Object.entries(formData)) {
+            console.log('Processing field:', { key, value });
+            if (value && !['push_to_db', 'create_tenant'].includes(key)) {
+                processedVars[key] = [value];
+            }
         }
 
+        if (processedVars.env) {
+            processedVars.env_code = [getEnvCode(processedVars.env[0])];
+        }
+
+        console.log('Processed vars:', processedVars);
         const requestBody = {
             processedVars,
             selectedCluster: cluster,
