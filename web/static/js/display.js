@@ -189,6 +189,41 @@ ${submitResult}`;
     displayResult(result);
 }
 
+function displayBucketModUpdateResults(result) {
+    const container = document.createElement('div');
+    container.className = 'table-container';
+
+    // Show updated buckets
+    if (result.updated_buckets && result.updated_buckets.length > 0) {
+        container.appendChild(createSection('Обновленные квоты бакетов',
+            createTable(
+                ['Бакет', 'Новая квота'],
+                result.updated_buckets.map(bucket => [
+                    bucket.name,
+                    bucket.size + 'G'
+                ])
+            )
+        ));
+    }
+
+    // Show errors if any
+    if (result.errors && result.errors.length > 0) {
+        const errorList = document.createElement('div');
+        errorList.className = 'error-list';
+        result.errors.forEach(error => {
+            const errorItem = document.createElement('p');
+            errorItem.className = 'error-message';
+            errorItem.textContent = error;
+            errorList.appendChild(errorItem);
+        });
+        container.appendChild(createSection('Ошибки', errorList));
+    }
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(container);
+}
+
 // Export functions
 window.displayResult = displayResult;
 window.displayTenantInfo = displayTenantInfo;
@@ -196,4 +231,5 @@ window.displayCheckResults = displayCheckResults;
 window.displayDeactivationResults = displayDeactivationResults;
 window.displaySearchResults = displaySearchResults;
 window.displayFormResult = displayFormResult;
-window.displayCombinedResult = displayCombinedResult; 
+window.displayCombinedResult = displayCombinedResult;
+window.displayBucketModUpdateResults = displayBucketModUpdateResults; 
