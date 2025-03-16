@@ -44,12 +44,16 @@ function displayCheckResults(data) {
     // Tenant info section
     container.appendChild(createSection('Информация о тенанте',
         createTable(
-            ['Тенант', 'Кластер', 'Среда', 'Зона безопасности'],
+            ['Тенант', 'Кластер', 'Среда', 'Зона безопасности', 'РИС код', 'РИС номер', 'Группа владельцев', 'Владелец'],
             [[
                 data.tenant.name,
                 data.tenant.cluster,
                 data.tenant.env,
-                data.tenant.segment
+                data.tenant.segment,
+                data.tenant.ris_code,
+                data.tenant.ris_id,
+                data.tenant.owner_group,
+                data.tenant.owner
             ]]
         )
     ));
@@ -74,15 +78,17 @@ function displayCheckResults(data) {
         ));
     }
 
-    // Commands section - show either deletion or quota commands
-    if (data.commands || data.deletion_commands) {
+    // Commands section - handle both creation and deletion commands
+    if (data.creation_commands || data.deletion_commands || data.commands) {
+        const commandsTitle = data.creation_commands ? 'Команды для создания' :
+                            data.deletion_commands ? 'Команды для удаления' :
+                            'Команды';
+        const commands = data.creation_commands || data.deletion_commands || data.commands;
+        
         const pre = document.createElement('pre');
         pre.className = 'command-block';
-        pre.textContent = data.commands || data.deletion_commands;
-        container.appendChild(createSection(
-            data.commands ? 'Команды для изменения квоты' : 'Команды для удаления ресурсов',
-            pre
-        ));
+        pre.textContent = commands;
+        container.appendChild(createSection(commandsTitle, pre));
     }
 
     const resultDiv = document.getElementById('result');
