@@ -442,12 +442,6 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if tenant is provided
-	if request.Tenant == "" {
-		http.Error(w, "Tenant name is required", http.StatusBadRequest)
-		return
-	}
-
 	// Get all entries for this tenant
 	results, err := postgresql_operations.CheckDBForExistingEntries(
 		"", "", "", "", request.Tenant, "", "", "",
@@ -457,20 +451,22 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If no results found
 	if len(results) == 0 {
 		http.Error(w, "Tenant not found", http.StatusNotFound)
 		return
 	}
 
-	// Get tenant info from first result
 	result := map[string]interface{}{
 		"tenant": map[string]string{
-			"name":    request.Tenant,
-			"cluster": results[0].ClsName,
-			"env":     results[0].Env,
-			"segment": results[0].NetSeg,
-			"realm":   results[0].Realm,
+			"name":        request.Tenant,
+			"cluster":     results[0].ClsName,
+			"env":         results[0].Env,
+			"segment":     results[0].NetSeg,
+			"realm":       results[0].Realm,
+			"ris_code":    results[0].RisCode,
+			"ris_id":      results[0].RisId,
+			"owner_group": results[0].OwnerGroup,
+			"owner":       results[0].OwnerPerson,
 		},
 		"users":   make([]map[string]interface{}, 0),
 		"buckets": make([]map[string]interface{}, 0),
@@ -478,7 +474,6 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 
 	// Check users if any provided
 	for _, user := range request.Users {
-		// Check if user exists and get active status
 		var userInfo *postgresql_operations.CheckResult
 		for _, entry := range results {
 			if entry.S3User.Valid && entry.S3User.String == user {
@@ -497,7 +492,6 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 	for _, bucket := range request.Buckets {
 		bucketName := strings.Split(bucket, "|")[0]
 		bucketName = strings.TrimSpace(bucketName)
-		// Check if bucket exists in results
 		var bucketInfo *postgresql_operations.CheckResult
 		for _, entry := range results {
 			if entry.Bucket.Valid && entry.Bucket.String == bucketName {
@@ -513,13 +507,46 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Add commands based on mode
-	if request.Mode == "quota" {
-		commands := rgw_commands.GenerateQuotaCommands(request.Tenant, request.Buckets, results[0].Realm)
-		result["commands"] = commands
+	// Add appropriate commands based on mode
+	if request.Mode == "create" {
+		// Generate creation commands
+		vars := map[string][]string{
+			"tenant":         {request.Tenant},
+			"users":          request.Users,
+			"request_id_srt": {results[0].SrtNum},
+			"resp_group":     {results[0].OwnerGroup},
+			"owner":          {results[0].OwnerPerson},
+		}
+
+		// Split buckets and their quotas
+		var bucketNames, bucketQuotas []string
+		for _, bucket := range request.Buckets {
+			parts := strings.Split(bucket, "|")
+			name := strings.TrimSpace(parts[0])
+			quota := "0"
+			if len(parts) > 1 {
+				quota = strings.TrimSpace(parts[1])
+			}
+			bucketNames = append(bucketNames, name)
+			bucketQuotas = append(bucketQuotas, quota)
+		}
+		vars["bucketnames"] = bucketNames
+		vars["bucketquotas"] = bucketQuotas
+
+		clusters := map[string]string{
+			"Кластер": results[0].ClsName,
+			"Реалм":   results[0].Realm,
+		}
+
+		bucketCommands := rgw_commands.BucketCreation(vars, clusters)
+		userCommands := rgw_commands.UserCreation(vars, clusters)
+		checkCommands := rgw_commands.ResultCheck(vars, clusters)
+
+		result["creation_commands"] = bucketCommands + "\n" + userCommands + "\n" + checkCommands
+	} else if request.Mode == "quota" {
+		result["commands"] = rgw_commands.GenerateQuotaCommands(request.Tenant, request.Buckets, results[0].Realm)
 	} else {
-		commands := rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
-		result["deletion_commands"] = commands
+		result["deletion_commands"] = rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

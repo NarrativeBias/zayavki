@@ -10,7 +10,6 @@ import (
 
 	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type DBConfig struct {

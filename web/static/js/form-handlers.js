@@ -273,7 +273,7 @@ async function handleFormSubmit(pushToDb = false) {
     if (activeTab.id === 'tenant-mod') {
         if (!pushToDb) {
             // Check button pressed
-            await handleTenantModCheck(new FormData(form));
+            await handleTenantModCheck();
         } else {
             // Submit to DB button pressed
             if (!lastCheckedTenantInfo) {
@@ -363,113 +363,50 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     }
 }
 
-async function handleTenantModCheck(formData) {
+async function handleTenantModCheck() {
+    const tabPane = document.querySelector('#tenant-mod');
+    const tenantInput = tabPane.querySelector('#tenant');
+    const usersInput = tabPane.querySelector('#users');
+    const bucketsInput = tabPane.querySelector('#buckets');
+    
+    const tenant = tenantInput ? tenantInput.value.trim() : '';
+    const users = usersInput && usersInput.value ? 
+        usersInput.value.trim().split('\n').filter(Boolean).map(u => u.trim()) : [];
+    const buckets = bucketsInput && bucketsInput.value ? 
+        bucketsInput.value.trim().split('\n').filter(Boolean).map(b => b.trim()) : [];
+
+    if (!tenant) {
+        displayResult('Ошибка: Необходимо указать имя тенанта');
+        return;
+    }
+
     try {
-        const activeTab = document.querySelector('.tab-pane.active');
-        const tenantInput = activeTab.querySelector('#tenant');
-        const tenant = tenantInput ? tenantInput.value : '';
-
-        if (!tenant) {
-            displayResult('Ошибка: Имя тенанта не указано');
-            return;
-        }
-
-        // Get tenant info
-        const infoResponse = await fetch('/zayavki/tenant-info', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ tenant: tenant })
+        const response = await fetchJson('/zayavki/check-tenant-resources', {
+            tenant,
+            users,
+            buckets,
+            mode: "create"  // Specify create mode
         });
-
-        const infoData = await infoResponse.text();
-        if (!infoResponse.ok) {
-            throw new Error(infoData);
-        }
-
-        // Parse the tenant info
-        const tenantInfo = JSON.parse(infoData);
-        tenantInfo.tenant = tenant;
-        lastCheckedTenantInfo = tenantInfo;
-
-        // Get cluster info
-        const clusterResponse = await fetch('/zayavki/cluster-info', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                segment: tenantInfo.net_seg,
-                env: tenantInfo.env,
-                cluster: tenantInfo.cls_name
-            })
-        });
-
-        const clusterInfo = await clusterResponse.json();
-
-        // Create complete clusters map
-        const clustersMap = {
-            "Кластер": tenantInfo.cls_name,
-            "Реалм": tenantInfo.realm,
-            "ЦОД": clusterInfo.ЦОД,
-            "Выдача": clusterInfo.Выдача,
-            "Среда": clusterInfo.Среда,
-            "ЗБ": clusterInfo.ЗБ,
-            "tls_endpoint": clusterInfo.tls_endpoint,
-            "mtls_endpoint": clusterInfo.mtls_endpoint
+        
+        const data = await response.json();
+        // Store tenant info for later use
+        lastCheckedTenantInfo = {
+            tenant: tenant,
+            cls_name: data.tenant.cluster,
+            net_seg: data.tenant.segment,
+            env: data.tenant.env,
+            realm: data.tenant.realm,
+            ris_code: data.tenant.ris_code,
+            ris_id: data.tenant.ris_id,
+            owner_group: data.tenant.owner_group,
+            owner_person: data.tenant.owner
         };
-
-        // Create processedVars with all necessary tenant info
-        const processedVars = {
-            segment: [tenantInfo.net_seg],
-            env: [tenantInfo.env],
-            tenant_override: [tenant],
-            ris_number: [tenantInfo.ris_id],
-            ris_name: [tenantInfo.ris_code],
-            resp_group: [tenantInfo.owner_group],
-            owner: [tenantInfo.owner_person],
-            cluster: [tenantInfo.cls_name],
-            realm: [tenantInfo.realm]
-        };
-
-        // Add form fields to processedVars
-        const sdInput = activeTab.querySelector('#request_id_sd');
-        const srtInput = activeTab.querySelector('#request_id_srt');
-        const usersInput = activeTab.querySelector('#users');
-        const bucketsInput = activeTab.querySelector('#buckets');
-        const emailInput = activeTab.querySelector('#email_for_credentials');
-
-        if (sdInput?.value) processedVars.request_id_sd = [sdInput.value];
-        if (srtInput?.value) processedVars.request_id_srt = [srtInput.value];
-        if (usersInput?.value) processedVars.users = usersInput.value.split('\n').filter(Boolean);
-        if (bucketsInput?.value) processedVars.buckets = [bucketsInput.value];
-        if (emailInput?.value) processedVars.email = [emailInput.value];
-
-        // Send to cluster endpoint
-        const endpointResponse = await fetch('/zayavki/cluster', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                processedVars,
-                selectedCluster: clustersMap,
-                pushToDb: false
-            })
-        });
-
-        if (!endpointResponse.ok) {
-            const errorText = await endpointResponse.text();
-            throw new Error(errorText);
-        }
-
-        const submitResult = await endpointResponse.text();
-        displayCombinedResult(tenantInfo, submitResult);
-
+        displayCheckResults(data);
+        enablePushToDbButton(); // Enable the "Send to DB" button after successful check
     } catch (error) {
         displayResult(`Ошибка: ${error.message}`);
         lastCheckedTenantInfo = null;
+        disablePushToDbButton(); // Disable the "Send to DB" button on error
     }
 }
 
@@ -564,42 +501,18 @@ function initializeUserBucketDel() {
 }
 
 function initializeTenantMod() {
-    const checkButton = document.querySelector('#tenant-mod #check-tenant');
-    const submitButton = document.querySelector('#tenant-mod #submit-form');
-    let tenantData = null; // Store tenant data
+    const tabPane = document.querySelector('#tenant-mod');
+    if (!tabPane) return;
 
+    const checkButton = tabPane.querySelector('#check-tenant');
+    const submitButton = tabPane.querySelector('#submit-form');
+
+    // Handle check button
     if (checkButton) {
         checkButton.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
-            const tabPane = document.querySelector('#tenant-mod');
-            const tenantInput = tabPane.querySelector('#tenant');
-            const tenant = tenantInput ? tenantInput.value.trim() : '';
-
-            if (!tenant) {
-                displayResult('Ошибка: Необходимо указать имя тенанта');
-                return;
-            }
-
-            try {
-                const response = await fetch('/zayavki/tenant-info', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ tenant })
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                tenantData = await response.json();
-                displayTenantInfo(tenantData);
-            } catch (error) {
-                displayResult(`Ошибка: ${error.message}`);
-            }
+            await handleTenantModCheck();
         };
     }
 
@@ -609,10 +522,25 @@ function initializeTenantMod() {
             e.preventDefault();
             e.stopPropagation();
 
-            if (!tenantData) {
+            if (!lastCheckedTenantInfo) {
                 displayResult('Ошибка: Сначала необходимо проверить тенант');
                 return;
             }
+
+            // First get cluster info to get endpoints
+            const clusterResponse = await fetch('/zayavki/cluster-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    segment: lastCheckedTenantInfo.net_seg,
+                    env: lastCheckedTenantInfo.env,
+                    cluster: lastCheckedTenantInfo.cls_name
+                })
+            });
+
+            const clusterInfo = await clusterResponse.json();
 
             // Get form data
             const tabPane = document.querySelector('#tenant-mod');
@@ -624,15 +552,15 @@ function initializeTenantMod() {
 
             // Create form data
             const submitData = new FormData();
-            submitData.append('segment', tenantData.net_seg);
-            submitData.append('env', tenantData.env);
-            submitData.append('tenant_override', tenantData.tenant);
-            submitData.append('ris_number', tenantData.ris_id);
-            submitData.append('ris_name', tenantData.ris_code);
-            submitData.append('resp_group', tenantData.owner_group);
-            submitData.append('owner', tenantData.owner_person);
-            submitData.append('cluster', tenantData.cls_name);
-            submitData.append('realm', tenantData.realm);
+            submitData.append('segment', lastCheckedTenantInfo.net_seg);
+            submitData.append('env', lastCheckedTenantInfo.env);
+            submitData.append('tenant_override', lastCheckedTenantInfo.tenant);
+            submitData.append('ris_number', lastCheckedTenantInfo.ris_id);
+            submitData.append('ris_name', lastCheckedTenantInfo.ris_code);
+            submitData.append('resp_group', lastCheckedTenantInfo.owner_group);
+            submitData.append('owner', lastCheckedTenantInfo.owner_person);
+            submitData.append('cluster', lastCheckedTenantInfo.cls_name);
+            submitData.append('realm', lastCheckedTenantInfo.realm);
 
             if (sdInput) submitData.append('request_id_sd', sdInput.value);
             if (srtInput) submitData.append('request_id_srt', srtInput.value);
@@ -649,14 +577,14 @@ function initializeTenantMod() {
                     body: JSON.stringify({
                         processedVars: Object.fromEntries([...submitData.entries()].map(([k,v]) => [k,[v]])),
                         selectedCluster: {
-                            "Кластер": tenantData.cls_name,
-                            "Реалм": tenantData.realm,
-                            "ЦОД": tenantData.dc,
-                            "Выдача": tenantData.issue,
-                            "Среда": tenantData.env,
-                            "ЗБ": tenantData.net_seg,
-                            "tls_endpoint": tenantData.tls_endpoint,
-                            "mtls_endpoint": tenantData.mtls_endpoint
+                            "Кластер": lastCheckedTenantInfo.cls_name,
+                            "Реалм": lastCheckedTenantInfo.realm,
+                            "ЦОД": clusterInfo.ЦОД,
+                            "Выдача": clusterInfo.Выдача,
+                            "Среда": clusterInfo.Среда,
+                            "ЗБ": clusterInfo.ЗБ,
+                            "tls_endpoint": clusterInfo.tls_endpoint,
+                            "mtls_endpoint": clusterInfo.mtls_endpoint
                         },
                         pushToDb: true
                     })
