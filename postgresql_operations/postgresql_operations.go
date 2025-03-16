@@ -481,45 +481,68 @@ func DeactivateResources(tenant string, users []string, buckets []string) (map[s
 	return result, nil
 }
 
+type BucketQuotaUpdateResult struct {
+	UpdatedBuckets []struct {
+		Name string `json:"name"`
+		Size string `json:"size"`
+	} `json:"updated_buckets"`
+	Errors []string `json:"errors"`
+}
+
 func UpdateBucketQuotas(tenant string, buckets []struct {
 	Name string `json:"name"`
 	Size string `json:"size"`
-}) (map[string]interface{}, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database connection not initialized")
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %v", err)
-	}
-	defer tx.Rollback()
-
-	result := map[string]interface{}{
-		"updated_buckets": []map[string]string{},
-		"errors":          []string{},
+}) (*BucketQuotaUpdateResult, error) {
+	result := &BucketQuotaUpdateResult{
+		UpdatedBuckets: make([]struct {
+			Name string `json:"name"`
+			Size string `json:"size"`
+		}, 0),
+		Errors: make([]string, 0),
 	}
 
 	for _, bucket := range buckets {
-		_, err := tx.Exec(fmt.Sprintf(
-			"UPDATE %s.%s SET quota = $1 WHERE tenant = $2 AND bucket = $3 AND active = true",
-			config.Schema, config.Table,
-		), bucket.Size, tenant, bucket.Name)
+		// Check if bucket exists and is active
+		var active bool
+		err := db.QueryRow(fmt.Sprintf(`
+			SELECT active 
+			FROM %s.%s 
+			WHERE tenant = $1 AND bucket = $2
+		`, config.Schema, config.Table), tenant, bucket.Name).Scan(&active)
 
+		if err == sql.ErrNoRows {
+			result.Errors = append(result.Errors,
+				fmt.Sprintf("Бакет '%s' не найден в базе данных", bucket.Name))
+			continue
+		}
 		if err != nil {
-			result["errors"] = append(result["errors"].([]string),
-				fmt.Sprintf("Failed to update %s: %v", bucket.Name, err))
+			return nil, fmt.Errorf("error checking bucket status: %v", err)
+		}
+
+		if !active {
+			result.Errors = append(result.Errors,
+				fmt.Sprintf("Бакет '%s' неактивен, квота не может быть изменена", bucket.Name))
 			continue
 		}
 
-		result["updated_buckets"] = append(
-			result["updated_buckets"].([]map[string]string),
-			map[string]string{"name": bucket.Name, "size": bucket.Size},
-		)
-	}
+		// Update quota for active bucket
+		_, err = db.Exec(fmt.Sprintf(`
+			UPDATE %s.%s 
+			SET quota = $1 
+			WHERE tenant = $2 AND bucket = $3 AND active = true
+		`, config.Schema, config.Table), bucket.Size, tenant, bucket.Name)
 
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+		if err != nil {
+			return nil, fmt.Errorf("error updating bucket quota: %v", err)
+		}
+
+		result.UpdatedBuckets = append(result.UpdatedBuckets, struct {
+			Name string `json:"name"`
+			Size string `json:"size"`
+		}{
+			Name: bucket.Name,
+			Size: bucket.Size,
+		})
 	}
 
 	return result, nil

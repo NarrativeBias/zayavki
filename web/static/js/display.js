@@ -195,7 +195,7 @@ function displayBucketModUpdateResults(result) {
 
     // Show updated buckets
     if (result.updated_buckets && result.updated_buckets.length > 0) {
-        container.appendChild(createSection('Обновленные квоты бакетов',
+        container.appendChild(createSection('Успешно обновленные квоты бакетов',
             createTable(
                 ['Бакет', 'Новая квота'],
                 result.updated_buckets.map(bucket => [
@@ -204,6 +204,10 @@ function displayBucketModUpdateResults(result) {
                 ])
             )
         ));
+    } else {
+        const noUpdatesMsg = document.createElement('p');
+        noUpdatesMsg.textContent = 'Ни один бакет не был обновлен';
+        container.appendChild(createSection('Результат', noUpdatesMsg));
     }
 
     // Show errors if any
