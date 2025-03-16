@@ -84,7 +84,12 @@ async function submitForm(form, pushToDb = false) {
         }
         
         formData.append('push_to_db', pushToDb.toString());
-        formData.append('create_tenant', 'true');
+        
+        // Add create_tenant flag for new-tenant tab
+        const activeTab = document.querySelector('.tab-pane.active');
+        if (activeTab && activeTab.id === 'new-tenant') {
+            formData.append('create_tenant', 'true');
+        }
 
         const response = await fetch('/zayavki/submit', {
             method: 'POST',
@@ -127,9 +132,15 @@ async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
         const processedVars = {};
         for (let [key, value] of Object.entries(formData)) {
-            if (value && !['push_to_db', 'create_tenant'].includes(key)) {
+            if (value && !['push_to_db'].includes(key)) {  // Remove 'create_tenant' from excluded keys
                 processedVars[key] = [value];
             }
+        }
+
+        // Add create_tenant flag for new-tenant tab
+        const activeTab = document.querySelector('.tab-pane.active');
+        if (activeTab && activeTab.id === 'new-tenant') {
+            processedVars['create_tenant'] = ['true'];
         }
 
         if (processedVars.env) {
