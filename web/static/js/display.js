@@ -96,36 +96,56 @@ function displayCheckResults(data) {
     resultDiv.appendChild(container);
 }
 
-function displayDeactivationResults(data) {
+function displayDeactivationResults(result) {
     const container = document.createElement('div');
     container.className = 'table-container';
 
-    // Users section
-    if (data.deactivated_users && data.deactivated_users.length > 0) {
+    // Show deactivated users
+    if (result.deactivated_users && result.deactivated_users.length > 0) {
         container.appendChild(createSection('Деактивированные пользователи',
             createTable(
                 ['Пользователь'],
-                data.deactivated_users.map(user => [user])
+                result.deactivated_users.map(user => [user])
             )
         ));
     }
 
-    // Buckets section
-    if (data.deactivated_buckets && data.deactivated_buckets.length > 0) {
+    // Show deactivated buckets
+    if (result.deactivated_buckets && result.deactivated_buckets.length > 0) {
         container.appendChild(createSection('Деактивированные бакеты',
             createTable(
                 ['Бакет'],
-                data.deactivated_buckets.map(bucket => [bucket])
+                result.deactivated_buckets.map(bucket => [bucket])
             )
         ));
+
+        // Add warning message about bucket status
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'warning-message';
+        warningDiv.style.backgroundColor = '#fff3cd';
+        warningDiv.style.color = '#856404';
+        warningDiv.style.padding = '1rem';
+        warningDiv.style.marginTop = '1rem';
+        warningDiv.style.borderRadius = '4px';
+        warningDiv.style.border = '1px solid #ffeeba';
+        warningDiv.innerHTML = `
+            <strong>⚠️ Важно!</strong><br>
+            Не забудьте изменить статус КЕ бакета на "Вывод из эксплуатации" в Сфера.Конфигурации.
+        `;
+        container.appendChild(createSection('Напоминание', warningDiv));
     }
 
-    // No resources message
-    if ((!data.deactivated_users || data.deactivated_users.length === 0) && 
-        (!data.deactivated_buckets || data.deactivated_buckets.length === 0)) {
-        const message = document.createElement('p');
-        message.textContent = 'Не найдено активных ресурсов для деактивации';
-        container.appendChild(message);
+    // Show errors if any
+    if (result.errors && result.errors.length > 0) {
+        const errorList = document.createElement('div');
+        errorList.className = 'error-list';
+        result.errors.forEach(error => {
+            const errorItem = document.createElement('p');
+            errorItem.className = 'error-message';
+            errorItem.textContent = error;
+            errorList.appendChild(errorItem);
+        });
+        container.appendChild(createSection('Ошибки', errorList));
     }
 
     const resultDiv = document.getElementById('result');
