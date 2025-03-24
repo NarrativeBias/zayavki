@@ -122,16 +122,45 @@ function displayDeactivationResults(result) {
         // Add warning message about bucket status
         const warningDiv = document.createElement('div');
         warningDiv.className = 'warning-message';
-        warningDiv.style.backgroundColor = '#fff3cd';
-        warningDiv.style.color = '#856404';
-        warningDiv.style.padding = '1rem';
-        warningDiv.style.marginTop = '1rem';
-        warningDiv.style.borderRadius = '4px';
-        warningDiv.style.border = '1px solid #ffeeba';
-        warningDiv.innerHTML = `
-            <strong>⚠️ Важно!</strong><br>
-            Не забудьте изменить статус КЕ бакета на "Вывод из эксплуатации" в Сфера.Конфигурации.
+        warningDiv.style.cssText = `
+            background-color: #fff3cd;
+            color: #664d03;
+            padding: 1.25rem;
+            margin-top: 1.5rem;
+            border-radius: 8px;
+            border-left: 5px solid #ffc107;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 1.1em;
+            line-height: 1.5;
         `;
+        
+        const warningIcon = document.createElement('span');
+        warningIcon.style.cssText = `
+            font-size: 1.4em;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        `;
+        warningIcon.textContent = '⚠️';
+
+        const warningTitle = document.createElement('strong');
+        warningTitle.style.cssText = `
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1.2em;
+            font-weight: 600;
+        `;
+        warningTitle.appendChild(warningIcon);
+        warningTitle.appendChild(document.createTextNode('Важно!'));
+
+        const warningText = document.createElement('span');
+        warningText.style.cssText = `
+            display: block;
+            padding-left: 2.4rem;
+        `;
+        warningText.textContent = 'Не забудьте изменить статус КЕ бакета на "Вывод из эксплуатации" в Сфера.Конфигурации.';
+
+        warningDiv.appendChild(warningTitle);
+        warningDiv.appendChild(warningText);
         container.appendChild(createSection('Напоминание', warningDiv));
     }
 
