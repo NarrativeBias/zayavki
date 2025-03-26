@@ -430,17 +430,31 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find the row where s3_user equals tenant
+	var tenantInfo *postgresql_operations.CheckResult
+	for _, result := range results {
+		if result.S3User.Valid && result.S3User.String == request.Tenant {
+			tenantInfo = &result
+			break
+		}
+	}
+
+	if tenantInfo == nil {
+		http.Error(w, "Tenant info not found", http.StatusNotFound)
+		return
+	}
+
 	result := map[string]interface{}{
 		"tenant": map[string]string{
 			"name":        request.Tenant,
-			"cluster":     results[0].ClsName,
-			"env":         results[0].Env,
-			"segment":     results[0].NetSeg,
-			"realm":       results[0].Realm,
-			"ris_code":    results[0].RisCode,
-			"ris_id":      results[0].RisId,
-			"owner_group": results[0].OwnerGroup,
-			"owner":       results[0].OwnerPerson,
+			"cluster":     tenantInfo.ClsName,
+			"env":         tenantInfo.Env,
+			"segment":     tenantInfo.NetSeg,
+			"realm":       tenantInfo.Realm,
+			"ris_code":    tenantInfo.RisCode,
+			"ris_id":      tenantInfo.RisId,
+			"owner_group": tenantInfo.OwnerGroup,
+			"owner":       tenantInfo.OwnerPerson,
 		},
 		"users":   make([]map[string]interface{}, 0),
 		"buckets": make([]map[string]interface{}, 0),
@@ -487,9 +501,9 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		vars := map[string][]string{
 			"tenant":         {request.Tenant},
 			"users":          request.Users,
-			"request_id_srt": {results[0].SrtNum},
-			"resp_group":     {results[0].OwnerGroup},
-			"owner":          {results[0].OwnerPerson},
+			"request_id_srt": {tenantInfo.SrtNum},
+			"resp_group":     {tenantInfo.OwnerGroup},
+			"owner":          {tenantInfo.OwnerPerson},
 		}
 
 		// Split buckets and their quotas
@@ -508,8 +522,8 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 		vars["bucketquotas"] = bucketQuotas
 
 		clusters := map[string]string{
-			"Кластер": results[0].ClsName,
-			"Реалм":   results[0].Realm,
+			"Кластер": tenantInfo.ClsName,
+			"Реалм":   tenantInfo.Realm,
 		}
 
 		bucketCommands := rgw_commands.BucketCreation(vars, clusters)
@@ -518,9 +532,9 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 
 		result["creation_commands"] = bucketCommands + "\n" + userCommands + "\n" + checkCommands
 	} else if request.Mode == "quota" {
-		result["commands"] = rgw_commands.GenerateQuotaCommands(request.Tenant, request.Buckets, results[0].Realm)
+		result["commands"] = rgw_commands.GenerateQuotaCommands(request.Tenant, request.Buckets, tenantInfo.Realm)
 	} else {
-		result["deletion_commands"] = rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, results[0].Realm)
+		result["deletion_commands"] = rgw_commands.GenerateDeletionCommands(request.Tenant, request.Users, request.Buckets, tenantInfo.Realm)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
