@@ -45,7 +45,6 @@ func main() {
 	mux.HandleFunc("/zayavki/", stripPrefix(handleIndex))
 	mux.HandleFunc("/zayavki/cluster", stripPrefix(handleClusterSelection))
 	mux.HandleFunc("/zayavki/check", stripPrefix(handleCheck))
-	mux.HandleFunc("/zayavki/tenant-info", stripPrefix(handleTenantInfo))
 	mux.HandleFunc("/zayavki/cluster-info", stripPrefix(handleClusterInfo))
 	mux.HandleFunc("/zayavki/check-tenant-resources", stripPrefix(handleCheckTenantResources))
 	mux.HandleFunc("/zayavki/deactivate-resources", stripPrefix(handleDeactivateResources))
@@ -372,31 +371,6 @@ func jsonError(w http.ResponseWriter, message string, code int) {
 func handleError(w http.ResponseWriter, err error) {
 	log.Printf("Error processing data: %v", err)
 	http.Error(w, err.Error(), http.StatusInternalServerError)
-}
-
-func handleTenantInfo(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var request struct {
-		Tenant string `json:"tenant"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	result, err := postgresql_operations.GetTenantInfo(request.Tenant)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
 }
 
 func handleClusterInfo(w http.ResponseWriter, r *http.Request) {

@@ -12,31 +12,6 @@ function displayResult(data) {
     }
 }
 
-function displayTenantInfo(data) {
-    const container = document.createElement('div');
-    container.className = 'table-container';
-
-    container.appendChild(createSection('Информация о тенанте',
-        createTable(
-            ['Тенант', 'Кластер', 'Среда', 'Зона безопасности', 'РИС код', 'РИС номер', 'Группа владельцев', 'Владелец'],
-            [[
-                data.tenant,
-                data.cls_name,
-                data.env,
-                data.net_seg,
-                data.ris_code,
-                data.ris_id,
-                data.owner_group,
-                data.owner_person
-            ]]
-        )
-    ));
-
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '';
-    resultDiv.appendChild(container);
-}
-
 function displayCheckResults(data) {
     const container = document.createElement('div');
     container.className = 'table-container';
@@ -285,7 +260,6 @@ function displayBucketModUpdateResults(result) {
 
 // Export functions
 window.displayResult = displayResult;
-window.displayTenantInfo = displayTenantInfo;
 window.displayCheckResults = displayCheckResults;
 window.displayDeactivationResults = displayDeactivationResults;
 window.displaySearchResults = displaySearchResults;

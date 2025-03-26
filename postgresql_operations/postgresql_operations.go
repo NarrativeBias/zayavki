@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NarrativeBias/zayavki/cluster_endpoint_parser"
 	"github.com/lib/pq"
 )
 
@@ -307,48 +306,6 @@ func PushToDB(variables map[string][]string, clusters map[string]string) (string
 		strings.Join(insertedBuckets, ", "))
 
 	return result, nil
-}
-
-func GetTenantInfo(tenant string) (*TenantInfo, error) {
-	query := fmt.Sprintf(`
-        SELECT DISTINCT cls_name, net_seg, env, realm, ris_code, ris_id, owner_group, owner_person, srt_num
-        FROM %s.%s
-        WHERE tenant = $1 AND s3_user = $1
-        LIMIT 1`, config.Schema, config.Table)
-
-	var result TenantInfo
-	err := db.QueryRow(query, tenant).Scan(
-		&result.ClsName, &result.NetSeg, &result.Env, &result.Realm,
-		&result.RisCode, &result.RisId, &result.OwnerGroup, &result.OwnerPerson,
-		&result.SrtNum,
-	)
-
-	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("tenant not found")
-	}
-	if err != nil {
-		return nil, fmt.Errorf("database error: %v", err)
-	}
-
-	// Get matching clusters
-	clusters, err := cluster_endpoint_parser.FindMatchingClusters("clusters.xlsx", result.NetSeg, result.Env)
-	if err != nil {
-		return nil, fmt.Errorf("error finding clusters: %v", err)
-	}
-
-	// Find the cluster that matches our cls_name
-	for _, cluster := range clusters {
-		if cluster.Кластер == result.ClsName {
-			result.TlsEndpoint = cluster.TLSEndpoint
-			result.MtlsEndpoint = cluster.MTLSEndpoint
-			break
-		}
-	}
-
-	// Add tenant to the result
-	result.Tenant = tenant
-
-	return &result, nil
 }
 
 // CloseDB closes the database connection
