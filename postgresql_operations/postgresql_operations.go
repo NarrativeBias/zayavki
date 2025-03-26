@@ -70,21 +70,6 @@ func getStringValue(ns sql.NullString) string {
 	return ns.String
 }
 
-type TenantInfo struct {
-	ClsName      string `json:"cls_name"`
-	NetSeg       string `json:"net_seg"`
-	Env          string `json:"env"`
-	Realm        string `json:"realm"`
-	RisCode      string `json:"ris_code"`
-	RisId        string `json:"ris_id"`
-	OwnerGroup   string `json:"owner_group"`
-	OwnerPerson  string `json:"owner_person"`
-	SrtNum       string `json:"srt_num"`
-	TlsEndpoint  string `json:"tls_endpoint"`
-	MtlsEndpoint string `json:"mtls_endpoint"`
-	Tenant       string `json:"tenant"`
-}
-
 var (
 	db     *sql.DB
 	config DBConfig
