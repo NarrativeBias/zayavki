@@ -144,6 +144,7 @@ function parseParamsJson(data) {
                 formFields.email_for_credentials = item.value;
                 break;
             case 'Зона безопасности (выделенный кластер)':
+            case 'Зона безопасности (коммунальный кластер)':
                 formFields.segment = item.value;
                 break;
             case 'Рабочая группа сопровождения ИС: название':
@@ -168,9 +169,15 @@ function parseParamsJson(data) {
                 }
                 break;
             case 'Номер РИС и идентификационный код':
-                const [risNumber, risName] = item.value.split('-').map(s => s.trim());
-                if (risNumber) formFields.ris_number = risNumber;
-                if (risName) formFields.ris_name = risName;
+                const parts = item.value.match(/^(\d+)\s+([A-Za-z]+)$/);
+                
+                if (parts && parts[1].length >= 2 && parts[1].length <= 5 && 
+                    parts[2].length >= 3 && parts[2].length <= 5) {
+                    formFields.ris_number = parts[1];
+                    formFields.ris_name = parts[2].toLowerCase();
+                } else {
+                    console.warn('Could not parse RIS number and name:', item.value);
+                }
                 break;
         }
     });
