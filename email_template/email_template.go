@@ -9,14 +9,14 @@ import (
 func PopulateEmailTemplate(variables map[string][]string, clusters map[string]string) (string, error) {
 	// Helper function to safely get the first element of a slice or return a default value
 	getFirst := func(slice []string, defaultValue string) string {
-		if len(slice) > 0 {
+		if len(slice) > 0 && slice[0] != "" {
 			return slice[0]
 		}
 		return defaultValue
 	}
 
 	// Get tenant from either tenant or tenant_override
-	tenant := getFirst(variables["tenant_override"], getFirst(variables["tenant"], "N/A"))
+	tenant := getFirst(variables["tenant"], getFirst(variables["tenant_override"], "N/A"))
 
 	data := map[string]interface{}{
 		"email":          getFirst(variables["email"], "N/A"),
