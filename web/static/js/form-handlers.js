@@ -264,70 +264,6 @@ function handleSearch(e) {
     });
 }
 
-async function handleFormSubmit(pushToDb = false) {
-    const form = document.getElementById('mainForm');
-    const activeTab = document.querySelector('.tab-pane.active');
-    if (!form || !activeTab) return;
-    
-    // Special handling for tenant-mod tab
-    if (activeTab.id === 'tenant-mod') {
-        if (!pushToDb) {
-            // Check button pressed
-            await handleTenantModCheck();
-        } else {
-            // Submit to DB button pressed
-            if (!lastCheckedTenantInfo) {
-                displayResult('Ошибка: Сначала нужно проверить тенант');
-                return;
-            }
-            await handleTenantModSubmit(lastCheckedTenantInfo);
-        }
-        return;
-    }
-
-    try {
-        // Create new FormData only from the active tab's fields
-        const formData = new FormData();
-        const inputs = activeTab.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            if (input.id && input.value) {
-                formData.append(input.id, input.value);
-            }
-        });
-
-        // Add create_tenant=true if we're in the new-tenant tab
-        if (activeTab.id === 'new-tenant') {
-            formData.append('create_tenant', 'true');
-        }
-
-        // Add push_to_db parameter
-        formData.append('push_to_db', pushToDb.toString());
-
-        const response = await fetch('/zayavki/submit', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
-        }
-
-        const text = await response.text();
-        
-        if (text.startsWith('CLUSTER_SELECTION_REQUIRED:')) {
-            const clusters = JSON.parse(text.substring('CLUSTER_SELECTION_REQUIRED:'.length));
-            showClusterModal(clusters, formData, pushToDb);
-            return;
-        }
-
-        displayResult(text);
-
-    } catch (error) {
-        displayResult(`Error: ${error.message}`);
-    }
-}
-
 async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     try {
         // Convert FormData to an object
@@ -702,7 +638,6 @@ function initializeBucketMod() {
 }
 
 // Export functions for use in other files
-window.handleFormSubmit = handleFormSubmit;
 window.handleClusterSelection = handleClusterSelection;
 window.initializeForm = initializeForm;
 window.initializeUserBucketDel = initializeUserBucketDel;
