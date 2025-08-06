@@ -5,8 +5,23 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
+
+// convertGBToBytes converts gigabytes to bytes (1 GB = 1,000,000,000 bytes)
+func convertGBToBytes(gbStr string) (string, error) {
+	// Parse the GB value
+	gb, err := strconv.ParseFloat(gbStr, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid quota value: %s", gbStr)
+	}
+
+	// Convert to bytes (1 GB = 1,000,000,000 bytes, not 1,073,741,824 bytes)
+	bytes := int64(gb * 1000000000)
+
+	return strconv.FormatInt(bytes, 10), nil
+}
 
 func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]string, error) {
 	processedVars := make(map[string][]string)
@@ -51,12 +66,13 @@ func ParseAndProcessVariables(rawVariables map[string][]string) (map[string][]st
 	// Process buckets
 	bucketInput := getFirst(rawVariables["buckets"])
 	if bucketInput != "" {
-		bucketNames, bucketQuotas, err := parseBuckets(bucketInput)
+		bucketNames, bucketQuotas, bucketQuotasBytes, err := parseBuckets(bucketInput)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse buckets: %v", err)
 		}
 		processedVars["bucketnames"] = bucketNames
 		processedVars["bucketquotas"] = bucketQuotas
+		processedVars["bucketquotas_bytes"] = bucketQuotasBytes
 	}
 
 	// Process environment code
@@ -115,9 +131,10 @@ func LoadFromJSON(url string) (map[string]interface{}, error) {
 	return data, nil
 }
 
-func parseBuckets(bucketStr string) ([]string, []string, error) {
+func parseBuckets(bucketStr string) ([]string, []string, []string, error) {
 	var bucketNames []string
 	var bucketQuotas []string
+	var bucketQuotasBytes []string
 
 	// Split into lines and process each line
 	lines := strings.Split(bucketStr, "\n")
@@ -130,7 +147,7 @@ func parseBuckets(bucketStr string) ([]string, []string, error) {
 		// Split by pipe and trim spaces
 		parts := strings.Split(line, "|")
 		if len(parts) != 2 {
-			return nil, nil, fmt.Errorf("invalid bucket format: %s (expected: name | quota)", line)
+			return nil, nil, nil, fmt.Errorf("invalid bucket format: %s (expected: name | quota)", line)
 		}
 
 		bucketName := strings.TrimSpace(parts[0])
@@ -138,12 +155,19 @@ func parseBuckets(bucketStr string) ([]string, []string, error) {
 
 		// Validate bucket name and quota
 		if bucketName == "" || quota == "" {
-			return nil, nil, fmt.Errorf("bucket name and quota cannot be empty")
+			return nil, nil, nil, fmt.Errorf("bucket name and quota cannot be empty")
+		}
+
+		// Convert quota from GB to bytes
+		quotaBytes, err := convertGBToBytes(quota)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to convert quota to bytes: %v", err)
 		}
 
 		bucketNames = append(bucketNames, bucketName)
 		bucketQuotas = append(bucketQuotas, quota)
+		bucketQuotasBytes = append(bucketQuotasBytes, quotaBytes)
 	}
 
-	return bucketNames, bucketQuotas, nil
+	return bucketNames, bucketQuotas, bucketQuotasBytes, nil
 }
