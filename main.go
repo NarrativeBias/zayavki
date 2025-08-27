@@ -14,7 +14,6 @@ import (
 	"github.com/NarrativeBias/zayavki/prep_db_table_data"
 	"github.com/NarrativeBias/zayavki/rgw_commands"
 	"github.com/NarrativeBias/zayavki/tenant_name_generation"
-	"github.com/NarrativeBias/zayavki/validator"
 	"github.com/NarrativeBias/zayavki/variables_parser"
 )
 
@@ -217,9 +216,7 @@ func processDataWithCluster(variables map[string][]string, cluster cluster_endpo
 	}
 
 	// Validate the data
-	if err := validator.ValidateData(variables); err != nil {
-		return "", fmt.Errorf("validation error: %v", err)
-	}
+	// Client-side validation is now handled in JavaScript
 
 	// Check for existing tenant first
 	if err := checkTenantExists(variables, clusterMap); err != nil {
@@ -325,24 +322,8 @@ func pushToDatabase(processedVars map[string][]string, clusterMap map[string]str
 
 func generateFullResult(processedVars map[string][]string, clusterMap map[string]string) (string, error) {
 	var result strings.Builder
-	var warnings []string
 
-	// Validate users and buckets
-	if valid, err := validator.ValidateUsers(processedVars); !valid {
-		warnings = append(warnings, fmt.Sprintf("User validation warning: %v", err))
-	}
-	if valid, err := validator.ValidateBuckets(processedVars); !valid {
-		warnings = append(warnings, fmt.Sprintf("Bucket validation warning: %v", err))
-	}
-
-	// Add warnings at the top if there are any
-	if len(warnings) > 0 {
-		result.WriteString("~~~~~~~Предупреждения~~~~~~~\n")
-		for _, warning := range warnings {
-			result.WriteString(warning + "\n")
-		}
-		result.WriteString("\n")
-	}
+	// Client-side validation is now handled in JavaScript
 
 	// Generate other parts of the result
 	result.WriteString("~~~~~~~Таблица пользователей и бакетов для отправки в БД~~~~~~~\n")
