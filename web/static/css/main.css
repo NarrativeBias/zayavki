@@ -661,7 +661,7 @@ body {
     max-height: calc(100vh - 100px);
     padding-bottom: 15px; /* Ensure space above buttons */
     /* Prevent excessive expansion when zooming out */
-    max-height: 75vh;
+    max-height: 76vh;
 }
 
 /* Button container positioning */
@@ -673,7 +673,7 @@ body {
     position: relative;
     z-index: 2;
     /* Ensure buttons are always visible */
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 /* Custom scrollbar styling */
@@ -736,6 +736,27 @@ body {
 .form-fields-container > * {
     position: relative;
     z-index: 1;
+}
+
+/* Fix nested scrolling issues - make textareas fixed size */
+.form-field textarea {
+    resize: none;
+    height: 120px;
+    overflow-y: auto;
+}
+
+/* Ensure all form content flows naturally in single scroll */
+.form-fields-container {
+    /* Single scroll container - no nested scrolling */
+    scroll-behavior: smooth;
+}
+
+/* Specific styles for users and buckets textareas */
+.form-field textarea[id="users"],
+.form-field textarea[id="buckets"] {
+    resize: none;
+    height: 140px;
+    overflow-y: auto;
 }
 
 
