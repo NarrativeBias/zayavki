@@ -63,7 +63,14 @@ function displayCheckResults(data) {
         // Create commands section container
         const commandsSection = document.createElement('div');
         commandsSection.className = 'commands-section';
-        
+                // Create header with title and copy button
+                const commandsHeader = document.createElement('div');
+                commandsHeader.className = 'commands-header';
+                
+                const titleElement = document.createElement('h3');
+                titleElement.className = 'commands-title';
+                titleElement.textContent = commandsTitle;
+                
         const pre = document.createElement('pre');
         pre.className = 'command-block';
         pre.textContent = commands;
@@ -111,9 +118,15 @@ function displayCheckResults(data) {
                 });
             };
             
-            commandsSection.appendChild(copyButton);
+            commandsHeader.appendChild(titleElement);
+            commandsHeader.appendChild(copyButton);
+        } else {
+            // No copy button for other tabs
+            commandsHeader.appendChild(titleElement);
         }
         
+        // Assemble the section
+        commandsSection.appendChild(commandsHeader);
         commandsSection.appendChild(pre);
         container.appendChild(createSection(commandsTitle, commandsSection));
     }
