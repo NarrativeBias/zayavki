@@ -159,14 +159,14 @@ const TAB_CONFIGS = {
                 label: 'Дополнительные пользователи (по одному на строку)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if_cosd_user1\nif_cosd_user2'
+                placeholder: 'Примеры:\nif_cosd_user1\nif_cosd_user2\n\nПримечание:\n- Имя пользователя должно начинаться с {env_code}_{ris_name}_\n- Разрешены только буквы, цифры и подчеркивания'
             },
             {
                 id: 'buckets',
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
+                placeholder: 'Примеры:\nif-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание:\n- Имя бакета должно начинаться с {среда}-{рис_имя}-\n- Размер указывается в GB, только целые числа\n- Разрешены только буквы, цифры и дефисы'
             }
         ],
         buttons: [
@@ -179,7 +179,7 @@ const TAB_CONFIGS = {
     },
     'tenant-mod': {
         fields: [
-            { id: 'tenant', label: 'Имя тенанта', type: 'text', required: true, placeholder: 'Введите имя тенанта' },
+            { id: 'tenant', label: 'Имя тенанта', type: 'text', required: true, placeholder: 'Имя существующего тенанта' },
             {
                 id: 'request_id_sd',
                 label: 'Номер обращения SD',
@@ -206,14 +206,14 @@ const TAB_CONFIGS = {
                 label: 'Дополнительные пользователи (по одному на строку)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if_cosd_user1\nif_cosd_user2'
+                placeholder: 'Примеры:\nif_cosd_user1\nif_cosd_user2\n\nПримечание:\n- Имя пользователя должно начинаться с {env_code}_{ris_code}_\n- Код среды и РИС извлекается из имени тенанта\n- Разрешены только буквы, цифры и подчеркивания'
             },
             {
                 id: 'buckets',
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
+                placeholder: 'Примеры:\nif-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание:\n- Имя бакета должно начинаться с {env_code}-{ris_code}-\n- Код среды и РИС извлекается из имени тенанта\n- Размер указывается в GB, только целые числа\n- Разрешены только буквы, цифры и дефисы'
             }
         ],
         buttons: [
@@ -230,13 +230,13 @@ const TAB_CONFIGS = {
                 label: 'Имя тенанта',
                 type: 'text',
                 required: true,
-                placeholder: 'Введите имя тенанта'
+                placeholder: 'Имя существующего тенанта'
             },
             {
                 id: 'users',
                 label: 'Пользователи (один в строке)',
                 type: 'textarea',
-                placeholder: 'if_cosd_user1\nif_cosd_user2',
+                placeholder: 'Примеры:\nif_cosd_user1\nif_cosd_user2\n\nПримечание:\n- Имя пользователя должно начинаться с {env_code}_{ris_code}_\n- Код среды и РИС извлекается из имени тенанта\n- Разрешены только буквы, цифры и подчеркивания',
                 required: false
             },
             {
@@ -261,14 +261,14 @@ const TAB_CONFIGS = {
                 label: 'Имя тенанта',
                 type: 'text',
                 required: true,
-                placeholder: 'Введите имя тенанта'
+                placeholder: 'Имя существующего тенанта'
             },
             {
                 id: 'buckets',
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: true,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
+                placeholder: 'Примеры:\nif-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание:\n- Имя бакета должно начинаться с {env_code}-{ris_code}-\n- Код среды и РИС извлекается из имени тенанта\n- Размер указывается в GB, только целые числа\n- Разрешены только буквы, цифры и дефисы'
             }
         ],
         buttons: [

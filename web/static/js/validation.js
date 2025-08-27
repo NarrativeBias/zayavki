@@ -3,6 +3,7 @@ function initializeFieldValidation() {
     validateSRTField();
     validateEmailFields();
     validateBucketQuotaFields(); // Add bucket quota validation
+    validateUsernameFields(); // Add username validation
 }
 
 function validateSDField() {
@@ -67,6 +68,24 @@ function validateBucketQuotaFields() {
     }
 }
 
+function validateUsernameFields() {
+    // Find all username textarea fields in the currently active tab
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (activeTab) {
+        const usernameFields = activeTab.querySelectorAll('textarea[id="users"]');
+        
+        usernameFields.forEach(field => {
+            // Remove existing event listeners to prevent duplicates
+            field.removeEventListener('input', handleUsernameInput);
+            field.removeEventListener('blur', handleUsernameBlur);
+            
+            // Add new event listeners
+            field.addEventListener('input', handleUsernameInput);
+            field.addEventListener('blur', handleUsernameBlur);
+        });
+    }
+}
+
 // Separate handler functions to prevent duplicate event listeners
 function handleBucketQuotaInput(e) {
     validateBucketQuotaFormat(e.target);
@@ -76,12 +95,111 @@ function handleBucketQuotaBlur(e) {
     validateBucketQuotaFormat(e.target);
 }
 
+function handleUsernameInput(e) {
+    validateUsernameFormat(e.target);
+}
+
+function handleUsernameBlur(e) {
+    validateUsernameFormat(e.target);
+}
+
 // Function to reinitialize validation when tabs are switched
 function reinitializeValidation() {
     validateSDField();
     validateSRTField();
     validateEmailFields();
     validateBucketQuotaFields();
+    validateUsernameFields(); // Add username validation
+    validateTenantNameField(); // Add tenant name validation
+}
+
+// Validate tenant name field for existing tenant operations
+function validateTenantNameField() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) return;
+    
+    // Only validate tenant name in tabs that use existing tenants
+    const tenantModTab = activeTab.id === 'tenant-mod';
+    const bucketModTab = activeTab.id === 'bucket-mod';
+    const userBucketDelTab = activeTab.id === 'user-bucket-del';
+    
+    if (!tenantModTab && !bucketModTab && !userBucketDelTab) return;
+    
+    const tenantInput = activeTab.querySelector('#tenant');
+    if (!tenantInput) return;
+    
+    // Remove existing event listeners to prevent duplicates
+    tenantInput.removeEventListener('input', handleTenantNameInput);
+    tenantInput.removeEventListener('blur', handleTenantNameBlur);
+    
+    // Add new event listeners
+    tenantInput.addEventListener('input', handleTenantNameInput);
+    tenantInput.addEventListener('blur', handleTenantNameBlur);
+}
+
+// Separate handler functions to prevent duplicate event listeners
+function handleTenantNameInput(e) {
+    validateTenantNameFormat(e.target);
+}
+
+function handleTenantNameBlur(e) {
+    validateTenantNameFormat(e.target);
+}
+
+function validateTenantNameFormat(input) {
+    const value = input.value.trim();
+    if (!value) {
+        clearValidationMessage(getOrCreateValidationDiv(input));
+        return;
+    }
+    
+    const errors = [];
+    
+    // Tenant name format: env_riscode_restoftenantname
+    // Example: if_cosd_mytenant
+    const tenantParts = value.split('_');
+    if (tenantParts.length < 2) {
+        errors.push('Неверный формат имени тенанта. Ожидается: env_riscode_rest');
+    } else {
+        const envCode = tenantParts[0];
+        const risCode = tenantParts[1];
+        
+        // Validate env_code
+        const validEnvCodes = ['p0', 'rr', 'if', 'hf', 'lt'];
+        if (!validEnvCodes.includes(envCode)) {
+            errors.push(`Неверный код среды "${envCode}". Допустимые значения: ${validEnvCodes.join(', ')}`);
+        }
+        
+        // Validate ris_code (should not be empty)
+        if (!risCode || risCode.trim() === '') {
+            errors.push('Код РИС не может быть пустым');
+        }
+        
+        // Check if there's a rest part
+        if (tenantParts.length < 3 || !tenantParts[2] || tenantParts[2].trim() === '') {
+            errors.push('Имя тенанта должно содержать дополнительную часть после env_riscode_');
+        }
+    }
+    
+    // Check if tenant name contains only valid characters (alphanumeric and underscores)
+    const validCharPattern = /^[a-zA-Z0-9_]+$/;
+    if (!validCharPattern.test(value)) {
+        errors.push('Имя тенанта содержит недопустимые символы. Разрешены только буквы, цифры и подчеркивания');
+    }
+    
+    if (errors.length > 0) {
+        showValidationMessage(
+            getOrCreateValidationDiv(input),
+            errors.join('\n'),
+            'error'
+        );
+    } else {
+        showValidationMessage(
+            getOrCreateValidationDiv(input),
+            'Формат имени тенанта корректен',
+            'success'
+        );
+    }
 }
 
 function validateBucketQuotaFormat(textarea) {
@@ -109,6 +227,10 @@ function validateBucketQuotaFormat(textarea) {
         
         if (!bucketName) {
             errors.push(`Строка ${i + 1}: Имя бакета не может быть пустым`);
+        } else {
+            // Validate bucket name format and characters
+            const bucketNameErrors = validateBucketName(bucketName, i + 1);
+            errors.push(...bucketNameErrors);
         }
         
         if (!quota) {
@@ -131,6 +253,232 @@ function validateBucketQuotaFormat(textarea) {
             'success'
         );
     }
+}
+
+function validateUsernameFormat(textarea) {
+    const value = textarea.value.trim();
+    if (!value) {
+        clearValidationMessage(getOrCreateValidationDiv(textarea));
+        return;
+    }
+    
+    const lines = value.split('\n');
+    const errors = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
+        // Validate username format and characters
+        const usernameErrors = validateUsername(line, i + 1);
+        errors.push(...usernameErrors);
+    }
+    
+    if (errors.length > 0) {
+        showValidationMessage(
+            getOrCreateValidationDiv(textarea),
+            errors.join('\n'),
+            'error'
+        );
+    } else {
+        showValidationMessage(
+            getOrCreateValidationDiv(textarea),
+            'Формат корректен',
+            'success'
+        );
+    }
+}
+
+function validateBucketName(bucketName, lineNumber) {
+    const errors = [];
+    
+    // Get environment and RIS name from the current form
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) {
+        return [`Строка ${lineNumber}: Не удалось определить активную вкладку`];
+    }
+    
+    let envCode, risCode;
+    
+    // Check if this is a new tenant creation (has env and ris_name fields)
+    const envSelect = activeTab.querySelector('#env');
+    const risNameInput = activeTab.querySelector('#ris_name');
+    
+    if (envSelect && risNameInput && envSelect.value && risNameInput.value.trim()) {
+        // New tenant creation - use env and ris_name fields
+        const env = envSelect.value;
+        const risName = risNameInput.value.trim();
+        
+        // Convert environment to env_code (same logic as Go backend)
+        switch (env) {
+            case 'PROD':
+                envCode = 'p0';
+                break;
+            case 'PREPROD':
+                envCode = 'rr';
+                break;
+            case 'IFT':
+                envCode = 'if';
+                break;
+            case 'HOTFIX':
+                envCode = 'hf';
+                break;
+            case 'LT':
+                envCode = 'lt';
+                break;
+            default:
+                return [`Строка ${lineNumber}: Неизвестная среда "${env}"`];
+        }
+        
+        // Convert ris_name: replace underscores with hyphens
+        risCode = risName.replace(/_/g, '-');
+        
+    } else {
+        // Existing tenant operation - extract from tenant name
+        const tenantInput = activeTab.querySelector('#tenant');
+        if (!tenantInput || !tenantInput.value.trim()) {
+            return [`Строка ${lineNumber}: Заполните поле "Имя тенанта" перед валидацией бакетов`];
+        }
+        
+        const tenantName = tenantInput.value.trim();
+        
+        // Tenant name format: env_riscode_restoftenantname
+        // Example: if_cosd_mytenant
+        const tenantParts = tenantName.split('_');
+        if (tenantParts.length < 2) {
+            return [`Строка ${lineNumber}: Неверный формат имени тенанта "${tenantName}". Ожидается: env_riscode_rest`];
+        }
+        
+        // Extract env_code and ris_code from tenant name
+        const tenantEnvCode = tenantParts[0];
+        const tenantRisCode = tenantParts[1];
+        
+        // Validate env_code
+        const validEnvCodes = ['p0', 'rr', 'if', 'hf', 'lt'];
+        if (!validEnvCodes.includes(tenantEnvCode)) {
+            return [`Строка ${lineNumber}: Неверный код среды в имени тенанта "${tenantEnvCode}". Допустимые значения: ${validEnvCodes.join(', ')}`];
+        }
+        
+        envCode = tenantEnvCode;
+        risCode = tenantRisCode;
+    }
+    
+    // Expected prefix: envCode-risCode-
+    const expectedPrefix = `${envCode}-${risCode}-`;
+    
+    // Check if bucket name starts with expected prefix
+    if (!bucketName.toLowerCase().startsWith(expectedPrefix.toLowerCase())) {
+        errors.push(`Строка ${lineNumber}: Имя бакета "${bucketName}" должно начинаться с "${expectedPrefix}"`);
+    }
+    
+    // Check if bucket name contains only valid characters (alphanumeric and hyphens)
+    const validCharPattern = /^[a-zA-Z0-9-]+$/;
+    if (!validCharPattern.test(bucketName)) {
+        errors.push(`Строка ${lineNumber}: Имя бакета "${bucketName}" содержит недопустимые символы. Разрешены только буквы, цифры и дефисы`);
+    }
+    
+    // Check if bucket name is not too short (at least prefix + 1 character)
+    if (bucketName.length <= expectedPrefix.length) {
+        errors.push(`Строка ${lineNumber}: Имя бакета "${bucketName}" слишком короткое. Должно быть длиннее префикса "${expectedPrefix}"`);
+    }
+    
+    return errors;
+}
+
+function validateUsername(username, lineNumber) {
+    const errors = [];
+    
+    // Get environment and RIS name from the current form
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) {
+        return [`Строка ${lineNumber}: Не удалось определить активную вкладку`];
+    }
+    
+    let envCode, risCode;
+    
+    // Check if this is a new tenant creation (has env and ris_name fields)
+    const envSelect = activeTab.querySelector('#env');
+    const risNameInput = activeTab.querySelector('#ris_name');
+    
+    if (envSelect && risNameInput && envSelect.value && risNameInput.value.trim()) {
+        // New tenant creation - use env and ris_name fields
+        const env = envSelect.value;
+        const risName = risNameInput.value.trim();
+        
+        // Convert environment to env_code (same logic as Go backend)
+        switch (env) {
+            case 'PROD':
+                envCode = 'p0';
+                break;
+            case 'PREPROD':
+                envCode = 'rr';
+                break;
+            case 'IFT':
+                envCode = 'if';
+                break;
+            case 'HOTFIX':
+                envCode = 'hf';
+                break;
+            case 'LT':
+                envCode = 'lt';
+                break;
+            default:
+                return [`Строка ${lineNumber}: Неизвестная среда "${env}"`];
+        }
+        
+        // For usernames, keep ris_name as is (with underscores)
+        risCode = risName;
+        
+    } else {
+        // Existing tenant operation - extract from tenant name
+        const tenantInput = activeTab.querySelector('#tenant');
+        if (!tenantInput || !tenantInput.value.trim()) {
+            return [`Строка ${lineNumber}: Заполните поле "Имя тенанта" перед валидацией пользователей`];
+        }
+        
+        const tenantName = tenantInput.value.trim();
+        
+        // Tenant name format: env_riscode_restoftenantname
+        // Example: if_cosd_mytenant
+        const tenantParts = tenantName.split('_');
+        if (tenantParts.length < 2) {
+            return [`Строка ${lineNumber}: Неверный формат имени тенанта "${tenantName}". Ожидается: env_riscode_rest`];
+        }
+        
+        // Extract env_code and ris_code from tenant name
+        const tenantEnvCode = tenantParts[0];
+        const tenantRisCode = tenantParts[1];
+        
+        // Validate env_code
+        const validEnvCodes = ['p0', 'rr', 'if', 'hf', 'lt'];
+        if (!validEnvCodes.includes(tenantEnvCode)) {
+            return [`Строка ${lineNumber}: Неверный код среды в имени тенанта "${tenantEnvCode}". Допустимые значения: ${validEnvCodes.join(', ')}`];
+        }
+        
+        envCode = tenantEnvCode;
+        risCode = tenantRisCode;
+    }
+    
+    // Expected prefix: envCode_risCode_ (using underscore for usernames)
+    const expectedPrefix = `${envCode}_${risCode}_`;
+    
+    // Check if username starts with expected prefix
+    if (!username.toLowerCase().startsWith(expectedPrefix.toLowerCase())) {
+        errors.push(`Строка ${lineNumber}: Имя пользователя "${username}" должно начинаться с "${expectedPrefix}"`);
+    }
+    
+    // Check if username contains only valid characters (alphanumeric and underscores)
+    const validCharPattern = /^[a-zA-Z0-9_]+$/;
+    if (!validCharPattern.test(username)) {
+        errors.push(`Строка ${lineNumber}: Имя пользователя "${username}" содержит недопустимые символы. Разрешены только буквы, цифры и подчеркивания`);
+    }
+    
+    // Check if username is not too short (at least prefix + 1 character)
+    if (username.length <= expectedPrefix.length) {
+        errors.push(`Строка ${lineNumber}: Имя пользователя "${username}" слишком короткое. Должно быть длиннее префикса "${expectedPrefix}"`);
+    }
+    
+    return errors;
 }
 
 function isValidQuota(quota) {
