@@ -493,6 +493,15 @@ function hasValidationErrors() {
     return errorMessages.length > 0;
 }
 
+// Check if there are validation errors ONLY in the current active tab
+function hasValidationErrorsInCurrentTab() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) return false;
+    
+    const errorMessages = activeTab.querySelectorAll('.validation-message.error');
+    return errorMessages.length > 0;
+}
+
 function validateFieldPrefix(input, prefix, message) {
     const value = input.value.trim().toLowerCase();
     if (value && !value.startsWith(prefix)) {
@@ -543,6 +552,7 @@ window.initializeFieldValidation = initializeFieldValidation;
 
 // Export validation functions for use in other scripts
 window.hasValidationErrors = hasValidationErrors;
+window.hasValidationErrorsInCurrentTab = hasValidationErrorsInCurrentTab;
 window.validateBucketQuotaFormat = validateBucketQuotaFormat;
 window.isValidQuota = isValidQuota;
 window.reinitializeValidation = reinitializeValidation; 

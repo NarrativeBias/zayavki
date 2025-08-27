@@ -65,7 +65,7 @@ async function handleClusterSelection(clusters, operation, data) {
 async function submitForm(form, pushToDb = false) {
     try {
         // Check for validation errors before submission
-        if (hasValidationErrors()) {
+        if (hasValidationErrorsInCurrentTab()) {
             displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
             return;
         }
@@ -137,7 +137,7 @@ async function submitForm(form, pushToDb = false) {
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
         // Check for validation errors before proceeding
-        if (hasValidationErrors()) {
+        if (hasValidationErrorsInCurrentTab()) {
             displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
             return;
         }
@@ -223,7 +223,7 @@ function clearAllFields() {
 
 function handlePushToDb() {
     // Check for validation errors before proceeding
-    if (hasValidationErrors()) {
+    if (hasValidationErrorsInCurrentTab()) {
         displayResult('Ошибка: Исправьте ошибки валидации перед отправкой в БД');
         return;
     }
@@ -239,59 +239,61 @@ function initializeFormSubmission() {
     initializeFormSubmissionHandler();
 }
 
-function handleSearch(e) {
-    e.preventDefault();
-    
-    // Check for validation errors before proceeding
-    if (hasValidationErrors()) {
-        displayResult('Ошибка: Исправьте ошибки валидации перед поиском');
-        return;
-    }
-    
-    // Get the search tab's fields
-    const searchTab = document.getElementById('search');
-    if (!searchTab) {
-        console.error('Search tab not found');
-        return;
-    }
-
-    const formData = new FormData();
-    const inputs = searchTab.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        if (input.id && input.value) {
-            formData.append(input.id, input.value);
+async function handleSearch() {
+    try {
+        // Check for validation errors before proceeding
+        if (hasValidationErrorsInCurrentTab()) {
+            displayResult('Ошибка: Исправьте ошибки валидации перед поиском');
+            return;
         }
-    });
-
-    const searchData = {
-        segment: formData.get('segment'),
-        env: formData.get('env'),
-        ris_number: formData.get('ris_number'),
-        ris_name: formData.get('ris_name')?.toLowerCase(),
-        tenant: formData.get('tenant'),
-        bucket: formData.get('bucket'),
-        user: formData.get('user'),
-        cluster: formData.get('cluster')
-    };
     
-    fetch('/zayavki/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        displaySearchResults(data.results);
-    })
-    .catch(error => {
-        displayResult(`Error performing search: ${error.message}`);
-    });
+        // Get the search tab's fields
+        const searchTab = document.getElementById('search');
+        if (!searchTab) {
+            console.error('Search tab not found');
+            return;
+        }
+
+        const formData = new FormData();
+        const inputs = searchTab.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.id && input.value) {
+                formData.append(input.id, input.value);
+            }
+        });
+
+        const searchData = {
+            segment: formData.get('segment'),
+            env: formData.get('env'),
+            ris_number: formData.get('ris_number'),
+            ris_name: formData.get('ris_name')?.toLowerCase(),
+            tenant: formData.get('tenant'),
+            bucket: formData.get('bucket'),
+            user: formData.get('user'),
+            cluster: formData.get('cluster')
+        };
+        
+        fetch('/zayavki/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(searchData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            displaySearchResults(data.results);
+        })
+        .catch(error => {
+            displayResult(`Error performing search: ${error.message}`);
+        });
+    } catch (error) {
+        displayResult(`Error in handleSearch: ${error.message}`);
+    }
 }
 
 async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     try {
         // Check for validation errors before proceeding
-        if (hasValidationErrors()) {
+        if (hasValidationErrorsInCurrentTab()) {
             displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
             return;
         }
@@ -331,7 +333,7 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
 
 async function handleTenantModCheck() {
     // Check for validation errors before proceeding
-    if (hasValidationErrors()) {
+    if (hasValidationErrorsInCurrentTab()) {
         displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
         return;
     }
@@ -426,7 +428,7 @@ function initializeUserBucketDel() {
             e.stopPropagation();
 
             // Check for validation errors before proceeding
-            if (hasValidationErrors()) {
+            if (hasValidationErrorsInCurrentTab()) {
                 displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
                 return;
             }
@@ -455,7 +457,7 @@ function initializeUserBucketDel() {
             e.stopPropagation();
 
             // Check for validation errors before proceeding
-            if (hasValidationErrors()) {
+            if (hasValidationErrorsInCurrentTab()) {
                 displayResult('Ошибка: Исправьте ошибки валидации перед отправкой');
                 return;
             }
@@ -610,7 +612,7 @@ function initializeBucketMod() {
                 e.stopPropagation();
 
                 // Check for validation errors before proceeding
-                if (hasValidationErrors()) {
+                if (hasValidationErrorsInCurrentTab()) {
                     displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
                     return;
                 }
@@ -663,7 +665,7 @@ function initializeBucketMod() {
             e.stopPropagation();
 
             // Check for validation errors before proceeding
-            if (hasValidationErrors()) {
+            if (hasValidationErrorsInCurrentTab()) {
                 displayResult('Ошибка: Исправьте ошибки валидации перед отправкой');
                 return;
             }
