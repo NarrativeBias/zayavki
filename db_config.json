@@ -1,9 +1,21 @@
 {
+  "server": {
+    "address": "localhost",
+    "port": 8080,
+    "read_timeout": 30,
+    "write_timeout": 30,
+    "max_header_bytes": 1048576
+  },
+  "database": {
     "host": "localhost",
     "port": "5432",
     "user": "postgres",
     "password": "3130",
     "dbname": "Import",
     "schema": "sds",
-    "table": "simple_cspp_clients"
+    "table": "simple_cspp_clients",
+    "max_open_conns": 25,
+    "max_idle_conns": 25,
+    "conn_max_lifetime": 300
   }
+}
