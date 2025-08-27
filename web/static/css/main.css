@@ -650,11 +650,11 @@ body {
     padding: 0;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 40px);
-    max-height: calc(100vh - 40px);
+    height: calc(100vh - 0px);
+    max-height: calc(100vh - 0px);
     border: 1px solid rgba(59, 130, 246, 0.1);
     /* Prevent excessive expansion when zooming out */
-    max-height: 85vh;
+    max-height: 92vh;
 }
 
 /* Form fields container */
@@ -664,11 +664,11 @@ body {
     border-radius: 0 0 8px 8px;
     position: relative;
     overflow-y: auto;
-    height: calc(100vh - 100px);
-    max-height: calc(100vh - 100px);
-    padding-bottom: 15px; /* Ensure space above buttons */
+    height: calc(100vh - 220px);
+    max-height: calc(100vh - 220px);
+    padding-bottom: 10px; /* Ensure space above buttons */
     /* Prevent excessive expansion when zooming out */
-    max-height: 76vh;
+    max-height: 85vh;
 }
 
 /* Button container positioning */
@@ -754,7 +754,7 @@ body {
 .form-field textarea {
     resize: none;
     height: 120px;
-    overflow-y: auto;
+    overflow-y: hidden; /* Hidden by default */
 }
 
 /* Ensure all form content flows naturally in single scroll */
@@ -768,7 +768,22 @@ body {
 .form-field textarea[id="buckets"] {
     resize: none;
     height: 140px;
+    overflow-y: hidden; /* Hidden by default */
+}
+
+/* Show scrollbar only when textarea is focused */
+.form-field textarea:focus {
     overflow-y: auto;
+    border-color: #3b82f6; /* Blue border when focused */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Subtle blue glow */
+}
+
+/* Specific focus styles for users and buckets textareas */
+.form-field textarea[id="users"]:focus,
+.form-field textarea[id="buckets"]:focus {
+    overflow-y: auto;
+    border-color: #3b82f6; /* Blue border when focused */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Subtle blue glow */
 }
 
 
