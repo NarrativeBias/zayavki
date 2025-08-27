@@ -76,6 +76,11 @@ function switchTab(tabName) {
             restoreFieldValues(tabName);
         }
     });
+    
+    // Reinitialize validation for the new tab
+    if (window.reinitializeValidation) {
+        window.reinitializeValidation();
+    }
 }
 
 function initializeFieldSync() {

@@ -166,7 +166,7 @@ const TAB_CONFIGS = {
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200'
+                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
             }
         ],
         buttons: [
@@ -213,7 +213,7 @@ const TAB_CONFIGS = {
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: false,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200'
+                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
             }
         ],
         buttons: [
@@ -268,7 +268,7 @@ const TAB_CONFIGS = {
                 label: 'Бакеты с указанием квоты (формат: имя-бакета | размер)',
                 type: 'textarea',
                 required: true,
-                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200'
+                placeholder: 'if-cosd-bucket1 | 100\nif-cosd-bucket2 | 200\n\nПримечание: размер указывается в GB, только целые числа'
             }
         ],
         buttons: [

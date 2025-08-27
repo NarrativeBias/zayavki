@@ -64,6 +64,12 @@ async function handleClusterSelection(clusters, operation, data) {
 
 async function submitForm(form, pushToDb = false) {
     try {
+        // Check for validation errors before submission
+        if (hasValidationErrors()) {
+            displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
+            return;
+        }
+        
         let formData;
         if (form instanceof FormData) {
             formData = form;
@@ -130,6 +136,12 @@ async function submitForm(form, pushToDb = false) {
 
 async function submitFormWithCluster(cluster, { formData, pushToDb }) {
     try {
+        // Check for validation errors before proceeding
+        if (hasValidationErrors()) {
+            displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
+            return;
+        }
+        
         const processedVars = {};
         for (let [key, value] of Object.entries(formData)) {
             if (value && !['push_to_db'].includes(key)) {  // Remove 'create_tenant' from excluded keys
@@ -210,6 +222,12 @@ function clearAllFields() {
 }
 
 function handlePushToDb() {
+    // Check for validation errors before proceeding
+    if (hasValidationErrors()) {
+        displayResult('Ошибка: Исправьте ошибки валидации перед отправкой в БД');
+        return;
+    }
+    
     disableButton('pushDbButton');
     const form = document.getElementById('mainForm');
     selectedCluster
@@ -223,6 +241,12 @@ function initializeFormSubmission() {
 
 function handleSearch(e) {
     e.preventDefault();
+    
+    // Check for validation errors before proceeding
+    if (hasValidationErrors()) {
+        displayResult('Ошибка: Исправьте ошибки валидации перед поиском');
+        return;
+    }
     
     // Get the search tab's fields
     const searchTab = document.getElementById('search');
@@ -266,6 +290,12 @@ function handleSearch(e) {
 
 async function handleClusterSelection(selectedCluster, formData, pushToDb) {
     try {
+        // Check for validation errors before proceeding
+        if (hasValidationErrors()) {
+            displayResult('Ошибка: Исправьте ошибки валидации перед отправкой формы');
+            return;
+        }
+        
         // Convert FormData to an object
         const formDataObj = {};
         for (let [key, value] of formData.entries()) {
@@ -300,6 +330,12 @@ async function handleClusterSelection(selectedCluster, formData, pushToDb) {
 }
 
 async function handleTenantModCheck() {
+    // Check for validation errors before proceeding
+    if (hasValidationErrors()) {
+        displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
+        return;
+    }
+    
     const tabPane = document.querySelector('#tenant-mod');
     const tenantInput = tabPane.querySelector('#tenant');
     const usersInput = tabPane.querySelector('#users');
@@ -388,6 +424,12 @@ function initializeUserBucketDel() {
         checkButton.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation();
+
+            // Check for validation errors before proceeding
+            if (hasValidationErrors()) {
+                displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
+                return;
+            }
             
             const tabPane = document.querySelector('#user-bucket-del');
             const resourceData = collectTenantResourcesData(tabPane);
@@ -411,6 +453,12 @@ function initializeUserBucketDel() {
         submitButton.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation();
+
+            // Check for validation errors before proceeding
+            if (hasValidationErrors()) {
+                displayResult('Ошибка: Исправьте ошибки валидации перед отправкой');
+                return;
+            }
 
             const tabPane = document.querySelector('#user-bucket-del');
             const resourceData = collectTenantResourcesData(tabPane);
@@ -453,15 +501,21 @@ function initializeTenantMod() {
     }
 
     // Handle submit button
-    if (submitButton) {
-        submitButton.onclick = async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            if (submitButton) {
+            submitButton.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-            if (!lastCheckedTenantInfo) {
-                displayResult('Ошибка: Сначала необходимо проверить тенант');
-                return;
-            }
+                // Check for validation errors before proceeding
+                if (hasValidationErrors()) {
+                    displayResult('Ошибка: Исправьте ошибки валидации перед отправкой');
+                    return;
+                }
+
+                if (!lastCheckedTenantInfo) {
+                    displayResult('Ошибка: Сначала необходимо проверить тенант');
+                    return;
+                }
 
             // First get cluster info to get endpoints
             const clusterResponse = await fetch('/zayavki/cluster-info', {
@@ -550,13 +604,19 @@ function initializeBucketMod() {
     const submitButton = tabPane.querySelector('#submit-form');
 
     // Handle check button
-    if (checkButton) {
-        checkButton.onclick = async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        if (checkButton) {
+            checkButton.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-            const tenantInput = tabPane.querySelector('#tenant');
-            const bucketsInput = tabPane.querySelector('#buckets');
+                // Check for validation errors before proceeding
+                if (hasValidationErrors()) {
+                    displayResult('Ошибка: Исправьте ошибки валидации перед проверкой тенанта');
+                    return;
+                }
+
+                const tenantInput = tabPane.querySelector('#tenant');
+                const bucketsInput = tabPane.querySelector('#buckets');
             
             const tenant = tenantInput ? tenantInput.value.trim() : '';
             const buckets = bucketsInput && bucketsInput.value ? 
@@ -602,6 +662,12 @@ function initializeBucketMod() {
             e.preventDefault();
             e.stopPropagation();
 
+            // Check for validation errors before proceeding
+            if (hasValidationErrors()) {
+                displayResult('Ошибка: Исправьте ошибки валидации перед отправкой');
+                return;
+            }
+
             if (!lastCheckedTenantInfo) {
                 displayResult('Ошибка: Сначала необходимо проверить тенант');
                 return;
@@ -636,6 +702,8 @@ function initializeBucketMod() {
         };
     }
 }
+
+
 
 // Export functions for use in other files
 window.handleClusterSelection = handleClusterSelection;

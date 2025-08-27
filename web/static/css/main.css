@@ -396,6 +396,27 @@ input[type="text"], input[type="email"], select, textarea {
     color: #28a745;
 }
 
+/* Enhanced validation message styling for bucket quotas */
+.validation-message.error {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-left: 3px solid #dc3545;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 8px;
+    white-space: pre-line;
+    line-height: 1.4;
+}
+
+.validation-message.success {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 3px solid #28a745;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
 /* Add loading state styles */
 .loading-spinner {
     display: flex;
