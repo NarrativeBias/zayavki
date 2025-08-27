@@ -1,7 +1,5 @@
 function showJsonImportModal() {
-    console.log('Showing JSON import modal');
     const modal = document.getElementById('jsonImportModal');
-    console.log('Modal element:', modal);
     if (modal) modal.style.display = 'block';
 }
 
@@ -53,6 +51,11 @@ function initializeJsonParser() {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             modal.style.display = 'none';
+
+            // Trigger comprehensive validation after import
+            if (typeof reinitializeValidationAfterImport === 'function') {
+                reinitializeValidationAfterImport();
+            }
 
             // Format the imported values message with all fields
             let resultMessage = 'Импортированы:\n\n';
@@ -226,6 +229,11 @@ function setFieldValue(fieldId, value) {
             } else {
                 fieldValues[tabPane.id][fieldId] = value;
             }
+        }
+
+        // Trigger validation after setting value
+        if (typeof triggerFieldValidation === 'function') {
+            triggerFieldValidation(input);
         }
 
         // Trigger change event

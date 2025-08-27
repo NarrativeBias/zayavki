@@ -548,6 +548,26 @@ function clearValidationMessage(validationDiv) {
     validationDiv.className = 'validation-message';
 }
 
+// Function to trigger validation for a specific field after programmatic value change
+function triggerFieldValidation(input) {
+    const fieldId = input.id;
+    
+    if (fieldId === 'request_id_sd') {
+        validateFieldPrefix(input, 'sd-', 'Номер должен начинаться с "SD-"');
+    } else if (fieldId === 'request_id_srt') {
+        validateFieldPrefix(input, 'srt-', 'Номер должен начинаться с "SRT-"');
+    } else if (['owner', 'zam_owner', 'email_for_credentials'].includes(fieldId)) {
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        validateEmail(input, emailPattern);
+    } else if (fieldId === 'buckets') {
+        validateBucketQuotaFormat(input);
+    } else if (fieldId === 'users') {
+        validateUsernameFormat(input);
+    } else if (fieldId === 'tenant') {
+        validateTenantNameFormat(input);
+    }
+}
+
 window.initializeFieldValidation = initializeFieldValidation; 
 
 // Export validation functions for use in other scripts
@@ -556,3 +576,59 @@ window.hasValidationErrorsInCurrentTab = hasValidationErrorsInCurrentTab;
 window.validateBucketQuotaFormat = validateBucketQuotaFormat;
 window.isValidQuota = isValidQuota;
 window.reinitializeValidation = reinitializeValidation; 
+
+// Function to reinitialize validation after import with comprehensive validation
+function reinitializeValidationAfterImport() {
+    // Wait a bit for DOM to update
+    setTimeout(() => {
+        
+        // Reinitialize validation for all fields
+        reinitializeValidation();
+        
+        // Trigger validation for fields with values
+        const activeTab = document.querySelector('.tab-pane.active');
+        
+        if (activeTab) {
+            // Validate SD/SRT fields
+            const sdInput = activeTab.querySelector('#request_id_sd');
+            const srtInput = activeTab.querySelector('#request_id_srt');
+            
+            if (sdInput && sdInput.value) {
+                validateFieldPrefix(sdInput, 'sd-', 'Номер должен начинаться с "SD-"');
+            }
+            if (srtInput && srtInput.value) {
+                validateFieldPrefix(srtInput, 'srt-', 'Номер должен начинаться с "SRT-"');
+            }
+            
+            // Validate email fields
+            ['owner', 'zam_owner', 'email_for_credentials'].forEach(fieldId => {
+                const input = activeTab.querySelector(`#${fieldId}`);
+                if (input && input.value) {
+                    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                    validateEmail(input, emailPattern);
+                }
+            });
+            
+            // Validate bucket/user fields
+            const bucketsInput = activeTab.querySelector('textarea[id="buckets"]');
+            const usersInput = activeTab.querySelector('textarea[id="users"]');
+            
+            if (bucketsInput && bucketsInput.value) {
+                validateBucketQuotaFormat(bucketsInput);
+            }
+            if (usersInput && usersInput.value) {
+                validateUsernameFormat(usersInput);
+            }
+            
+            // Validate tenant field if it exists
+            const tenantInput = activeTab.querySelector('#tenant');
+            if (tenantInput && tenantInput.value) {
+                validateTenantNameFormat(tenantInput);
+            }
+        }
+    }, 100);
+}
+
+// Export the new validation functions
+window.triggerFieldValidation = triggerFieldValidation;
+window.reinitializeValidationAfterImport = reinitializeValidationAfterImport; 
