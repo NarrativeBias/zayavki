@@ -541,11 +541,27 @@ function getOrCreateValidationDiv(inputElement) {
 function showValidationMessage(container, message, type) {
     container.textContent = message;
     container.className = 'validation-message ' + type;
+    
+    // Add error class to the input field for red border styling
+    const inputField = container.previousElementSibling;
+    if (inputField && (inputField.tagName === 'INPUT' || inputField.tagName === 'SELECT' || inputField.tagName === 'TEXTAREA')) {
+        if (type === 'error') {
+            inputField.classList.add('error');
+        } else {
+            inputField.classList.remove('error');
+        }
+    }
 }
 
 function clearValidationMessage(validationDiv) {
     validationDiv.textContent = '';
     validationDiv.className = 'validation-message';
+    
+    // Remove error class from the input field when clearing validation
+    const inputField = validationDiv.previousElementSibling;
+    if (inputField && (inputField.tagName === 'INPUT' || inputField.tagName === 'SELECT' || inputField.tagName === 'TEXTAREA')) {
+        inputField.classList.remove('error');
+    }
 }
 
 // Function to trigger validation for a specific field after programmatic value change

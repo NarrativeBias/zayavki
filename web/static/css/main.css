@@ -3,8 +3,7 @@ body {
     line-height: 1.6;
     margin: 0;
     padding: 0;
-    min-height: 100vh;
-    background-color: #004d4d;
+    background-color: #0f172a; /* Modern dark blue */
     background-image: url('/zayavki/static/images/background.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -13,51 +12,31 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 0px;
     box-sizing: border-box;
 }
 
-.container {
-    display: flex;
-    width: 100%;
-    max-width: 2400px;
-    height: auto;
-    min-height: 600px;
-    max-height: calc(100vh - 40px);
-    margin: 0 auto;
-    gap: 20px;
-    box-sizing: border-box;
-    padding: 0 20px;
-}
 
-.form-container {
-    flex: 0 0 400px;
-    min-width: 320px;
-    max-width: 400px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow-y: auto;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    height: fit-content;
-    max-height: calc(100vh - 140px);
-}
 
-.form-container > h1 {
-    display: none;
-}
 
+
+/* Form container styles */
+
+
+
+
+
+
+/* Results container styles */
 .results-container {
     flex: 1;
     min-width: 500px;
     display: flex;
     flex-direction: column;
-    background-color: rgba(0, 77, 77, 0.8);
+    background-color: rgba(15, 23, 42, 0.9);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     overflow: auto;
 }
 
@@ -67,18 +46,12 @@ body {
     margin-bottom: 15px;
 }
 
-h1, h2 {
-    color: #333;
-    margin-top: 0;
-    font-size: 1.4em;
-}
-
 #result {
     flex: 1;
-    background-color: rgba(0, 51, 51, 0.9);
+    background-color: rgba(30, 41, 59, 0.95); /* Modern slate blue */
     padding: 15px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 255, 255, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.3); /* Modern blue border */
     font-family: monospace;
     font-size: 14px;
     color: #ffffff;
@@ -97,39 +70,16 @@ h1, h2 {
     color: inherit;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #666;
-    font-size: 0.9em;
-}
 
-.form-field {
-    width: 100%;
-    max-width: 280px;
-    margin: 0 auto;
-    margin-bottom: 7px;
-}
 
-.form-field:last-child {
-    margin-bottom: 0;
-}
 
-input[type="text"], input[type="email"], select, textarea {
-    width: 100%;
-    max-width: 280px;
-    padding: 5px;
-    margin-bottom: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 0.9em;
-}
+
+
 
 .button-container {
     width: 100%;
     max-width: 360px;
-    margin: 20px auto 0;  /* Increased top margin */
+    margin: 10px auto 0;  /* Reduced top margin */
     display: flex;
     flex-direction: column;
     gap: 10px;  /* Consistent gap between buttons */
@@ -503,74 +453,179 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 .tab-button {
-    padding: 10px 15px;
+    padding: 12px 16px;
     border: none;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.9);
     cursor: pointer;
     font-size: 14px;
-    color: #004d4d;
+    color: #1e293b;
     font-weight: 500;
-    border-radius: 4px;
+    border-radius: 6px;
     flex: 1;
     text-align: center;
     white-space: nowrap;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .tab-button.active {
-    background: rgba(255, 255, 255, 0.95);
-    color: #003333;
-    font-weight: bold;
+    background: #10b981;
+    color: white;
+    font-weight: 600;
+    border-color: #10b981;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
 .tab-button:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Form field styles - simplified */
-.form-field {
-    margin-bottom: 7px;
-}
+
 
 .form-field label {
     display: block;
-    margin-bottom: 2px;
-    color: #003333;
-    font-weight: 500;
+    margin-bottom: 8px;
+    color: #1e293b;
+    font-weight: 600;
     font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
 }
 
 .form-field input,
 .form-field select {
     width: 100%;
-    padding: 3px;
-    border: 1px solid rgba(0, 51, 51, 0.2);
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
     font-size: 14px;
     box-sizing: border-box;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1e293b;
+    font-style: normal;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.form-field input:hover,
+.form-field select:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.form-field input:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.form-field input::placeholder {
+    color: #9ca3af;
+    font-style: normal;
+}
+
+/* Ensure all text in form inputs is normal style */
+.form-field input,
+.form-field select {
+    font-style: normal !important;
+}
+
+/* Validation styling - only show red borders when there are actual validation errors */
+.form-field input.error,
+.form-field select.error,
+.form-field textarea.error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    background-color: rgba(254, 242, 242, 0.5) !important;
+}
+
+/* Remove the problematic :invalid pseudo-class styling */
+.form-field input:invalid,
+.form-field select:invalid,
+.form-field textarea:invalid {
+    border-color: rgba(59, 130, 246, 0.2);
+    box-shadow: none;
+}
+
+/* Validation message styling */
+.validation-message {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.validation-message.error {
+    color: #dc2626;
+    background-color: rgba(254, 242, 242, 0.8);
+    border-color: #fecaca;
+}
+
+.validation-message.success {
+    color: #059669;
+    background-color: rgba(236, 253, 245, 0.8);
+    border-color: #a7f3d0;
+}
+
+.form-field input:disabled,
+.form-field select:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #d1d5db;
+}
+
+
+
+/* Enhanced select dropdown styling */
+.form-field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+.form-field select:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
 }
 
 /* Tab styles - simplified */
 .tab-pane {
-    display: none;
-    height: fit-content;
-    padding: 20px;
+    display: none !important;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
 }
 
 .tab-pane.active {
-    display: block;
+    display: block !important;
+    height: 100%;
 }
 
 /* Tab header styles */
 .tab-pane h2 {
-    color: #004d4d;
-    margin: 0 0 20px 0;
-    padding: 0;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    padding: 8px 20px 8px 20px;
     font-size: 1.4em;
-    font-weight: 500;
+    font-weight: 600;
     text-align: center;
-    border-bottom: 2px solid rgba(0, 77, 77, 0.1);
-    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
 }
 
 /* Form container styles */
@@ -578,19 +633,158 @@ input[type="text"], input[type="email"], select, textarea {
     flex: 0 0 400px;
     min-width: 320px;
     max-width: 400px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow-y: auto;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 12px;
+    box-shadow: 
+        0 4px 6px rgba(0, 0, 0, 0.1),
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    overflow: hidden;
     padding: 0;
     display: flex;
     flex-direction: column;
-    height: fit-content;
-    max-height: calc(100vh - 140px);
+    height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    /* Prevent excessive expansion when zooming out */
+    max-height: 85vh;
 }
 
 /* Form fields container */
 .form-fields-container {
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+    border-radius: 0 0 8px 8px;
+    position: relative;
+    overflow-y: auto;
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
+    padding-bottom: 15px; /* Ensure space above buttons */
+    /* Prevent excessive expansion when zooming out */
+    max-height: 75vh;
+}
+
+/* Button container positioning */
+.button-container {
+    margin-top: 6px;
+    padding: 8px 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    position: relative;
+    z-index: 2;
+    /* Ensure buttons are always visible */
+    margin-bottom: 10px;
+}
+
+/* Custom scrollbar styling */
+.form-fields-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.form-fields-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.form-fields-container::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+}
+
+.form-fields-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+/* Responsive constraints for extreme zoom levels */
+@media (max-width: 800px) {
+    .form-container {
+        min-width: 280px;
+        max-width: 90vw;
+    }
+    
+    .form-fields-container {
+        padding: 15px;
+    }
+}
+
+@media (max-height: 600px) {
+    .form-container {
+        max-height: 60vh;
+    }
+    
+    .form-fields-container {
+        max-height: 45vh;
+    }
+}
+
+/* Add subtle pattern overlay to form fields container */
+.form-fields-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Ensure form fields are above the pattern */
+.form-fields-container > * {
+    position: relative;
+    z-index: 1;
+}
+
+
+
+.form-field {
+    margin-bottom: 10px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.form-field:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced form field grouping */
+.form-field-group {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.form-field-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-field-group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Main container styles */
+.container {
+    display: flex;
+    width: 100%;
+    max-width: 2400px;
+    height: auto;
+    max-height: calc(100vh - 40px);
+    margin: 0 auto;
+    gap: 10px;
+    box-sizing: border-box;
     padding: 0 20px;
 }
 
@@ -601,21 +795,26 @@ input[type="text"], input[type="email"], select, textarea {
     width: 100%;
     min-width: 900px;
     max-width: 100%;
-    gap: 20px;
+    gap: 6px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0px 20px 0 20px;
+    /* Prevent excessive expansion when zooming out */
+    max-height: 100vh;
+    overflow: hidden;
 }
 
 .tabs-container {
     background: transparent;
-    margin-bottom: -10px; /* Negative margin to reduce gap with content */
+    margin-bottom: 0; /* Remove negative margin that was causing positioning issues */
 }
 
 .content-container {
     display: flex;
-    gap: 20px;
-    height: calc(100vh - 120px);
-    min-height: 400px;
+    gap: 15px;
+    height: calc(100vh - 20px);
+    /* Prevent excessive expansion when zooming out */
+    max-height: 90vh;
+    overflow: hidden;
 }
 
 /* Update tabs styles */
@@ -634,20 +833,25 @@ input[type="text"], input[type="email"], select, textarea {
     font-size: 0.9em;
     transition: all 0.3s ease;
     border-radius: 8px 8px 0 0;
-    border: 1px solid rgba(0, 255, 255, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-bottom: none;
+    color: #1e293b;
 }
 
 .tab-button.active {
-    background: #fff;
+    background: #10b981;
+    color: white;
     font-weight: bold;
     position: relative;
     z-index: 1;
     transform: translateY(2px);
+    border-color: #10b981;
 }
 
 .tab-button:hover:not(.active) {
-    background: rgba(255, 255, 255, 1);
+    background: rgba(255, 255, 255, 0.95);
+    color: #1e293b;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Update form container styles */
@@ -720,20 +924,32 @@ input[type="text"], input[type="email"], select, textarea {
 }
 
 .search-button {
-    background-color: #4CAF50;  /* Green color for search */
+    background-color: #10b981;  /* Modern emerald green for search */
     color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 }
 
 .clear-search-button {
-    background-color: #008CBA;  /* Changed from #f44336 (red) to #008CBA (blue) */
+    background-color: #6b7280;  /* Modern gray for clear */
     color: white;
+    box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
 }
 
 /* Add hover and active states to match other buttons */
 .search-button:hover,
 .clear-search-button:hover {
-    opacity: 0.9;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-button:hover {
+    background-color: #059669;
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.clear-search-button:hover {
+    background-color: #4b5563;
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
 }
 
 .search-button:active,
@@ -880,53 +1096,57 @@ textarea {
 
 /* Add this with the other button styles */
 .danger-button {
-    background-color: #dc3545 !important; /* Red color */
+    background-color: #ef4444 !important; /* Modern red */
     color: white;
     width: 100%;
     max-width: 400px;
     padding: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 1em;
     text-align: center;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .danger-button:hover {
-    background-color: #c82333 !important; /* Darker red */
-    opacity: 0.9;
+    background-color: #dc2626 !important; /* Darker red */
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
 .danger-button:active {
-    background-color: #bd2130 !important; /* Even darker red */
+    background-color: #b91c1c !important; /* Even darker red */
     transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .primary-button {
-    background-color: #4CAF50 !important; /* Green color */
+    background-color: #3b82f6 !important; /* Modern blue */
     color: white;
     width: 100%;
     max-width: 400px;
     padding: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 1em;
     text-align: center;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 .primary-button:hover {
-    background-color: #45a049 !important; /* Darker green */
-    opacity: 0.9;
+    background-color: #2563eb !important; /* Darker blue */
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
 .primary-button:active {
-    background-color: #3d8b40 !important; /* Even darker green */
+    background-color: #1d4ed8 !important; /* Even darker blue */
     transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 /* Update JSON import modal specific styles */
