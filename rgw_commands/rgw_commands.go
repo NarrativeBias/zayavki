@@ -7,38 +7,20 @@ import (
 	"strings"
 )
 
-// convertSizeToBytes converts various size units to bytes
-// Supports: T (TB), G (GB), M (MB), K (KB) and plain numbers (assumed to be GB)
-func convertSizeToBytes(sizeStr string) string {
+// convertGBToBytes converts gigabytes to bytes (1 GB = 1,000,000,000 bytes)
+// Only accepts plain integers, assumed to be in GB
+func convertGBToBytes(gbStr string) string {
 	// Remove any whitespace
-	sizeStr = strings.TrimSpace(sizeStr)
+	gbStr = strings.TrimSpace(gbStr)
 
-	// Check if it ends with a unit
-	var multiplier float64 = 1000000000 // Default: GB (1 GB = 1,000,000,000 bytes)
-	var numericPart string = sizeStr
-
-	if strings.HasSuffix(strings.ToUpper(sizeStr), "T") {
-		multiplier = 1000000000000 // 1 TB = 1,000,000,000,000 bytes
-		numericPart = strings.TrimSuffix(strings.ToUpper(sizeStr), "T")
-	} else if strings.HasSuffix(strings.ToUpper(sizeStr), "G") {
-		multiplier = 1000000000 // 1 GB = 1,000,000,000 bytes
-		numericPart = strings.TrimSuffix(strings.ToUpper(sizeStr), "G")
-	} else if strings.HasSuffix(strings.ToUpper(sizeStr), "M") {
-		multiplier = 1000000 // 1 MB = 1,000,000 bytes
-		numericPart = strings.TrimSuffix(strings.ToUpper(sizeStr), "M")
-	} else if strings.HasSuffix(strings.ToUpper(sizeStr), "K") {
-		multiplier = 1000 // 1 KB = 1,000 bytes
-		numericPart = strings.TrimSuffix(strings.ToUpper(sizeStr), "K")
-	}
-
-	// Parse the numeric value
-	size, err := strconv.ParseFloat(numericPart, 64)
+	// Parse the GB value as integer
+	gb, err := strconv.ParseInt(gbStr, 10, 64)
 	if err != nil {
-		return sizeStr // Return original if conversion fails
+		return gbStr // Return original if conversion fails
 	}
 
-	// Convert to bytes
-	bytes := int64(size * multiplier)
+	// Convert to bytes (1 GB = 1,000,000,000 bytes)
+	bytes := gb * 1000000000
 
 	return strconv.FormatInt(bytes, 10)
 }
@@ -57,7 +39,7 @@ func BucketCreation(variables map[string][]string, clusters map[string]string) s
 					clusters["Реалм"],
 					variables["tenant"][0],
 					variables["bucketnames"][i],
-					convertSizeToBytes(variables["bucketquotas"][i]),
+					convertGBToBytes(variables["bucketquotas"][i]),
 					displayName)
 				rows.WriteString(bucketcreate)
 			} else {
@@ -65,7 +47,7 @@ func BucketCreation(variables map[string][]string, clusters map[string]string) s
 					clusters["Реалм"],
 					variables["tenant"][0],
 					variables["bucketnames"][i],
-					convertSizeToBytes(variables["bucketquotas"][i]))
+					convertGBToBytes(variables["bucketquotas"][i]))
 				rows.WriteString(bucketcreate)
 			}
 			if i < len(variables["bucketnames"])-1 {
@@ -141,7 +123,7 @@ func GenerateQuotaCommands(tenant string, buckets []string, realm string) string
 			}
 
 			cmd := fmt.Sprintf("sudo radosgw-admin quota set --rgw-realm %s --quota-scope bucket --bucket \"%s/%s\" --max-size %s\n",
-				realm, tenant, name, convertSizeToBytes(size))
+				realm, tenant, name, convertGBToBytes(size))
 			commands.WriteString(cmd)
 		}
 	}
