@@ -60,10 +60,62 @@ function displayCheckResults(data) {
                             'Команды';
         const commands = data.creation_commands || data.deletion_commands || data.commands;
         
+        // Create commands section container
+        const commandsSection = document.createElement('div');
+        commandsSection.className = 'commands-section';
+        
         const pre = document.createElement('pre');
         pre.className = 'command-block';
         pre.textContent = commands;
-        container.appendChild(createSection(commandsTitle, pre));
+        
+        // Add copy button for tenant-mod and bucket-mod tabs
+        const activeTab = document.querySelector('.tab-pane.active');
+        if (activeTab && (activeTab.id === 'tenant-mod' || activeTab.id === 'bucket-mod')) {
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.textContent = 'Копировать';
+            copyButton.onclick = () => {
+                navigator.clipboard.writeText(commands).then(() => {
+                    // Temporarily change button text to show success
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Скопировано!';
+                    copyButton.style.backgroundColor = '#28a745';
+                    copyButton.disabled = true;
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                        copyButton.style.backgroundColor = '';
+                        copyButton.disabled = false;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = commands;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // Show success message
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Скопировано!';
+                    copyButton.style.backgroundColor = '#28a745';
+                    copyButton.disabled = true;
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                        copyButton.style.backgroundColor = '';
+                        copyButton.disabled = false;
+                    }, 2000);
+                });
+            };
+            
+            commandsSection.appendChild(copyButton);
+        }
+        
+        commandsSection.appendChild(pre);
+        container.appendChild(createSection(commandsTitle, commandsSection));
     }
 
     const resultDiv = document.getElementById('result');

@@ -1098,4 +1098,45 @@ textarea {
     white-space: pre-wrap;
     word-wrap: break-word;
     color: #ffffff;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Copy button styles */
+.copy-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.copy-button:hover {
+    background-color: #0056b3;
+}
+
+.copy-button:active {
+    background-color: #004085;
+}
+
+.copy-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Commands section with copy button */
+.commands-section {
+    position: relative;
+}
+
+.commands-section .copy-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
