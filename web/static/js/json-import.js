@@ -106,8 +106,15 @@ function parseSrtJson(data) {
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя бакета'))
                 .map(line => {
-                    const [name, size] = line.split('|').map(s => s.trim());
-                    return `${name} | ${size}`;
+                    // Handle new format: bucketname | quota | id
+                    const parts = line.split('|').map(s => s.trim());
+                    if (parts.length >= 2) {
+                        // Take only bucket name and quota, ignore ID
+                        const name = parts[0];
+                        const quota = parts[1];
+                        return `${name} | ${quota}`;
+                    }
+                    return line; // Fallback to original line if format is unexpected
                 })
                 .join('\n');
             setFieldValue('buckets', bucketsList);
@@ -120,6 +127,15 @@ function parseSrtJson(data) {
             const usersList = userLines
                 .map(line => line.trim())
                 .filter(line => line && !line.includes('Имя дополнительной'))
+                .map(line => {
+                    // Handle new format: username | id
+                    const parts = line.split('|').map(s => s.trim());
+                    if (parts.length >= 1) {
+                        // Take only username, ignore ID
+                        return parts[0];
+                    }
+                    return line; // Fallback to original line if format is unexpected
+                })
                 .join('\n');
             setFieldValue('users', usersList);
         }
