@@ -1,3 +1,4 @@
+/* CSS Updated for form sizing - v2.1 */
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
@@ -400,6 +401,8 @@ body {
         max-width: 600px;
         min-width: unset;
         margin: 0 auto;
+        height: fit-content !important;
+        min-height: fit-content !important;
     }
 
     .results-container {
@@ -612,14 +615,14 @@ body {
 /* Tab styles - simplified */
 .tab-pane {
     display: none !important;
-    height: 100%;
+    height: auto !important;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .tab-pane.active {
     display: block !important;
-    height: 100%;
+    height: auto !important;
 }
 
 /* Tab header styles */
@@ -646,15 +649,81 @@ body {
         0 4px 6px rgba(0, 0, 0, 0.1),
         0 1px 3px rgba(0, 0, 0, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    overflow: hidden;
+    overflow: visible;
     padding: 0;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 0px);
-    max-height: calc(100vh - 0px);
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
     border: 1px solid rgba(59, 130, 246, 0.1);
-    /* Prevent excessive expansion when zooming out */
-    max-height: 92vh;
+    /* Force the form to size to content */
+    align-self: flex-start;
+}
+
+/* Force the main form to have no height constraints */
+#mainForm {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure form fields don't have height constraints */
+.form-field {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+
+/* Specific styles for bucket-mod tab to ensure it sizes to content */
+#bucket-mod {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+
+#bucket-mod .form-fields-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+
+/* Force all form elements to be as small as possible */
+.form-container,
+.form-container *,
+.tab-pane,
+.tab-pane *,
+.form-fields-container,
+.form-fields-container * {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+
+/* Override any flex properties that might be causing height issues */
+.form-container {
+    flex-shrink: 1 !important;
+    flex-grow: 0 !important;
+}
+
+.content-container {
+    align-items: flex-start !important;
+}
+
+/* Force the form to be as small as possible */
+.form-container {
+    height: fit-content !important;
+    min-height: fit-content !important;
+    max-height: fit-content !important;
+}
+
+/* Ensure the form doesn't expand beyond its content */
+.form-container > * {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
 }
 
 /* Form fields container */
@@ -663,12 +732,11 @@ body {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
     border-radius: 0 0 8px 8px;
     position: relative;
-    overflow-y: auto;
-    height: calc(100vh - 220px);
-    max-height: calc(100vh - 220px);
+    overflow-y: visible;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
     padding-bottom: 10px; /* Ensure space above buttons */
-    /* Prevent excessive expansion when zooming out */
-    max-height: 85vh;
 }
 
 /* Button container positioning */
@@ -712,20 +780,28 @@ body {
     .form-container {
         min-width: 280px;
         max-width: 90vw;
+        height: fit-content;
+        min-height: fit-content;
     }
     
     .form-fields-container {
         padding: 15px;
+        height: fit-content;
+        min-height: fit-content;
     }
 }
 
 @media (max-height: 600px) {
     .form-container {
         max-height: 60vh;
+        height: fit-content;
+        min-height: fit-content;
     }
     
     .form-fields-container {
         max-height: 45vh;
+        height: fit-content;
+        min-height: fit-content;
     }
 }
 
@@ -828,7 +904,8 @@ body {
     display: flex;
     width: 100%;
     max-width: 2400px;
-    height: auto;
+    height: fit-content !important;
+    min-height: fit-content !important;
     max-height: calc(100vh - 40px);
     margin: 0 auto;
     gap: 10px;
@@ -848,7 +925,9 @@ body {
     padding: 0px 20px 0 20px;
     /* Prevent excessive expansion when zooming out */
     max-height: 100vh;
-    overflow: hidden;
+    height: fit-content !important;
+    min-height: fit-content !important;
+    overflow: visible;
 }
 
 .tabs-container {
@@ -859,10 +938,12 @@ body {
 .content-container {
     display: flex;
     gap: 15px;
-    height: calc(100vh - 20px);
+    height: fit-content !important;
+    min-height: fit-content !important;
+    max-height: calc(100vh - 20px);
     /* Prevent excessive expansion when zooming out */
     max-height: 90vh;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Update tabs styles */
@@ -916,10 +997,7 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Update container styles */
-.container {
-    height: auto;
-}
+/* Update container styles - removed duplicate */
 
 /* Search tab styles */
 .search-fields {

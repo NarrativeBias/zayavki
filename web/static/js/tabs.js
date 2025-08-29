@@ -49,6 +49,12 @@ function initializeTabs() {
             
             // Restore values for the new tab
             restoreFieldValues(newTabId);
+            
+            // Force form resize after tab switch
+            setTimeout(forceFormResize, 50);
+            
+            // Debug form heights
+            setTimeout(debugFormHeights, 100);
         });
     });
 }
@@ -81,6 +87,12 @@ function switchTab(tabName) {
     if (window.reinitializeValidation) {
         window.reinitializeValidation();
     }
+    
+    // Force form resize after tab switch
+    setTimeout(forceFormResize, 50);
+    
+    // Debug form heights
+    setTimeout(debugFormHeights, 100);
 }
 
 function initializeFieldSync() {
