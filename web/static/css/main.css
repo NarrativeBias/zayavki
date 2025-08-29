@@ -32,6 +32,8 @@ body {
 .results-container {
     flex: 1;
     min-width: 500px;
+    min-height: 0;
+    max-height: calc(100vh - 100px);
     display: flex;
     flex-direction: column;
     background-color: rgba(15, 23, 42, 0.9);
@@ -39,6 +41,30 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     overflow: auto;
+}
+
+/* Ensure results container is always at least as tall as the form container */
+.content-container {
+    align-items: stretch;
+}
+
+.results-container {
+    align-self: stretch;
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+
+/* Responsive max-height adjustments */
+@media (max-height: 800px) {
+    .results-container {
+        max-height: calc(100vh - 80px);
+    }
+}
+
+@media (max-height: 600px) {
+    .results-container {
+        max-height: calc(100vh - 60px);
+    }
 }
 
 .results-container h2 {

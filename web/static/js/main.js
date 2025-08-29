@@ -11,12 +11,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Debug form heights
     setTimeout(debugFormHeights, 200);
+    
+    // Set up automatic height syncing
+    setTimeout(setupHeightSync, 300);
 });
 
 // Function to force form container to resize to its content
 function forceFormResize() {
     const formContainer = document.querySelector('.form-container');
     const activeTab = document.querySelector('.tab-pane.active');
+    const resultsContainer = document.querySelector('.results-container');
     
     if (formContainer && activeTab) {
         // Force the form container to size to its content
@@ -35,6 +39,18 @@ function forceFormResize() {
             fieldsContainer.style.height = 'auto';
             fieldsContainer.style.minHeight = 'auto';
             fieldsContainer.style.maxHeight = 'none';
+        }
+        
+        // Ensure results container matches form container height
+        if (resultsContainer) {
+            const formHeight = formContainer.offsetHeight;
+            const maxHeight = window.innerHeight - 100; // Match CSS max-height
+            
+            // Set min-height to form height, but don't exceed max-height
+            const targetHeight = Math.min(formHeight, maxHeight);
+            resultsContainer.style.minHeight = targetHeight + 'px';
+            
+            console.log('Results container min-height set to:', targetHeight + 'px', '(form height:', formHeight + 'px, max height:', maxHeight + 'px)');
         }
         
         console.log('Form resize forced');
@@ -81,3 +97,38 @@ function debugFormHeights() {
 
 // Make debug function globally available
 window.debugFormHeights = debugFormHeights;
+
+// Function to sync results container height with form container
+function syncResultsHeight() {
+    const formContainer = document.querySelector('.form-container');
+    const resultsContainer = document.querySelector('.results-container');
+    
+    if (formContainer && resultsContainer) {
+        const formHeight = formContainer.offsetHeight;
+        const maxHeight = window.innerHeight - 100; // Match CSS max-height
+        
+        // Set min-height to form height, but don't exceed max-height
+        const targetHeight = Math.min(formHeight, maxHeight);
+        resultsContainer.style.minHeight = targetHeight + 'px';
+        
+        console.log('Results container height synced to:', targetHeight + 'px', '(form height:', formHeight + 'px, max height:', maxHeight + 'px)');
+    }
+}
+
+// Make sync function globally available
+window.syncResultsHeight = syncResultsHeight;
+
+// Set up a resize observer to automatically sync heights
+function setupHeightSync() {
+    const formContainer = document.querySelector('.form-container');
+    const resultsContainer = document.querySelector('.results-container');
+    
+    if (formContainer && resultsContainer && window.ResizeObserver) {
+        const resizeObserver = new ResizeObserver(() => {
+            syncResultsHeight();
+        });
+        
+        resizeObserver.observe(formContainer);
+        console.log('Height sync observer set up');
+    }
+}
