@@ -58,12 +58,12 @@ function validateBucketQuotaFields() {
         
         bucketFields.forEach(field => {
             // Remove existing event listeners to prevent duplicates
-            field.removeEventListener('input', handleBucketQuotaInput);
-            field.removeEventListener('blur', handleBucketQuotaBlur);
+            field.removeEventListener('input', handleBucketInput);
+            field.removeEventListener('blur', handleBucketBlur);
             
             // Add new event listeners
-            field.addEventListener('input', handleBucketQuotaInput);
-            field.addEventListener('blur', handleBucketQuotaBlur);
+            field.addEventListener('input', handleBucketInput);
+            field.addEventListener('blur', handleBucketBlur);
         });
     }
 }
@@ -95,6 +95,14 @@ function handleBucketQuotaBlur(e) {
     validateBucketQuotaFormat(e.target);
 }
 
+function handleBucketInput(e) {
+    triggerFieldValidation(e.target);
+}
+
+function handleBucketBlur(e) {
+    triggerFieldValidation(e.target);
+}
+
 function handleUsernameInput(e) {
     validateUsernameFormat(e.target);
 }
@@ -103,8 +111,29 @@ function handleUsernameBlur(e) {
     validateUsernameFormat(e.target);
 }
 
+// Function to clear all validation messages in the current tab
+function clearAllValidationMessages() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    if (!activeTab) return;
+    
+    // Clear all validation messages
+    const validationDivs = activeTab.querySelectorAll('.validation-message');
+    validationDivs.forEach(div => {
+        div.remove();
+    });
+    
+    // Remove error classes from input fields
+    const errorFields = activeTab.querySelectorAll('.error');
+    errorFields.forEach(field => {
+        field.classList.remove('error');
+    });
+}
+
 // Function to reinitialize validation when tabs are switched
 function reinitializeValidation() {
+    // Clear existing validation messages first
+    clearAllValidationMessages();
+    
     validateSDField();
     validateSRTField();
     validateEmailFields();
@@ -239,6 +268,50 @@ function validateBucketQuotaFormat(textarea) {
             errors.push(`Строка ${i + 1}: Размер квоты "${quota}" должен быть положительным целым числом (в GB)`);
         }
     }
+    
+    if (errors.length > 0) {
+        showValidationMessage(
+            getOrCreateValidationDiv(textarea),
+            errors.join('\n'),
+            'error'
+        );
+    } else {
+        showValidationMessage(
+            getOrCreateValidationDiv(textarea),
+            'Формат корректен',
+            'success'
+        );
+    }
+}
+
+function validateBucketNamesOnly(textarea) {
+    console.log('validateBucketNamesOnly called with value:', textarea.value);
+    const value = textarea.value.trim();
+    if (!value) {
+        clearValidationMessage(getOrCreateValidationDiv(textarea));
+        return;
+    }
+    
+    const lines = value.split('\n');
+    const errors = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
+        // For bucket deletion, we only expect bucket names (no size)
+        const bucketName = line;
+        
+        if (!bucketName) {
+            errors.push(`Строка ${i + 1}: Имя бакета не может быть пустым`);
+        } else {
+            // Validate bucket name format and characters
+            const bucketNameErrors = validateBucketName(bucketName, i + 1);
+            errors.push(...bucketNameErrors);
+        }
+    }
+    
+    console.log('validateBucketNamesOnly errors:', errors);
     
     if (errors.length > 0) {
         showValidationMessage(
@@ -576,7 +649,16 @@ function triggerFieldValidation(input) {
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         validateEmail(input, emailPattern);
     } else if (fieldId === 'buckets') {
-        validateBucketQuotaFormat(input);
+        // Use different validation based on the tab
+        const activeTab = document.querySelector('.tab-pane.active');
+        console.log('Validating buckets field, active tab:', activeTab ? activeTab.id : 'none');
+        if (activeTab && activeTab.id === 'user-bucket-del') {
+            console.log('Using validateBucketNamesOnly for user-bucket-del tab');
+            validateBucketNamesOnly(input);
+        } else {
+            console.log('Using validateBucketQuotaFormat for other tabs');
+            validateBucketQuotaFormat(input);
+        }
     } else if (fieldId === 'users') {
         validateUsernameFormat(input);
     } else if (fieldId === 'tenant') {
@@ -590,8 +672,10 @@ window.initializeFieldValidation = initializeFieldValidation;
 window.hasValidationErrors = hasValidationErrors;
 window.hasValidationErrorsInCurrentTab = hasValidationErrorsInCurrentTab;
 window.validateBucketQuotaFormat = validateBucketQuotaFormat;
+window.validateBucketNamesOnly = validateBucketNamesOnly;
 window.isValidQuota = isValidQuota;
-window.reinitializeValidation = reinitializeValidation; 
+window.reinitializeValidation = reinitializeValidation;
+window.clearAllValidationMessages = clearAllValidationMessages; 
 
 // Function to reinitialize validation after import with comprehensive validation
 function reinitializeValidationAfterImport() {
@@ -630,7 +714,12 @@ function reinitializeValidationAfterImport() {
             const usersInput = activeTab.querySelector('textarea[id="users"]');
             
             if (bucketsInput && bucketsInput.value) {
-                validateBucketQuotaFormat(bucketsInput);
+                // Use different validation based on the tab
+                if (activeTab.id === 'user-bucket-del') {
+                    validateBucketNamesOnly(bucketsInput);
+                } else {
+                    validateBucketQuotaFormat(bucketsInput);
+                }
             }
             if (usersInput && usersInput.value) {
                 validateUsernameFormat(usersInput);

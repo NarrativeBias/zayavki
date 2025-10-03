@@ -140,8 +140,59 @@ function displayDeactivationResults(result) {
     const container = document.createElement('div');
     container.className = 'table-container';
 
+    // Check if there are any deactivated resources
+    const hasDeactivatedUsers = result.deactivated_users && result.deactivated_users.length > 0;
+    const hasDeactivatedBuckets = result.deactivated_buckets && result.deactivated_buckets.length > 0;
+    const hasErrors = result.errors && result.errors.length > 0;
+
+    // If nothing was deactivated and no errors, show informational message
+    if (!hasDeactivatedUsers && !hasDeactivatedBuckets && !hasErrors) {
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'info-message';
+        infoDiv.style.cssText = `
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border-left: 5px solid #17a2b8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 1.1em;
+            line-height: 1.5;
+            text-align: center;
+        `;
+        
+        const infoIcon = document.createElement('span');
+        infoIcon.style.cssText = `
+            font-size: 1.4em;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        `;
+        infoIcon.textContent = 'ℹ️';
+
+        const infoTitle = document.createElement('strong');
+        infoTitle.style.cssText = `
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1.2em;
+            font-weight: 600;
+        `;
+        infoTitle.appendChild(infoIcon);
+        infoTitle.appendChild(document.createTextNode('Результат операции'));
+
+        const infoText = document.createElement('span');
+        infoText.style.cssText = `
+            display: block;
+        `;
+        infoText.textContent = 'Указанные пользователи и бакеты не были найдены в системе или уже деактивированы.';
+
+        infoDiv.appendChild(infoTitle);
+        infoDiv.appendChild(infoText);
+        container.appendChild(infoDiv);
+    }
+
     // Show deactivated users
-    if (result.deactivated_users && result.deactivated_users.length > 0) {
+    if (hasDeactivatedUsers) {
         container.appendChild(createSection('Деактивированные пользователи',
             createTable(
                 ['Пользователь'],
@@ -151,7 +202,7 @@ function displayDeactivationResults(result) {
     }
 
     // Show deactivated buckets
-    if (result.deactivated_buckets && result.deactivated_buckets.length > 0) {
+    if (hasDeactivatedBuckets) {
         container.appendChild(createSection('Деактивированные бакеты',
             createTable(
                 ['Бакет'],
@@ -205,7 +256,7 @@ function displayDeactivationResults(result) {
     }
 
     // Show errors if any
-    if (result.errors && result.errors.length > 0) {
+    if (hasErrors) {
         const errorList = document.createElement('div');
         errorList.className = 'error-list';
         result.errors.forEach(error => {
