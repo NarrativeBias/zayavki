@@ -386,10 +386,11 @@ func handleClusterInfo(w http.ResponseWriter, r *http.Request) {
 
 func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		Tenant  string   `json:"tenant"`
-		Users   []string `json:"users"`
-		Buckets []string `json:"buckets"`
-		Mode    string   `json:"mode"`
+		Tenant       string   `json:"tenant"`
+		Users        []string `json:"users"`
+		Buckets      []string `json:"buckets"`
+		Mode         string   `json:"mode"`
+		RequestIdSrt string   `json:"request_id_srt,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -479,10 +480,16 @@ func handleCheckTenantResources(w http.ResponseWriter, r *http.Request) {
 	// Add appropriate commands based on mode
 	if request.Mode == "create" {
 		// Generate creation commands
+		// Use input field value if provided, otherwise fall back to tenant info
+		requestIdSrt := tenantInfo.SrtNum
+		if request.RequestIdSrt != "" {
+			requestIdSrt = request.RequestIdSrt
+		}
+
 		vars := map[string][]string{
 			"tenant":         {request.Tenant},
 			"users":          request.Users,
-			"request_id_srt": {tenantInfo.SrtNum},
+			"request_id_srt": {requestIdSrt},
 			"resp_group":     {tenantInfo.OwnerGroup},
 			"owner":          {tenantInfo.OwnerPerson},
 		}

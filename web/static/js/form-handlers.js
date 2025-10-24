@@ -354,12 +354,17 @@ async function handleTenantModCheck() {
         return;
     }
 
+    // Get request_id_srt from input field
+    const srtInput = tabPane.querySelector('#request_id_srt');
+    const requestIdSrt = srtInput ? srtInput.value.trim() : '';
+
     try {
         const response = await fetchJson('/zayavki/check-tenant-resources', {
             tenant,
             users,
             buckets,
-            mode: "create"  // Specify create mode
+            mode: "create",  // Specify create mode
+            request_id_srt: requestIdSrt
         });
         
         const data = await response.json();
