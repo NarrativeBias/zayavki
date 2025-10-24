@@ -273,6 +273,26 @@ function displayDeactivationResults(result) {
     resultDiv.appendChild(container);
 }
 
+function convertTableToCSV(table) {
+    const rows = table.querySelectorAll('tr');
+    const csvRows = [];
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td, th');
+        const cellTexts = Array.from(cells).map(cell => {
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            let text = cell.textContent.trim();
+            if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+                text = '"' + text.replace(/"/g, '""') + '"';
+            }
+            return text;
+        });
+        csvRows.push(cellTexts.join(','));
+    });
+    
+    return csvRows.join('\n');
+}
+
 function displaySearchResults(results) {
     const resultDiv = document.getElementById('result');
     if (!resultDiv) return;
@@ -307,8 +327,51 @@ function displaySearchResults(results) {
         ])
     );
 
+    // Create container for results with copy button
+    const resultsContainer = document.createElement('div');
+    resultsContainer.className = 'search-results-container';
+    
+    // Create header with title and copy button
+    const resultsHeader = document.createElement('div');
+    resultsHeader.className = 'results-header';
+    
+    const titleElement = document.createElement('h3');
+    titleElement.className = 'results-title';
+    titleElement.textContent = 'Результаты поиска';
+    
+    // Create export button with CSV functionality
+    const exportButton = document.createElement('button');
+    exportButton.className = 'copy-button';
+    exportButton.textContent = 'Экспорт';
+    exportButton.onclick = () => {
+        // Convert table data to CSV format
+        const csvContent = convertTableToCSV(table);
+        
+        // Add BOM for proper UTF-8 encoding of Russian characters
+        const BOM = '\uFEFF';
+        const csvWithBOM = BOM + csvContent;
+        
+        // Create and download CSV file
+        const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'search_results.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    resultsHeader.appendChild(titleElement);
+    resultsHeader.appendChild(exportButton);
+    
+    // Assemble the container
+    resultsContainer.appendChild(resultsHeader);
+    resultsContainer.appendChild(table);
+
     resultDiv.textContent = '';
-    resultDiv.appendChild(table);
+    resultDiv.appendChild(resultsContainer);
 }
 
 function displayFormResult(data) {
